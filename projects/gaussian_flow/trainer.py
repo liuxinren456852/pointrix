@@ -9,7 +9,7 @@ from pointrix.base_model.gaussian_splatting import GaussianSplatting
 
 class GaussianFlow(GaussianSplatting):
     @dataclass
-    class Config:
+    class Config(GaussianSplatting.Config):
         pos_traj_type: str = 'poly_fourier'
         pos_traj_dim: int = 3
         

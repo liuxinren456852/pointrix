@@ -53,49 +53,16 @@ def C_max(value: Any) -> float:
 @dataclass
 class ExperimentConfig:
     name: str = "default"
-    description: str = ""
-    tag: str = ""
-    seed: int = 0
+    timestamp: str = ""
+    exp_dir: str = ""
     use_timestamp: bool = True
-    timestamp: Optional[str] = None
-    exp_root_dir: str = "outputs"
-
-    ### these shouldn't be set manually
-    exp_dir: str = "outputs/default"
-    trial_name: str = "exp"
-    trial_dir: str = "outputs/default/exp"
-    n_gpus: int = 1
-    ###
-
-    resume: Optional[str] = None
-
-    data_type: str = ""
-    data: dict = field(default_factory=dict)
-
-    system_type: str = ""
-    system: dict = field(default_factory=dict)
-
-    # accept pytorch-lightning trainer parameters
-    # see https://lightning.ai/docs/pytorch/stable/common/trainer.html#trainer-class-api
     trainer: dict = field(default_factory=dict)
 
-    # accept pytorch-lightning checkpoint callback parameters
-    # see https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html#modelcheckpoint
-    checkpoint: dict = field(default_factory=dict)
-
     def __post_init__(self):
-        if not self.tag and not self.use_timestamp:
-            raise ValueError("Either tag is specified or use_timestamp is True.")
-        self.trial_name = self.tag
-        # if resume from an existing config, self.timestamp should not be None
-        if self.timestamp is None:
-            self.timestamp = ""
-            if self.use_timestamp:
-                self.timestamp = datetime.now().strftime("@%Y%m%d-%H%M%S")
-        self.trial_name += self.timestamp
-        self.exp_dir = os.path.join(self.exp_root_dir, self.name)
-        self.trial_dir = os.path.join(self.exp_dir, self.trial_name)
-        os.makedirs(self.trial_dir, exist_ok=True)
+        if self.use_timestamp:
+            self.timestamp = datetime.now().strftime("@%Y%m%d-%H%M%S")
+        self.exp_dir = os.path.join(self.trainer.output_path, self.name) + self.timestamp
+        os.makedirs(self.exp_dir, exist_ok=True)
 
 
 def load_config(*yamls: str, cli_args: list = [], from_string=False, **kwargs) -> Any:

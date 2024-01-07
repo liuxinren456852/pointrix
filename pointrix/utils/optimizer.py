@@ -47,25 +47,24 @@ def parse_optimizer(config, model):
 def parse_scheduler(config):
     if hasattr(config, "name"):
         scheduler = get_scheduler(config.name)
-        
+    
+    max_steps = config.max_steps
     params = [
         {
             "name": name, 
-            "init": init, 
-            "final": final, 
-            "max_step": max_step, 
-            **args
+            "init": values["init"], 
+            "final": values["final"], 
+            "max_steps": max_steps, 
         }
-        for name, init, final, max_step, args in config.params.items()
+        for name, values in config.params.items()
     ]
-    
     scheduler_funcs = {}
     for param in params:
         scheduler_funcs[param["name"]] = (
             scheduler(
                 init=param["init"], 
                 final=param["final"], 
-                max_step=param["max_step"], 
+                max_steps=param["max_steps"], 
             )
         )
     return scheduler_funcs

@@ -75,7 +75,7 @@ def readCamerasFromTransforms(
 class DNeRFDataset(Dataset):
     @dataclass
     class Config:
-        data_path: str
+        data_path: str = ""
         factor: float = 1.0
         extension: str = ".png"
         white_background: bool = True
@@ -93,6 +93,7 @@ class DNeRFDataset(Dataset):
         self.test_data = test_data
         self.render_data = render_data
         self.nerf_norm = nerf_norm
+        self.cameras_extent = nerf_norm["radius"]
         
     def __len__(self):
         if self.split == "train":
@@ -135,7 +136,7 @@ class DNeRFDataset(Dataset):
         ).squeeze(0)
         camera_center = world_view_transform.inverse()[3, :3]
         
-        return {
+        results = {
             "data_id": index,
             "world_view_transform": world_view_transform,
             "projection_matrix": projection_matrix,
@@ -145,8 +146,11 @@ class DNeRFDataset(Dataset):
             "zfar": zfar,
             "trans": trans,
             "scale": scale,
-            **data,
         }
+        
+        results.update(data)
+        
+        return results
         
         
     def read_metadata(self, path):
@@ -169,8 +173,8 @@ class DNeRFDataset(Dataset):
             timestamp_mapper[time] = time/max_time_float
             
         train_data = readCamerasFromTransforms(
-            train_json, 
             path,
+            train_json, 
             self.cfg.white_background, 
             self.cfg.extension, 
             timestamp_mapper, 
@@ -178,8 +182,8 @@ class DNeRFDataset(Dataset):
         )
         
         test_data = readCamerasFromTransforms(
-            test_json, 
             path,
+            test_json, 
             self.cfg.white_background, 
             self.cfg.extension, 
             timestamp_mapper, 

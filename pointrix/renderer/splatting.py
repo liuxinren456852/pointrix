@@ -13,9 +13,9 @@ import torch
 import math
 from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
 
-def splatting(
-    FoVx,
-    FoVy,
+def splatting_render(
+    FovX,
+    FovY,
     height,
     width,
     world_view_transform, 
@@ -45,11 +45,14 @@ def splatting(
         requires_grad=True, 
         device="cuda"
     ) + 0
-    screenspace_points.retain_grad()
+    try:
+        screenspace_points.retain_grad()
+    except:
+        pass
 
     # Set up rasterization configuration
-    tanfovx = math.tan(FoVx * 0.5)
-    tanfovy = math.tan(FoVy * 0.5)
+    tanfovx = math.tan(FovX * 0.5)
+    tanfovy = math.tan(FovY * 0.5)
 
     raster_settings = GaussianRasterizationSettings(
         image_height=int(height),
@@ -84,13 +87,13 @@ def splatting(
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     num_rendered, rendered_image, opacity, depth, render_xyz, radii = rasterizer(
-        means3D = means3D,
-        means2D = means2D,
-        shs = shs,
+        means3D = means3D.contiguous(),
+        means2D = means2D.contiguous(),
+        shs = shs.contiguous(),
         colors_precomp = colors_precomp,
-        opacities = opacity,
-        scales = scaling,
-        rotations = rotation,
+        opacities = opacity.contiguous(),
+        scales = scaling.contiguous(),
+        rotations = rotation.contiguous(),
         cov3D_precomp = cov3D_precomp
     )
 
