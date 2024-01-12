@@ -24,6 +24,7 @@ class Camera:
     fovX: Union[float, None] = None
     fovY: Union[float, None] = None
     bg: float = 0.0
+    rgb_file_name: str = None
     _world_view_transform: Float[Tensor, "4 4"] = field(init=False)
     _projection_matrix: Float[Tensor, "4 4"] = field(init=False)
     _intrinsics_matrix: Float[Tensor, "3 3"] = field(init=False)

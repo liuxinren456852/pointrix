@@ -10,7 +10,7 @@ import numpy as np
 from dataclasses import dataclass
 from torch.utils.data import Dataset
 
-from pointrix.data.utils import (
+from pointrix.dataset.utils import (
     pose_spherical, 
     fov2focal, 
     focal2fov, 
