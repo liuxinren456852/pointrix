@@ -171,12 +171,20 @@ class GaussianSplatting(DefaultTrainer):
         for vp in viewspace_points:
             self.viewspace_grad += vp.grad
             
-        print("viewspace_grad: ", self.viewspace_grad)
+        # print("viewspace_grad: ", self.viewspace_grad)
+
+        for param_group in self.optimizer.param_groups:
+            name = param_group['name']
+            if name == "points_cloud.position":
+                pos_lr = param_group['lr']
+                break
             
-        return {
+        return {    
             "loss": loss,
             "L1_loss": L1_loss,
             "ssim_loss": ssim_loss,
+            "num_pt": len(self.points_cloud),
+            "pos_lr": pos_lr,
         }
     
     @torch.no_grad()
@@ -265,11 +273,6 @@ class GaussianSplatting(DefaultTrainer):
     def test(self):
         pass
     
-    def upd_bar_info(self, info: dict) -> None:
-        info.update({
-            "Num_pt": len(self.points_cloud),
-        })
-    
     @torch.no_grad()
     def update_state(self) -> None:
         if self.global_step < self.cfg.densify_stop_iter:
@@ -318,10 +321,12 @@ class GaussianSplatting(DefaultTrainer):
         )
         
         select_atributes = self.points_cloud.select_atributes(selected_pts_mask)
-        self.points_cloud.densify(select_atributes, self.optimizer)
+        self.points_cloud.extand_points(select_atributes, self.optimizer)
+        self.reset_densification_state()
         
         # densify and split
         # Extract points that satisfy the gradient condition
+        num_points = len(self.points_cloud)
         padded_grad = torch.zeros((num_points), device=self.device)
         padded_grad[:grads.shape[0]] = grads.squeeze()
         selected_pts_mask = torch.where(padded_grad >= max_grad, True, False)
@@ -334,7 +339,7 @@ class GaussianSplatting(DefaultTrainer):
             torch.max(scaling, dim=1).values > self.percent_dense*cameras_extent
         )
         stds = scaling[selected_pts_mask].repeat(split_num, 1)
-        means =torch.zeros((stds.size(0), 3),device="cuda")
+        means = torch.zeros((stds.size(0), 3),device="cuda")
         samples = torch.normal(mean=means, std=stds)
         rots = build_rotation(
             rotation[selected_pts_mask]
@@ -367,7 +372,7 @@ class GaussianSplatting(DefaultTrainer):
             # Repeat selected atributes in the fist dimension
             select_atributes[key] = value.repeat(*sizes)
 
-        self.points_cloud.densify(select_atributes, self.optimizer)
+        self.points_cloud.extand_points(select_atributes, self.optimizer)
         self.reset_densification_state()
         
         prune_filter = torch.cat((
@@ -379,7 +384,7 @@ class GaussianSplatting(DefaultTrainer):
             )
         ))
         valid_points_mask = ~prune_filter
-        self.points_cloud.prune(valid_points_mask, self.optimizer)
+        self.points_cloud.remove_points(valid_points_mask, self.optimizer)
         self.prune_postprocess(valid_points_mask)
         
     def prune(self):
@@ -397,7 +402,7 @@ class GaussianSplatting(DefaultTrainer):
             prune_filter = torch.logical_or(prune_filter, big_points_ws)
         
         valid_points_mask = ~prune_filter
-        self.points_cloud.prune(valid_points_mask, self.optimizer)
+        self.points_cloud.remove_points(valid_points_mask, self.optimizer)
         self.prune_postprocess(valid_points_mask)
         
     def reset_densification_state(self):

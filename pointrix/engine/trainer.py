@@ -87,15 +87,14 @@ class DefaultTrainer(nn.Module):
         bar_info = self.progress_bar_info
         self.train_loader = iter(self.dataloader["train"])
         ema_loss_for_log = 0.0
-        self.global_step += 1
         for iteration in self.loop_range:
+            self.global_step += 1
             try:
                 batch = next(self.train_loader)
             except StopIteration:
                 self.train_loader = iter(self.dataloader["train"])
             
             step_dict = self.train_step(batch)
-            self.global_step += 1
             self.update_state()
             self.optimization()
             
@@ -130,7 +129,7 @@ class DefaultTrainer(nn.Module):
                 name = param_group['name']
                 if name in self.schedulers.keys():
                     lr = self.schedulers[name](self.global_step)
-                    param_group[name] = lr
+                    param_group['lr'] = lr
                     
     def save_model(self, path=None) -> None:
         if path is None:

@@ -1,7 +1,7 @@
 name: "lego"
 
 trainer:
-  output_path: "ouput/gaussian_splatting/nerf"
+  output_path: "output/nerf"
   max_steps: 30000
   val_interval: 5000
 
@@ -21,12 +21,12 @@ trainer:
     trainable: true
     initializer:
       init_type: 'random'
-      p_size: 2000
+      p_size: 15000
       radius: 1.3
       feat_dim: 3
 
   optimizer:
-    name: AdamW
+    name: Adam
     args:
       eps: 1e-15
     params:
@@ -35,7 +35,7 @@ trainer:
       points_cloud.features:
         lr: 0.0025
       points_cloud.features_rest:
-        lr: 0.000125 # /20
+        lr: 0.000125 # features/20
       points_cloud.scaling:
         lr: 0.005
       points_cloud.rotation:
@@ -59,6 +59,6 @@ trainer:
       points_cloud.position:
         init:  0.00016
         final: 0.0000016
-      points_cloud.rotation:
-        init:  0.001
-        final: 0.0001
+      # points_cloud.rotation:
+      #   init:  0.001
+      #   final: 0.0001

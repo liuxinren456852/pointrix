@@ -97,13 +97,13 @@ class PointsCloud(BaseObject):
                 )
                 setattr(self, key, replace_atribute)
     
-    def densify(self, new_atributes, optimizer=None):
+    def extand_points(self, new_atributes, optimizer=None):
         if optimizer is not None:
-            extend_tensor = self.extend_optimizer(
+            extended_tensor = self.extend_optimizer(
                 new_atributes, 
                 optimizer
             )
-            for key, value in extend_tensor.items():
+            for key, value in extended_tensor.items():
                 setattr(self, key, value)
         else:
             for atribute in self.atributes:
@@ -117,7 +117,7 @@ class PointsCloud(BaseObject):
                 )
                 setattr(self, key, extend_atribute)
     
-    def prune(self, mask, optimizer=None):
+    def remove_points(self, mask, optimizer=None):
         if optimizer is not None:
             prune_tensor = self.prune_optimizer(
                 mask, 
@@ -159,7 +159,7 @@ class PointsCloud(BaseObject):
         return optimizable_tensors
     
     def extend_optimizer(self, new_atributes, optimizer):
-        optimizable_tensors = {}
+        new_tensors = {}
         for group in optimizer.param_groups:
             assert len(group["params"]) == 1
             unwarp_ground = unwarp_name(group["name"])
@@ -185,7 +185,7 @@ class PointsCloud(BaseObject):
                 )
                 optimizer.state[group['params'][0]] = stored_state
 
-                optimizable_tensors[unwarp_ground] = group["params"][0]
+                new_tensors[unwarp_ground] = group["params"][0]
             else:
                 group["params"][0] = nn.Parameter(
                     torch.cat((
@@ -193,27 +193,26 @@ class PointsCloud(BaseObject):
                         extension_tensor
                     ), dim=0).requires_grad_(True)
                 )
-                optimizable_tensors[unwarp_ground] = group["params"][0]
+                new_tensors[unwarp_ground] = group["params"][0]
 
-        return optimizable_tensors
+        return new_tensors
     
     def replace_optimizer(self, new_atributes, optimizer):
         optimizable_tensors = {}
-        for key, replace_tensor in new_atributes.items():
-            for group in optimizer.param_groups:
+        for group in optimizer.param_groups:
+            for key, replace_tensor in new_atributes.items():
                 if group["name"] == "points_cloud."+key:
-                    break
-            stored_state = optimizer.state.get(group['params'][0], None)
+                    stored_state = optimizer.state.get(group['params'][0], None)
 
-            stored_state["exp_avg"] = replace_tensor
-            stored_state["exp_avg_sq"] = replace_tensor
+                    stored_state["exp_avg"] = torch.zeros_like(replace_tensor)
+                    stored_state["exp_avg_sq"] = torch.zeros_like(replace_tensor)
 
-            del optimizer.state[group['params'][0]]
-            group["params"][0] = nn.Parameter(
-                replace_tensor.requires_grad_(True)
-            )
-            optimizer.state[group['params'][0]] = stored_state
+                    del optimizer.state[group['params'][0]]
+                    group["params"][0] = nn.Parameter(
+                        replace_tensor.requires_grad_(True)
+                    )
+                    optimizer.state[group['params'][0]] = stored_state
 
-            optimizable_tensors[unwarp_name(group["name"])] = group["params"][0]
+                    optimizable_tensors[unwarp_name(group["name"])] = group["params"][0]
 
         return optimizable_tensors
