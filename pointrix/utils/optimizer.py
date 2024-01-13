@@ -44,7 +44,8 @@ def parse_optimizer(config, model):
     return optim
 
 
-def parse_scheduler(config):
+# TODO: lr_scale should be a list, and additonal name dict should be added
+def parse_scheduler(config, lr_scale=1.0):
     if hasattr(config, "name"):
         scheduler = get_scheduler(config.name)
     
@@ -52,8 +53,8 @@ def parse_scheduler(config):
     params = [
         {
             "name": name, 
-            "init": values["init"], 
-            "final": values["final"], 
+            "init": values["init"] * lr_scale, 
+            "final": values["final"] * lr_scale, 
             "max_steps": max_steps, 
         }
         for name, values in config.params.items()

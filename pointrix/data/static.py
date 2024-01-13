@@ -34,20 +34,20 @@ def readCamerasFromTransforms(
     for idx, frame in enumerate(frames):
         cam_name = os.path.join(path, frame["file_path"] + extension)
         
-        matrix = np.linalg.inv(np.array(frame["transform_matrix"]))
-        R = -np.transpose(matrix[:3,:3])
-        R[:,0] = -R[:,0]
-        T = -matrix[:3, 3]
+        # matrix = np.linalg.inv(np.array(frame["transform_matrix"]))
+        # R = -np.transpose(matrix[:3,:3])
+        # R[:,0] = -R[:,0]
+        # T = -matrix[:3, 3]
         
-        # # NeRF 'transform_matrix' is a camera-to-world transform
-        # c2w = np.array(frame["transform_matrix"])
-        # # change from OpenGL/Blender camera axes (Y up, Z back) to COLMAP (Y down, Z forward)
-        # c2w[:3, 1:3] *= -1
+        # NeRF 'transform_matrix' is a camera-to-world transform
+        c2w = np.array(frame["transform_matrix"])
+        # change from OpenGL/Blender camera axes (Y up, Z back) to COLMAP (Y down, Z forward)
+        c2w[:3, 1:3] *= -1
 
-        # # get the world-to-camera transform and set R, T
-        # w2c = np.linalg.inv(c2w)
-        # R = np.transpose(w2c[:3,:3])  # R is stored transposed due to 'glm' in CUDA code
-        # T = w2c[:3, 3]
+        # get the world-to-camera transform and set R, T
+        w2c = np.linalg.inv(c2w)
+        R = np.transpose(w2c[:3,:3])  # R is stored transposed due to 'glm' in CUDA code
+        T = w2c[:3, 3]
 
         image_path = os.path.join(path, cam_name)
         image_name = Path(cam_name).stem
@@ -96,27 +96,35 @@ class NeRFDataset(Dataset):
         
         # Read metadata
         train_data, test_data, render_data, nerf_norm = self.read_metadata(self.cfg.data_path)
-        self.train_data = train_data
-        self.test_data = test_data
-        self.render_data = render_data
+        if split == "train":
+            self.data = train_data
+        elif split == "test":
+            self.data = test_data
+        elif split == "render":
+            self.data = render_data
+        # self.train_data = train_data
+        # self.test_data = test_data
+        # self.render_data = render_data
         self.nerf_norm = nerf_norm
         self.cameras_extent = nerf_norm["radius"]
         
     def __len__(self):
-        if self.split == "train":
-            return len(self.train_data)
-        elif self.split == "test":
-            return len(self.test_data)
-        elif self.split == "render":
-            return len(self.render_data)
+        return len(self.data)
+        # if self.split == "train":
+        #     return len(self.train_data)
+        # elif self.split == "test":
+        #     return len(self.test_data)
+        # elif self.split == "render":
+        #     return len(self.render_data)
         
     def __getitem__(self, index):
-        if self.split == "train":
-            data = self.train_data[index]
-        elif self.split == "test":
-            data = self.test_data[index]
-        elif self.split == "render":
-            data = self.render_data[index]
+        # if self.split == "train":
+        #     data = self.train_data[index]
+        # elif self.split == "test":
+        #     data = self.test_data[index]
+        # elif self.split == "render":
+        #     data = self.render_data[index]
+        data = self.data[index]
         
         znear = 100.0
         zfar = 0.01

@@ -1,7 +1,7 @@
 import numpy as np
 
 def get_expon_lr_func(
-    init, final, delay_steps=0, delay_mult=1.0, max_steps=1000000
+    init, final, delay_steps=0, delay_mult=0.01, max_steps=1000000
 ):
     """
     Copied from Plenoxels

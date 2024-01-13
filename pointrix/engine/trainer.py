@@ -51,21 +51,24 @@ class DefaultTrainer(nn.Module):
             self.cfg.num_workers,
             self.cfg.dataset,
         )
-        # all trainers should implement setup
-        self.setup()
-        
-        self.renderer = parse_renderer(self.cfg.renderer)
-        
         if self.cfg.scheduler is not None:
             self.schedulers = parse_scheduler(self.cfg.scheduler)
             
+        self.renderer = parse_renderer(self.cfg.renderer)  
+        # all trainers should implement setup
+        self.setup()    
+        # set up optimizer in the end, so that all parameters are registered      
         self.optimizer = parse_optimizer(self.cfg.optimizer, self)
         
         self.start_steps = 1
         self.global_step = 0
         
         self.loop_range = range(self.start_steps, self.cfg.max_steps+1)
-        self.progress_bar = tqdm(self.loop_range, desc="Training progress")
+        self.progress_bar = tqdm(
+            range(self.start_steps, self.cfg.max_steps),
+            desc="Training progress",
+            leave=False,
+        )
         
         self.progress_bar_info = {}
         
@@ -85,10 +88,11 @@ class DefaultTrainer(nn.Module):
     
     def train_loop(self) -> None:
         bar_info = self.progress_bar_info
+        self.global_step = self.start_steps
         self.train_loader = iter(self.dataloader["train"])
         ema_loss_for_log = 0.0
         for iteration in self.loop_range:
-            self.global_step += 1
+            self.update_lr()
             try:
                 batch = next(self.train_loader)
             except StopIteration:
@@ -111,18 +115,22 @@ class DefaultTrainer(nn.Module):
                 self.upd_bar_info(bar_info)
                 self.progress_bar.set_postfix(bar_info)
                 self.progress_bar.update(self.cfg.bar_upd_interval)
-                
-            if iteration == self.cfg.max_steps:
-                self.progress_bar.close()
             
             if iteration % self.cfg.val_interval == 0:
                 self.val_step()
+            
+            self.global_step += 1
+        
+        self.progress_bar.close()
     
     def optimization(self) -> None:
         self.optimizer.step()
         self.optimizer.zero_grad(set_to_none=True)
     
     def update_state(self) -> None:
+        pass
+
+    def update_lr(self) -> None:
         # Leraning rate scheduler
         if self.cfg.scheduler is not None:
             for param_group in self.optimizer.param_groups:

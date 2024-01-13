@@ -9,22 +9,17 @@ from pointrix.utils.sh_utils import RGB2SH
 from pointrix.engine.trainer import DefaultTrainer
 from pointrix.points import PointsCloud
 from pointrix.utils.losses import l1_loss, l2_loss, ssim
+from pointrix.utils.optimizer import parse_scheduler
 from pointrix.base_model.gaussian_utils import (
     build_covariance_from_scaling_rotation, 
     inverse_sigmoid,
     build_rotation,
-    psnr
+    validation_process,
+    render_batch,
 )
-from pytorch_msssim import ms_ssim
-from lpips import LPIPS
-
-lpips_net = LPIPS(net="vgg").to("cuda")
-lpips_norm_fn = lambda x: x[None, ...] * 2 - 1
-lpips_norm_b_fn = lambda x: x * 2 - 1
-lpips_fn = lambda x, y: lpips_net(lpips_norm_fn(x), lpips_norm_fn(y)).mean()
-lpips_b_fn = lambda x, y: lpips_net(lpips_norm_b_fn(x), lpips_norm_b_fn(y)).mean()
 
 from simple_knn._C import distCUDA2
+
 
 def gaussian_point_init(position, max_sh_degree, device):
     num_points = len(position)
@@ -39,7 +34,7 @@ def gaussian_point_init(position, max_sh_degree, device):
     ).to(device)
     opacities = inverse_sigmoid(0.1 * init_one)
     features_rest = torch.zeros(
-        (num_points, max_sh_degree ** 2, 3), 
+        (num_points, (max_sh_degree+1) ** 2 - 1, 3), 
         dtype=torch.float32
     ).to(device)
     
@@ -53,6 +48,7 @@ class GaussianSplatting(DefaultTrainer):
         # Train cfg
         percent_dense: float = 0.01
         lambda_dssim: float = 0.2
+        spatial_lr_scale: bool = True
         
         # Densification
         densify_stop_iter: int = 15000
@@ -77,6 +73,11 @@ class GaussianSplatting(DefaultTrainer):
         # Training variables
         self.active_sh_degree = 0
         
+        # Set up scheduler for points cloud position
+        self.cameras_extent = self.dataloader['val'].cameras_extent
+        if self.cfg.scheduler is not None:
+            self.schedulers = parse_scheduler(self.cfg.scheduler, self.cameras_extent)
+        
         # Set up points cloud
         self.points_cloud = PointsCloud(self.cfg.points_cloud).to(self.device)
         num_points = len(self.points_cloud)
@@ -87,7 +88,7 @@ class GaussianSplatting(DefaultTrainer):
             self.device
         )
         
-        fused_color = RGB2SH(self.points_cloud.features).unsqueeze(1)
+        fused_color = self.points_cloud.features.unsqueeze(1)
         self.points_cloud.features = (
             nn.Parameter(
                 fused_color.contiguous().requires_grad_(True)
@@ -106,52 +107,39 @@ class GaussianSplatting(DefaultTrainer):
             (num_points, 1)
         ).to(self.device)
         self.denom = torch.zeros((num_points, 1)).to(self.device)
-        self.cameras_extent = self.dataloader['val'].cameras_extent
         
         self.white_bg = self.dataloader['val'].cfg.white_background
-    
-    def train_step(self, batch) -> Dict:
-        # Every 1000 its we increase the levels of SH up to a maximum degree
-        if self.global_step % 1000 == 0:
-            if self.active_sh_degree < self.cfg.max_sh_degree:
-                self.active_sh_degree += 1
         
-        batch_size = len(batch)
         bg_color = [1, 1, 1] if self.white_bg else [0, 0, 0]
-        background = torch.tensor(
+        self.background = torch.tensor(
             bg_color, 
             dtype=torch.float32, 
-            device="cuda"
+            device=self.device,
         )
+    
+    def train_step(self, batch) -> Dict:
+        self.update_sh_degree()
         
-        renders = []
-        viewspace_points = []
-        visibilitys = []
-        radiis = []
-        gt_images = []
-        for b_i in batch:
-            # Get all gaussian parameters          
+        def render_func(data):
             render_pkg = self.renderer(
-                **b_i,
+                **data,
                 position = self.get_position,
                 opacity = self.get_opacity,
                 scaling = self.get_scaling,
                 rotation = self.get_rotation,
                 shs = self.get_shs,
                 active_sh_degree=self.active_sh_degree,
-                bg_color=background,
+                bg_color=self.background,
             )
+            return render_pkg
         
-        renders.append(render_pkg["render"])
-        viewspace_points.append(render_pkg["viewspace_points"])
-        visibilitys.append(render_pkg["visibility_filter"].unsqueeze(0))
-        radiis.append(render_pkg["radii"].unsqueeze(0))
-        gt_images.append(b_i["image"].cuda())
-        
-        self.radii = torch.cat(radiis,0).max(dim=0).values
-        self.visibility = torch.cat(visibilitys).any(dim=0)
-        images = torch.stack(renders)
-        gt_images = torch.stack(gt_images)    
+        (
+            images, 
+            gt_images, 
+            self.radii, 
+            self.visibility, 
+            viewspace_points
+        ) = render_batch(render_func, batch)
         
 
         L1_loss = l1_loss(images, gt_images) 
@@ -164,15 +152,10 @@ class GaussianSplatting(DefaultTrainer):
         
         loss.backward()
         
-        # Accumulate viewspace gradients for batch
-        self.viewspace_grad = torch.zeros_like(
-            viewspace_points[0]
-        )
-        for vp in viewspace_points:
-            self.viewspace_grad += vp.grad
+        self.accumulate_viewspace_grad(viewspace_points)
             
         # print("viewspace_grad: ", self.viewspace_grad)
-
+        # TODO: log the learning rate of each elements in optimizer
         for param_group in self.optimizer.param_groups:
             name = param_group['name']
             if name == "points_cloud.position":
@@ -186,88 +169,43 @@ class GaussianSplatting(DefaultTrainer):
             "num_pt": len(self.points_cloud),
             "pos_lr": pos_lr,
         }
+        
+    def update_sh_degree(self):
+        # Every 1000 its we increase the levels of SH up to a maximum degree
+        if self.global_step % 1000 == 0:
+            if self.active_sh_degree < self.cfg.max_sh_degree:
+                self.active_sh_degree += 1
+    
+    @torch.no_grad()    
+    def accumulate_viewspace_grad(self, viewspace_points):
+         # Accumulate viewspace gradients for batch
+        self.viewspace_grad = torch.zeros_like(
+            viewspace_points[0]
+        )
+        for vp in viewspace_points:
+            self.viewspace_grad += vp.grad
     
     @torch.no_grad()
     def val_step(self):
-        l1_test = 0.0
-        psnr_test = 0.0
-        ssims_test = 0.0
-        lpips_test = 0.0
-        bg_color = [1, 1, 1] if self.white_bg else [0, 0, 0]
-        background = torch.tensor(
-            bg_color, 
-            dtype=torch.float32, 
-            device="cuda"
-        )
-        print("Running Validation ...")
-        for b_i in tqdm(self.dataloader['val']):
+        def render_func(data):
             render_pkg = self.renderer(
-                **b_i,
+                **data,
                 position = self.get_position,
                 opacity = self.get_opacity,
                 scaling = self.get_scaling,
                 rotation = self.get_rotation,
                 shs = self.get_shs,
                 active_sh_degree=self.active_sh_degree,
-                bg_color=background,
+                bg_color=self.background,
             )
-            image = torch.clamp(render_pkg["render"], 0.0, 1.0)
-            gt_image = torch.clamp(b_i["image"].to("cuda"), 0.0, 1.0)
-            opacity = render_pkg["opacity"]
-            depth = render_pkg["depth"]
-            depth_normal = (depth - depth.min()) / (depth.max() - depth.min())
-            
-            if self.logger:
-                image_name = b_i["image_name"]
-                iteration = self.global_step
-                self.logger.add_images("test" + f"_view_{image_name}/render", image[None], global_step=iteration)
-                self.logger.add_images("test" + f"_view_{image_name}/ground_truth", gt_image[None], global_step=iteration)
-                self.logger.add_images("test" + f"_view_{image_name}/opacity", opacity[None], global_step=iteration)
-                self.logger.add_images("test" + f"_view_{image_name}/depth", depth_normal[None], global_step=iteration)
-                
-            l1_test += l1_loss(image, gt_image).mean().double()
-            psnr_test += psnr(image, gt_image).mean().double()
-            ssims_test += ms_ssim(
-                image[None], gt_image[None], data_range=1, size_average=True
-            )   
-            lpips_test += lpips_fn(image, gt_image).item()
-        l1_test /= len(self.dataloader['val']) 
-        psnr_test /= len(self.dataloader['val'])
-        ssims_test /= len(self.dataloader['val'])
-        lpips_test /= len(self.dataloader['val'])         
-        print(f"\n[ITER {iteration}] Evaluating test: L1 {l1_test:.5f} PSNR {psnr_test:.5f} SSIMS {ssims_test:.5f} LPIPS {lpips_test:.5f}")
-        if self.logger:
-            iteration = self.global_step
-            self.logger.add_scalar(
-                "test" + '/loss_viewpoint - l1_loss', 
-                l1_test, 
-                iteration
-            )
-            self.logger.add_scalar(
-                "test" + '/loss_viewpoint - psnr', 
-                psnr_test, 
-                iteration
-            )
-            self.logger.add_scalar(
-                "test" + '/loss_viewpoint - ssims', 
-                ssims_test, 
-                iteration
-            )
-            self.logger.add_scalar(
-                "test" + '/loss_viewpoint - lpips', 
-                lpips_test, 
-                iteration
-            )
-            self.logger.add_histogram(
-                "scene/opacity_histogram", 
-                self.get_opacity, 
-                iteration
-            )
-            self.logger.add_scalar(
-                'total_points', 
-                len(self.points_cloud), 
-                iteration
-            )
+            return render_pkg
+        
+        validation_process(
+            render_func, 
+            self.dataloader['val'], 
+            self.global_step, 
+            self.logger
+        )
     
     @torch.no_grad()
     def test(self):
@@ -278,10 +216,9 @@ class GaussianSplatting(DefaultTrainer):
         if self.global_step < self.cfg.densify_stop_iter:
             # Keep track of max radii in image-space for pruning
             visibility = self.visibility
-            radii = self.radii
             self.max_radii2D[visibility] = torch.max(
                 self.max_radii2D[visibility], 
-                radii[visibility]
+                self.radii[visibility]
             )
             self.pos_gradient_accum[visibility] += torch.norm(
                 self.viewspace_grad[visibility,:2], 
@@ -304,6 +241,7 @@ class GaussianSplatting(DefaultTrainer):
             self.prune()
         torch.cuda.empty_cache()
             
+    # TODO: make this function more readable and modular
     def densify(self):
         
         grads = self.pos_gradient_accum / self.denom
@@ -344,7 +282,7 @@ class GaussianSplatting(DefaultTrainer):
         rots = build_rotation(
             rotation[selected_pts_mask]
         ).repeat(split_num,1,1)
-        new_xyz = (
+        new_pos = (
             torch.bmm(rots, samples.unsqueeze(-1)).squeeze(-1)
         ) + (
             position[selected_pts_mask].repeat(split_num, 1)
@@ -356,16 +294,16 @@ class GaussianSplatting(DefaultTrainer):
         select_atributes = self.points_cloud.select_atributes(selected_pts_mask)
         
         # Replace position and scaling from selected atributes
-        select_atributes["position"] = new_xyz
+        select_atributes["position"] = new_pos
         select_atributes["scaling"] = new_scaling
         
         # Update rest of atributes
         for key, value in select_atributes.items():
             # Skip position and scaling, since they are already updated
-            if key in ["position", "scaling"]:
+            if key == "position" or key == "scaling":
                 continue
             # Create a tuple of n_dim ones
-            sizes = [1 for n_d in range(len(value.shape))]
+            sizes = [1 for _ in range(len(value.shape))]
             sizes[0] = split_num
             sizes = tuple(sizes)
             

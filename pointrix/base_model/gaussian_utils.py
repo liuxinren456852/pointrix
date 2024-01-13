@@ -1,4 +1,16 @@
 import torch
+from pytorch_msssim import ms_ssim
+from pointrix.utils.losses import l1_loss
+
+from tqdm import tqdm
+
+# FIXME: this is a hack to build lpips loss and lpips metric
+from lpips import LPIPS
+lpips_net = LPIPS(net="vgg").to("cuda")
+lpips_norm_fn = lambda x: x[None, ...] * 2 - 1
+lpips_norm_b_fn = lambda x: x * 2 - 1
+lpips_fn = lambda x, y: lpips_net(lpips_norm_fn(x), lpips_norm_fn(y)).mean()
+lpips_b_fn = lambda x, y: lpips_net(lpips_norm_b_fn(x), lpips_norm_b_fn(y)).mean()
 
 def inverse_sigmoid(x):
     return torch.log(x/(1-x))
@@ -57,3 +69,90 @@ def build_covariance_from_scaling_rotation(scaling, scaling_modifier, rotation):
 def psnr(img1, img2):
     mse = (((img1 - img2)) ** 2).view(img1.shape[0], -1).mean(1, keepdim=True)
     return 20 * torch.log10(1.0 / torch.sqrt(mse))
+
+# TODO: rewite this function, it is ugly
+def validation_process(render_func, dataset, global_step=0, logger=None):
+    l1_test = 0.0
+    psnr_test = 0.0
+    ssims_test = 0.0
+    lpips_test = 0.0
+    progress_bar = tqdm(
+        range(0, len(dataset)), 
+        desc="Validation progress", 
+        leave=False,
+    )
+    for data in dataset:
+        render_results = render_func(data)
+        image = torch.clamp(render_results["render"], 0.0, 1.0)
+        gt_image = torch.clamp(data["image"].to("cuda"), 0.0, 1.0)
+        opacity = render_results["opacity"]
+        depth = render_results["depth"]
+        depth_normal = (depth - depth.min()) / (depth.max() - depth.min())
+
+        if logger:
+            image_name = data["image_name"]
+            iteration = global_step
+            logger.add_images("test" + f"_view_{image_name}/render", image[None], global_step=iteration)
+            logger.add_images("test" + f"_view_{image_name}/ground_truth", gt_image[None], global_step=iteration)
+            logger.add_images("test" + f"_view_{image_name}/opacity", opacity[None], global_step=iteration)
+            logger.add_images("test" + f"_view_{image_name}/depth", depth_normal[None], global_step=iteration)
+            
+        l1_test += l1_loss(image, gt_image).mean().double()
+        psnr_test += psnr(image, gt_image).mean().double()
+        ssims_test += ms_ssim(
+            image[None], gt_image[None], data_range=1, size_average=True
+        )   
+        lpips_test += lpips_fn(image, gt_image).item()
+        progress_bar.update(1)
+    progress_bar.close()
+    l1_test /= len(dataset)
+    psnr_test /= len(dataset)
+    ssims_test /= len(dataset)
+    lpips_test /= len(dataset)    
+    print(f"\n[ITER {iteration}] Evaluating test: L1 {l1_test:.5f} PSNR {psnr_test:.5f} SSIMS {ssims_test:.5f} LPIPS {lpips_test:.5f}")
+    if logger:
+        iteration = global_step
+        logger.add_scalar(
+            "test" + '/loss_viewpoint - l1_loss', 
+            l1_test, 
+            iteration
+        )
+        logger.add_scalar(
+            "test" + '/loss_viewpoint - psnr', 
+            psnr_test, 
+            iteration
+        )
+        logger.add_scalar(
+            "test" + '/loss_viewpoint - ssims', 
+            ssims_test, 
+            iteration
+        )
+        logger.add_scalar(
+            "test" + '/loss_viewpoint - lpips', 
+            lpips_test, 
+            iteration
+        )
+        
+# TODO: rewite this function, it is ugly
+def render_batch(render_func, batch):
+    renders = []
+    viewspace_points = []
+    visibilitys = []
+    radiis = []
+    gt_images = []
+    
+    for b_i in batch:
+        render_results = render_func(b_i)
+        
+        renders.append(render_results["render"])
+        viewspace_points.append(render_results["viewspace_points"])
+        visibilitys.append(render_results["visibility_filter"].unsqueeze(0))
+        radiis.append(render_results["radii"].unsqueeze(0))
+        gt_images.append(b_i["image"].cuda())
+        
+    radii = torch.cat(radiis,0).max(dim=0).values
+    visibility = torch.cat(visibilitys).any(dim=0)
+    images = torch.stack(renders)
+    gt_images = torch.stack(gt_images)    
+    
+    return images, gt_images, radii, visibility, viewspace_points

@@ -1,2 +1,4 @@
-# Pointrix
-Pointrix: a differentiable point-based rendering libraries
+# Pointrix: a differentiable point-based rendering libraries
+
+## Installation
+

@@ -10,24 +10,24 @@ from pointrix.base_model.base import BaseObject
 def unwarp_name(name):
     return name.replace("points_cloud.", "")
 
-def get_random_points(p_size, radius):
-    pos = np.random.random((p_size, 3)) * 2 * radius - radius
+def get_random_points(num_points, radius):
+    pos = np.random.random((num_points, 3)) * 2 * radius - radius
     pos = torch.from_numpy(pos).float()
     return pos
 
-def get_random_feauture(p_size, feat_dim):
-    feart = np.random.random((p_size, feat_dim)) / 255.0
+def get_random_feauture(num_points, feat_dim):
+    feart = np.random.random((num_points, feat_dim)) / 255.0
     feart = torch.from_numpy(feart).float()
     return feart
 
 def points_init(init_cfg):
-    p_size = init_cfg.p_size
+    num_points = init_cfg.num_points
     init_type = init_cfg.init_type
-    print("Number of points at initialisation : ", p_size)
+    print("Number of points at initialisation : ", num_points)
     
     if init_type == 'random':
-        pos = get_random_points(p_size, init_cfg.radius)
-        features = get_random_feauture(p_size, init_cfg.feat_dim)
+        pos = get_random_points(num_points, init_cfg.radius)
+        features = get_random_feauture(num_points, init_cfg.feat_dim)
 
     return pos, features
 
