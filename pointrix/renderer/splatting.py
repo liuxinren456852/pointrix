@@ -66,7 +66,6 @@ def splatting_render(
         sh_degree=active_sh_degree,
         campos=camera_center.cuda(),
         prefiltered=False,
-        computer_xyz=render_xyz,
         debug=False,
     )
 
@@ -86,7 +85,7 @@ def splatting_render(
     colors_precomp = None
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
-    num_rendered, rendered_image, opacity, depth, render_xyz, radii = rasterizer(
+    rendered_image, radii = rasterizer(
         means3D = means3D.contiguous(),
         means2D = means2D.contiguous(),
         shs = shs.contiguous(),
@@ -101,9 +100,7 @@ def splatting_render(
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
     return {"render": rendered_image,
-            "num_rendered": num_rendered,
-            "opacity": opacity,
-            "depth": depth,
+            # "opacity": opacity,
             "render_xyz": render_xyz,
             "viewspace_points": screenspace_points,
             "visibility_filter" : radii > 0,
