@@ -12,7 +12,7 @@ def test_ReFormat():
 def test_Pipline():
     colmap_pipline = BaseDataPipline(config=None, path='/home/clz/code_remote/Pointrix/pointrix/data/truck')
     for i in range(100):
-        print(colmap_pipline.next_train(i)['camera']['idx'])
+        print(colmap_pipline.next_train(i)['camera'])
 
 if __name__ == "__main__":
     test_ReFormat()

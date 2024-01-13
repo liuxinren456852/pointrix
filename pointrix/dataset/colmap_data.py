@@ -5,16 +5,16 @@ from pathlib import Path
 
 from pointrix.camera.camera import Camera
 from pointrix.dataset.base_data import BaseReFormatData
-from pointrix.dataset.data_utils.colmap_utils import (read_extrinsics_binary, 
-                                                      read_intrinsics_binary, 
-                                                      qvec2rotmat)
+from pointrix.dataset.utils.colmap_utils import (read_extrinsics_binary,
+                                                 read_intrinsics_binary,
+                                                 qvec2rotmat)
 
 
 class ColmapReFormat(BaseReFormatData):
-    def __init__(self, cfg,
+    def __init__(self,
                  data_root: Path,
                  split: str = 'train'):
-        super().__init__(cfg, data_root, split)
+        super().__init__(data_root, split)
 
     def load_camera(self, split: str) -> List[Camera]:
         cameras_extrinsic_file = os.path.join(

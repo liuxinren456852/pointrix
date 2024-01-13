@@ -7,7 +7,7 @@ import torch
 from torch import nn
 from pointrix.renderer import parse_renderer
 from pointrix.utils.config import parse_structured
-from pointrix.data.dataloader import parse_dataloader
+from pointrix.dataset.base_data import BaseDataPipline
 from pointrix.utils.optimizer import parse_scheduler, parse_optimizer
 
 from torch.utils.tensorboard import SummaryWriter
@@ -45,12 +45,7 @@ class DefaultTrainer(nn.Module):
         self.device = device
         self.cfg = parse_structured(self.Config, cfg)
         
-        self.dataloader = parse_dataloader(
-            self.cfg.dataset_name, 
-            self.cfg.batch_size,
-            self.cfg.num_workers,
-            self.cfg.dataset,
-        )
+        self.datapipline = BaseDataPipline(self.cfg.dataset)
         if self.cfg.scheduler is not None:
             self.schedulers = parse_scheduler(self.cfg.scheduler)
             
