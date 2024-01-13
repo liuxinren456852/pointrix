@@ -48,23 +48,11 @@ class ColMapExtrinsics(BaseColMapExtrinsics):
 
 
 def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
-    """Read and unpack the next bytes from a binary file.
-    :param fid:
-    :param num_bytes: Sum of combination of {2, 4, 8}, e.g. 2, 6, 16, 30, etc.
-    :param format_char_sequence: List of {c, e, f, d, h, H, i, I, l, L, q, Q}.
-    :param endian_character: Any of {@, =, <, >, !}
-    :return: Tuple of read and unpacked values.
-    """
     data = fid.read(num_bytes)
     return struct.unpack(endian_character + format_char_sequence, data)
 
 
 def read_extrinsics_binary(path_to_model_file):
-    """
-    see: src/base/reconstruction.cc
-        void Reconstruction::ReadImagesBinary(const std::string& path)
-        void Reconstruction::WriteImagesBinary(const std::string& path)
-    """
     extrinsics = {}
     with open(path_to_model_file, "rb") as fid:
         num_reg_images = read_next_bytes(fid, 8, "Q")[0]
@@ -95,11 +83,6 @@ def read_extrinsics_binary(path_to_model_file):
 
 
 def read_intrinsics_binary(path_to_model_file):
-    """
-    see: src/base/reconstruction.cc
-        void Reconstruction::WriteCamerasBinary(const std::string& path)
-        void Reconstruction::ReadCamerasBinary(const std::string& path)
-    """
     intrinsics = {}
     with open(path_to_model_file, "rb") as fid:
         num_cameras = read_next_bytes(fid, 8, "Q")[0]

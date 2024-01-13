@@ -49,17 +49,6 @@ def getWorld2View2(R, t, translate=np.array([.0, .0, .0]), scale=1.0):
     return np.float32(Rt)
 
 def force_full_init(old_func: Callable) -> Any:
-    """Those methods decorated by ``force_full_init`` will be forced to call
-    ``full_init`` if the instance has not been fully initiated.
-
-    Args:
-        old_func (Callable): Decorated function, make sure the first arg is an
-            instance with ``full_init`` method.
-
-    Returns:
-        Any: Depends on old_func.
-    """
-
     @functools.wraps(old_func)
     def wrapper(obj: object, *args, **kwargs):
         # The instance must have `full_init` method.
