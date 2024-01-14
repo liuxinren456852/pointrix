@@ -51,7 +51,7 @@ class DefaultTrainer(nn.Module):
             
         self.renderer = parse_renderer(self.cfg.renderer)  
         # all trainers should implement setup
-        self.setup()    
+        self.setup(self.datapipline.point_cloud)    
         # set up optimizer in the end, so that all parameters are registered      
         self.optimizer = parse_optimizer(self.cfg.optimizer, self)
         

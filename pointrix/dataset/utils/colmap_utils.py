@@ -1,6 +1,7 @@
+import struct
 import numpy as np
 import collections
-import struct
+from plyfile import PlyData
 
 
 def qvec2rotmat(qvec):
@@ -104,3 +105,12 @@ def read_intrinsics_binary(path_to_model_file):
                                                      params=np.array(params))
         assert len(intrinsics) == num_cameras
     return intrinsics
+
+def fetchPly(path):
+    plydata = PlyData.read(path)
+    vertices = plydata['vertex']
+    positions = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T
+    colors = np.vstack([vertices['red'], vertices['green'],
+                        vertices['blue']]).T / 255.0
+    normals = np.vstack([vertices['nx'], vertices['ny'], vertices['nz']]).T
+    return positions, colors, normals

@@ -1,4 +1,4 @@
-import torch
+import math
 import torch
 from torch import Tensor
 from torch import nn
@@ -43,8 +43,8 @@ class Camera:
             self.cy = self.height / 2
         elif self.fovX is None:
             # TODO: check if this is correct
-            self.fovX = 2 * np.arctan(self.width / (2 * self.fx))
-            self.fovY = 2 * np.arctan(self.height / (2 * self.fy))
+            self.fovX = 2 * math.atan(self.width / (2 * self.fx))
+            self.fovY = 2 * math.atan(self.height / (2 * self.fy))
 
         if not isinstance(self.R, Tensor):
             self.R = torch.tensor(self.R)

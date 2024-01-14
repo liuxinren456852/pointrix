@@ -4,10 +4,10 @@ from typing import Any, Dict, List
 from pathlib import Path
 
 from pointrix.camera.camera import Camera
-from pointrix.dataset.base_data import BaseReFormatData
+from pointrix.dataset.base_data import BaseReFormatData, BasicPointCloud, BaseDataFormat
 from pointrix.dataset.utils.colmap_utils import (read_extrinsics_binary,
                                                  read_intrinsics_binary,
-                                                 qvec2rotmat)
+                                                 qvec2rotmat, fetchPly)
 
 
 class ColmapReFormat(BaseReFormatData):
@@ -15,6 +15,19 @@ class ColmapReFormat(BaseReFormatData):
                  data_root: Path,
                  split: str = 'train'):
         super().__init__(data_root, split)
+        
+    def load_data_list(self, split) -> BaseDataFormat:
+        camera = self.load_camera(split=split)
+        image_filenames = self.load_image_filenames(camera, split=split)
+        metadata = self.load_metadata(split=split)
+        pointcloud = self.load_pointcloud()
+        data = BaseDataFormat(image_filenames, camera, PointCloud=pointcloud, metadata=metadata)
+        return data
+
+    def load_pointcloud(self) -> BasicPointCloud:
+        ply_path = os.path.join(self.data_root, "sparse/0/points3D.ply")
+        positions, colors, normals = fetchPly(ply_path)
+        return BasicPointCloud(points=positions, colors=colors, normals=normals)
 
     def load_camera(self, split: str) -> List[Camera]:
         cameras_extrinsic_file = os.path.join(

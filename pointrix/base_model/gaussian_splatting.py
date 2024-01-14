@@ -62,7 +62,7 @@ class GaussianSplatting(DefaultTrainer):
 
     cfg: Config
 
-    def setup(self):
+    def setup(self, point_cloud):
         # Activation funcitons
         self.scaling_activation = torch.exp
         self.scaling_inverse_activation = torch.log
@@ -81,7 +81,7 @@ class GaussianSplatting(DefaultTrainer):
                 self.cfg.scheduler, self.cameras_extent)
 
         # Set up points cloud
-        self.points_cloud = PointsCloud(self.cfg.points_cloud).to(self.device)
+        self.points_cloud = PointsCloud(self.cfg.points_cloud, point_cloud).to(self.device)
         num_points = len(self.points_cloud)
 
         scales, rots, opacities, features_rest = gaussian_point_init(

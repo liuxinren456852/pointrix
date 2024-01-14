@@ -1,16 +1,23 @@
 import torch
 import numpy as np
 from PIL import Image
+from torch import Tensor
 from pathlib import Path
+from jaxtyping import Float
 from abc import abstractmethod
 from torch.utils.data import Dataset
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, Union, List
+from typing import Any, Dict, Union, List, NamedTuple
 
 from pointrix.utils.config import parse_structured
 from pointrix.camera.camera import Camera, TrainableCamera
 from pointrix.dataset.utils.dataset_utils import force_full_init, getNerfppNorm
 
+
+class BasicPointCloud(NamedTuple):
+    points: np.array
+    colors: np.array
+    normals: np.array
 
 @dataclass
 class BaseDataFormat:
@@ -18,13 +25,15 @@ class BaseDataFormat:
     """camera image filenames"""
     Cameras: List[Camera]
     """camera parameters"""
+    PointCloud: Union[BasicPointCloud, None] = None
+    """precompute pointcloud"""
     metadata: Dict[str, Any] = field(default_factory=lambda: dict({}))
     """other information that is required for the dataset"""
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> tuple[Path, Camera]:
         return self.image_filenames[item], self.Cameras[item]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.image_filenames)
 
 
@@ -40,7 +49,7 @@ class BaseReFormatData:
         camera = self.load_camera(split=split)
         image_filenames = self.load_image_filenames(camera, split=split)
         metadata = self.load_metadata(split=split)
-        data = BaseDataFormat(image_filenames, camera, metadata)
+        data = BaseDataFormat(image_filenames, camera, metadata=metadata)
         return data
 
     @abstractmethod
@@ -82,7 +91,7 @@ class BaseImageDataset(Dataset):
         return {"image": image,
                 "camera": asdict(camera)}
 
-    def load_image(self, image_filename, bg=[1., 1., 1.]):
+    def load_image(self, image_filename, bg=[1., 1., 1.]) -> Float[Tensor, "3 h w"]:
         pil_image = Image.open(image_filename)
         # shape is (h, w) or (h, w, 3 or 4)
         image = np.array(pil_image, dtype="uint8") / 255.0
@@ -113,7 +122,7 @@ class BaseDataPipline:
         num_workers: int = 1
     cfg: Config
 
-    def __init__(self, cfg):
+    def __init__(self, cfg) -> None:
         self.cfg = parse_structured(self.Config, cfg)
         self._fully_initialized = False
 
@@ -127,20 +136,21 @@ class BaseDataPipline:
             data_root=self.cfg.data_path, split="train").data_list
         self.validation_format_data = ReFormat(
             data_root=self.cfg.data_path, split="val").data_list
-
+        
+        self.point_cloud = self.train_format_data.PointCloud
         self.loaddata()
 
     # TODO use rigistry
-    def get_training_dataset(self):
+    def get_training_dataset(self) -> BaseImageDataset:
         # TODO: use registry
         self.training_dataset = BaseImageDataset(
             format_data=self.train_format_data)
 
-    def get_validation_dataset(self):
+    def get_validation_dataset(self) -> BaseImageDataset:
         self.validation_dataset = BaseImageDataset(
             format_data=self.validation_format_data)
 
-    def loaddata(self):
+    def loaddata(self) -> None:
         self.get_training_dataset()
         self.get_validation_dataset()
 
@@ -161,14 +171,14 @@ class BaseDataPipline:
         self.iter_train_image_dataloader = iter(self.training_loader)
         self.iter_val_image_dataloader = iter(self.validation_loader)
 
-    def next_train(self, step=int):
+    def next_train(self, step:int=-1):
         try:
             return next(self.iter_train_image_dataloader)
         except StopIteration:
             self.iter_train_image_dataloader = iter(self.training_loader)
             return next(self.iter_train_image_dataloader)
 
-    def next_val(self, step=int):
+    def next_val(self, step:int=-1):
         try:
             return next(self.iter_val_image_dataloader)
         except StopIteration:
@@ -176,12 +186,12 @@ class BaseDataPipline:
             return next(self.iter_val_image_dataloader)
 
     @property
-    def training_dataset_size(self):
+    def training_dataset_size(self) -> int:
         return len(self.training_dataset)
 
     @property
-    def validation_dataset_size(self):
+    def validation_dataset_size(self) -> int:
         return len(self.validation_dataset)
 
-    def get_param_groups(self):
+    def get_param_groups(self) -> Any:
         raise NotImplementedError
