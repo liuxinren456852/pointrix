@@ -76,12 +76,13 @@ def validation_process(render_func, datapipeline, global_step=0, logger=None):
     psnr_test = 0.0
     ssims_test = 0.0
     lpips_test = 0.0
+    val_dataset_size = datapipeline.validation_dataset_size
     progress_bar = tqdm(
-        range(0, len(datapipeline.validation_dataset)), 
+        range(0, val_dataset_size), 
         desc="Validation progress", 
         leave=False,
     )
-    for i in range(0, len(datapipeline.validation_dataset)):
+    for i in range(0, val_dataset_size):
         batch = datapipeline.next_val()
         FovX = batch["camera"]["fovX"]
         FovY = batch["camera"]["fovY"]
@@ -126,10 +127,10 @@ def validation_process(render_func, datapipeline, global_step=0, logger=None):
             lpips_test += lpips_fn(image, gt_image).item()
             progress_bar.update(1)
     progress_bar.close()
-    l1_test /= len(datapipeline.validation_dataset)
-    psnr_test /= len(datapipeline.validation_dataset)
-    ssims_test /= len(datapipeline.validation_dataset)
-    lpips_test /= len(datapipeline.validation_dataset)
+    l1_test /= val_dataset_size
+    psnr_test /= val_dataset_size
+    ssims_test /= val_dataset_size
+    lpips_test /= val_dataset_size
     print(f"\n[ITER {iteration}] Evaluating test: L1 {l1_test:.5f} PSNR {psnr_test:.5f} SSIMS {ssims_test:.5f} LPIPS {lpips_test:.5f}")
     if logger:
         iteration = global_step

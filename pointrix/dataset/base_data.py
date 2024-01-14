@@ -175,5 +175,13 @@ class BaseDataPipline:
             self.iter_val_image_dataloader = iter(self.validation_loader)
             return next(self.iter_val_image_dataloader)
 
+    @property
+    def training_dataset_size(self):
+        return len(self.training_dataset)
+
+    @property
+    def validation_dataset_size(self):
+        return len(self.validation_dataset)
+
     def get_param_groups(self):
         raise NotImplementedError
