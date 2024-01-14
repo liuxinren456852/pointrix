@@ -84,14 +84,10 @@ class DefaultTrainer(nn.Module):
     def train_loop(self) -> None:
         bar_info = self.progress_bar_info
         self.global_step = self.start_steps
-        self.train_loader = iter(self.dataloader["train"])
         ema_loss_for_log = 0.0
         for iteration in self.loop_range:
             self.update_lr()
-            try:
-                batch = next(self.train_loader)
-            except StopIteration:
-                self.train_loader = iter(self.dataloader["train"])
+            batch = self.datapipline.next_train()
             
             step_dict = self.train_step(batch)
             self.update_state()
