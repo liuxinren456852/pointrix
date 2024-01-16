@@ -7,7 +7,7 @@ import torch
 from torch import nn
 from pointrix.renderer import parse_renderer
 from pointrix.utils.config import parse_structured
-from pointrix.data.dataloader import parse_dataloader
+from pointrix.dataset.base_data import BaseDataPipline
 from pointrix.utils.optimizer import parse_scheduler, parse_optimizer
 
 from torch.utils.tensorboard import SummaryWriter
@@ -45,18 +45,13 @@ class DefaultTrainer(nn.Module):
         self.device = device
         self.cfg = parse_structured(self.Config, cfg)
         
-        self.dataloader = parse_dataloader(
-            self.cfg.dataset_name, 
-            self.cfg.batch_size,
-            self.cfg.num_workers,
-            self.cfg.dataset,
-        )
+        self.datapipline = BaseDataPipline(self.cfg.dataset)
         if self.cfg.scheduler is not None:
             self.schedulers = parse_scheduler(self.cfg.scheduler)
             
         self.renderer = parse_renderer(self.cfg.renderer)  
         # all trainers should implement setup
-        self.setup()    
+        self.setup(self.datapipline.point_cloud)    
         # set up optimizer in the end, so that all parameters are registered      
         self.optimizer = parse_optimizer(self.cfg.optimizer, self)
         
@@ -89,14 +84,10 @@ class DefaultTrainer(nn.Module):
     def train_loop(self) -> None:
         bar_info = self.progress_bar_info
         self.global_step = self.start_steps
-        self.train_loader = iter(self.dataloader["train"])
         ema_loss_for_log = 0.0
         for iteration in self.loop_range:
             self.update_lr()
-            try:
-                batch = next(self.train_loader)
-            except StopIteration:
-                self.train_loader = iter(self.dataloader["train"])
+            batch = self.datapipline.next_train()
             
             step_dict = self.train_step(batch)
             self.update_state()

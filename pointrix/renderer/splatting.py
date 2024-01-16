@@ -101,10 +101,8 @@ def splatting_render(
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
     return {"render": rendered_image,
-            "num_rendered": num_rendered,
-            "opacity": opacity,
-            "depth": depth,
-            "render_xyz": render_xyz,
+            # "opacity": opacity,
+            # "render_xyz": render_xyz,
             "viewspace_points": screenspace_points,
             "visibility_filter" : radii > 0,
             "radii": radii,

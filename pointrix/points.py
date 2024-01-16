@@ -7,6 +7,10 @@ import numpy as np
 
 from pointrix.base_model.base import BaseObject
 
+def RGB2SH(rgb):
+    C0 = 0.28209479177387814
+    return (rgb - 0.5) / C0
+
 def unwarp_name(name):
     return name.replace("points_cloud.", "")
 
@@ -20,15 +24,20 @@ def get_random_feauture(num_points, feat_dim):
     feart = torch.from_numpy(feart).float()
     return feart
 
-def points_init(init_cfg):
+def points_init(init_cfg, point_cloud):
     num_points = init_cfg.num_points
     init_type = init_cfg.init_type
-    print("Number of points at initialisation : ", num_points)
     
-    if init_type == 'random':
+    if init_type == 'random' and point_cloud is None:
+        print("Number of points at initialisation : ", num_points)
         pos = get_random_points(num_points, init_cfg.radius)
         features = get_random_feauture(num_points, init_cfg.feat_dim)
-
+        
+    else:
+        print("Number of points at initialisation : ", point_cloud.points.shape[0])
+        pos = np.asarray(point_cloud.points)
+        pos = torch.from_numpy(pos).float()
+        features = RGB2SH(torch.tensor(np.asarray(point_cloud.colors)).float())
     return pos, features
 
 class PointsCloud(BaseObject):
@@ -39,9 +48,9 @@ class PointsCloud(BaseObject):
     
     cfg: Config
     
-    def setup(self):
+    def setup(self, point_cloud=None):
         self.atributes = []
-        position, features = points_init(self.cfg.initializer)
+        position, features = points_init(self.cfg.initializer, point_cloud)
         self.register_buffer('position', position)
         self.register_buffer('features', features)
         self.atributes.append({
