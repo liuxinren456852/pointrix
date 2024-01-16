@@ -47,10 +47,10 @@ class NerfReFormat(BaseReFormatData):
 
             image = np.array(Image.open(image_path))
 
-            fovy = focal2fov(fov2focal(fovx, image.shape[0]), image.shape[1])
+            fovy = focal2fov(fov2focal(fovx, image.shape[1]), image.shape[0])
             FovY = fovy
             FovX = fovx
-            camera = Camera(idx=idx, R=R, T=T, width=image.shape[1], height=image.shape[2],
+            camera = Camera(idx=idx, R=R, T=T, width=image.shape[1], height=image.shape[0],
                                   rgb_file_name=image_path, fovX=FovX, fovY=FovY, bg=1.0)
             cameras.append(camera)
 
