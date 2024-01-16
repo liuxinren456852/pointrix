@@ -49,10 +49,10 @@ trainer:
   dataset:
     data_path: "/home/clz/data/nerf_synthetic/lego"
     data_type: "nerf_synthetic"
-    cached_image: False
+    cached_image: True
     shuffle: True
     batch_size: 1
-    num_workers: 1
+    num_workers: 0
 
   renderer:
     name: "splatting"

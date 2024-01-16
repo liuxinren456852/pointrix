@@ -19,6 +19,7 @@ class BasicPointCloud(NamedTuple):
     colors: np.array
     normals: np.array
 
+
 @dataclass
 class BaseDataFormat:
     image_filenames: List[Path]
@@ -43,12 +44,12 @@ class BaseReFormatData:
 
     def __init__(self, data_root: Path,
                  split: str = "train",
-                 fully_loaded: bool = False):
+                 cached_image: bool = False):
         self.data_root = data_root
         self.split = split
         self.data_list = self.load_data_list(self.split)
 
-        if fully_loaded:
+        if cached_image:
             self.data_list.images = self.load_all_images()
 
     def load_data_list(self, split) -> BaseDataFormat:
@@ -69,34 +70,24 @@ class BaseReFormatData:
     @abstractmethod
     def load_metadata(self, split) -> Dict[str, Any]:
         raise NotImplementedError
-    
+
     def load_all_images(self) -> List[Image.Image]:
         return [np.array(Image.open(image_filename), dtype="uint8") for image_filename in self.data_list.image_filenames]
 
-def PILtoTorch(pil_image, resolution):
-    if resolution is not None:
-        resized_image_PIL = pil_image.resize(resolution)
-    else:
-        resized_image_PIL = pil_image
-    resized_image = torch.from_numpy(np.array(resized_image_PIL)) / 255.0
-    if len(resized_image.shape) == 3:
-        return resized_image.permute(2, 0, 1)
-    else:
-        return resized_image.unsqueeze(dim=-1).permute(2, 0, 1)
-# TODO: support cached dataset and lazy init
+
+
 # TODO: support different dataset (Meta information (depth) support)
 class BaseImageDataset(Dataset):
-    def __init__(self, format_data: BaseDataFormat, full_index:bool=True) -> None:
+    def __init__(self, format_data: BaseDataFormat) -> None:
         self.format_data = format_data
-        self.full_index = full_index
         cameras = self.format_data.Cameras
         Rs, Ts = [], []
         for camera in cameras:
             Rs.append(camera.R)
             Ts.append(camera.T)
-        self.Rs = torch.stack(Rs, dim=0)
-        self.Ts = torch.stack(Ts, dim=0)
-        self.radius = getNerfppNorm(self.Rs.numpy(), self.Ts.numpy())["radius"]
+        Rs = torch.stack(Rs, dim=0)
+        Ts = torch.stack(Ts, dim=0)
+        self.radius = getNerfppNorm(Rs.numpy(), Ts.numpy())["radius"]
 
     # TODO: full init
     def __len__(self):
@@ -109,17 +100,17 @@ class BaseImageDataset(Dataset):
             image = self.format_data.images[idx]
         else:
             image = None
-        image = self.load_image(image_file_name, image, camera.bg)
+        image = self.load_image(image_file_name, image, camera.bg).cuda()
+        camera.load2device("cuda")
         camera.height = image.shape[1]
         camera.width = image.shape[2]
-        return {"image": image,
-                "camera": asdict(camera)}
+        return {"image": image, "camera": camera.__dict__}
 
     def load_image(self, image_filename, image=None, bg=[1., 1., 1.]) -> Float[Tensor, "3 h w"]:
-        pil_image = np.array(Image.open(image_filename), dtype="uint8") if image is None else image
+        pil_image = np.array(Image.open(image_filename),
+                             dtype="uint8") if image is None else image
         # shape is (h, w) or (h, w, 3 or 4)
         image = pil_image / 255.
-
         if len(image.shape) == 2:
             image = image[:, :, None].repeat(3, axis=2)
         assert len(image.shape) == 3
@@ -129,10 +120,8 @@ class BaseImageDataset(Dataset):
         if image.shape[2] == 4:
             image = image[:, :, :3] * image[:, :, 3:4] + \
                 bg * (1 - image[:, :, 3:4])
-        image = Image.fromarray(np.array(image*255.0, dtype=np.byte), "RGB")
-        image_tensor = PILtoTorch(image, (800, 800))
-        
-        return image_tensor.clamp(0.0, 1.0)
+        image = torch.from_numpy(np.array(image)).permute(2, 0, 1)
+        return image.clamp(0.0, 1.0)
 
 
 class BaseDataPipline:
@@ -140,8 +129,8 @@ class BaseDataPipline:
     class Config:
         # Datatype
         data_path: str = "data"
-        data_type: str = "nerf"
-        cached_image: bool = False
+        data_type: str = "nerf_synthetic"
+        cached_image: bool = True
         shuffle: bool = True
         batch_size: int = 1
         num_workers: int = 1
@@ -157,12 +146,11 @@ class BaseDataPipline:
         elif self.cfg.data_type == "nerf_synthetic":
             from pointrix.dataset.nerf_data import NerfReFormat as ReFormat
 
-
         self.train_format_data = ReFormat(
-            data_root=self.cfg.data_path, split="train", fully_loaded=self._fully_initialized).data_list
+            data_root=self.cfg.data_path, split="train", cached_image=self.cfg.cached_image).data_list
         self.validation_format_data = ReFormat(
-            data_root=self.cfg.data_path, split="val", fully_loaded=self._fully_initialized).data_list
-        
+            data_root=self.cfg.data_path, split="val", cached_image=self.cfg.cached_image).data_list
+
         self.point_cloud = self.train_format_data.PointCloud
         self.loaddata()
 
@@ -184,27 +172,25 @@ class BaseDataPipline:
             self.training_dataset,
             batch_size=self.cfg.batch_size,
             shuffle=self.cfg.shuffle,
-            num_workers=self.cfg.num_workers,
-            pin_memory=True,
+            num_workers=self.cfg.num_workers
         )
         self.validation_loader = torch.utils.data.DataLoader(
             self.validation_dataset,
             batch_size=self.cfg.batch_size,
             shuffle=self.cfg.shuffle,
-            num_workers=self.cfg.num_workers,
-            pin_memory=True,
+            num_workers=self.cfg.num_workers
         )
         self.iter_train_image_dataloader = iter(self.training_loader)
         self.iter_val_image_dataloader = iter(self.validation_loader)
 
-    def next_train(self, step:int=-1):
+    def next_train(self, step: int = -1):
         try:
             return next(self.iter_train_image_dataloader)
         except StopIteration:
             self.iter_train_image_dataloader = iter(self.training_loader)
             return next(self.iter_train_image_dataloader)
 
-    def next_val(self, step:int=-1):
+    def next_val(self, step: int = -1):
         try:
             return next(self.iter_val_image_dataloader)
         except StopIteration:

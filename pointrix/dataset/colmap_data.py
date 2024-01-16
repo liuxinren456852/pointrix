@@ -13,8 +13,9 @@ from pointrix.dataset.utils.colmap_utils import (read_extrinsics_binary,
 class ColmapReFormat(BaseReFormatData):
     def __init__(self,
                  data_root: Path,
-                 split: str = 'train'):
-        super().__init__(data_root, split)
+                 split: str = 'train',
+                 cached_image: bool = False):
+        super().__init__(data_root, split, cached_image)
         
     def load_data_list(self, split) -> BaseDataFormat:
         camera = self.load_camera(split=split)

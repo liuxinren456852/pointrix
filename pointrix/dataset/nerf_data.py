@@ -14,8 +14,8 @@ class NerfReFormat(BaseReFormatData):
     def __init__(self,
                  data_root: Path,
                  split: str = 'train',
-                 fully_loaded: bool = False):
-        super().__init__(data_root, split, fully_loaded)
+                 cached_image: bool = False):
+        super().__init__(data_root, split, cached_image)
 
     def load_camera(self, split: str) -> List[Camera]:
         if split == 'train':

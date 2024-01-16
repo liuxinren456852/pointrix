@@ -84,15 +84,15 @@ def validation_process(render_func, datapipeline, global_step=0, logger=None):
     )
     for i in range(0, val_dataset_size):
         batch = datapipeline.next_val()
-        FovX = batch["camera"]["fovX"].cuda()
-        FovY = batch["camera"]["fovY"].cuda()
-        height = batch["camera"]["height"].cuda()
-        width = batch["camera"]["width"].cuda()
-        world_view_transform = batch["camera"]["_world_view_transform"].cuda()
-        full_proj_transform = batch["camera"]["_full_proj_transform"].cuda()
-        camera_center = batch["camera"]["_full_proj_transform"].cuda()
+        FovX = batch["camera"]["fovX"]
+        FovY = batch["camera"]["fovY"]
+        height = batch["camera"]["height"]
+        width = batch["camera"]["width"]
+        world_view_transform = batch["camera"]["_world_view_transform"]
+        full_proj_transform = batch["camera"]["_full_proj_transform"]
+        camera_center = batch["camera"]["_camera_center"]
         filenames = batch["camera"]["rgb_file_name"]
-        gt_image = batch["image"].cuda()
+        gt_image = batch["image"]
         batch_size = world_view_transform.shape[0]
 
         for j in range(batch_size):

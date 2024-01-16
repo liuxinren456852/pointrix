@@ -82,7 +82,7 @@ class Camera:
                              [0, 0, 1]], dtype=torch.float32)
 
     @staticmethod
-    def getProjectionMatrix(fovX: float, fovY: float, znear: float = 0.1, zfar: float = 100) -> Float[Tensor, "4 4"]:
+    def getProjectionMatrix(fovX: float, fovY: float, znear: float = 0.01, zfar: float = 100) -> Float[Tensor, "4 4"]:
         tanHalfFovY = np.tan((fovY / 2))
         tanHalfFovX = np.tan((fovX / 2))
 
