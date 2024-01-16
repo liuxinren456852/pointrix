@@ -79,40 +79,27 @@ class BaseReFormatData:
 # TODO: support different dataset (Meta information (depth) support)
 class BaseImageDataset(Dataset):
     def __init__(self, format_data: BaseDataFormat) -> None:
-        self.format_data = format_data
-        cameras = self.format_data.Cameras
+        self.cameras = format_data.Cameras
+        self.images = format_data.images
+        self.image_file_names = format_data.image_filenames
         Rs, Ts = [], []
-        for camera in cameras:
+        for camera in self.cameras:
             Rs.append(camera.R)
             Ts.append(camera.T)
         Rs = torch.stack(Rs, dim=0)
         Ts = torch.stack(Ts, dim=0)
         self.radius = getNerfppNorm(Rs.numpy(), Ts.numpy())["radius"]
 
+        if self.images is not None:
+            self.images = [self._transform_image(
+                image) for image in self.images]
+
     # TODO: full init
     def __len__(self):
-        return len(self.format_data)
+        return len(self.cameras)
 
-    def __getitem__(self, idx):
-        image_file_name, camera = self.format_data[idx]
-
-        if self.format_data.images is not None:
-            image = self.format_data.images[idx]
-        else:
-            image = None
-        image = self.load_image(image_file_name, image, camera.bg)
-        camera.height = image.shape[1]
-        camera.width = image.shape[2]
-        return {"image": image, "camera": camera}
-
-    def load_image(self, image_filename, image=None, bg=[1., 1., 1.]) -> Float[Tensor, "3 h w"]:
-        if image is None:
-            pil_image = np.array(Image.open(image_filename),
-                                 dtype="uint8")
-        else:
-            pil_image = image
-        # shape is (h, w) or (h, w, 3 or 4)
-        image = pil_image / 255.
+    def _transform_image(self, image, bg=[1., 1., 1.]):
+        image = image / 255.
         if len(image.shape) == 2:
             image = image[:, :, None].repeat(3, axis=2)
         assert len(image.shape) == 3
@@ -124,6 +111,21 @@ class BaseImageDataset(Dataset):
                 bg * (1 - image[:, :, 3:4])
         image = torch.from_numpy(np.array(image)).permute(2, 0, 1)
         return image.clamp(0.0, 1.0)
+
+    def __getitem__(self, idx):
+        image_file_name = self.image_file_names[idx]
+        camera = self.cameras[idx]
+        image = self._load_transform_image(
+            image_file_name) if self.images is None else self.images[idx]
+        camera.height = image.shape[1]
+        camera.width = image.shape[2]
+        return {"image": image, "camera": camera}
+
+    def _load_transform_image(self, image_filename, bg=[1., 1., 1.]) -> Float[Tensor, "3 h w"]:
+        pil_image = np.array(Image.open(image_filename),
+                             dtype="uint8")
+
+        return self._transform_image(pil_image)
 
 
 class BaseDataPipline:
