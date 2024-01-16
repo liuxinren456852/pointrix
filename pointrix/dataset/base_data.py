@@ -138,6 +138,7 @@ class BaseDataPipline:
         shuffle: bool = True
         batch_size: int = 1
         num_workers: int = 1
+        white_bg: bool = False
     cfg: Config
 
     def __init__(self, cfg) -> None:
@@ -156,6 +157,7 @@ class BaseDataPipline:
             data_root=self.cfg.data_path, split="val", cached_image=self.cfg.cached_image).data_list
 
         self.point_cloud = self.train_format_data.PointCloud
+        self.white_bg = self.cfg.white_bg
         self.loaddata()
 
     # TODO use rigistry

@@ -53,6 +53,7 @@ trainer:
     shuffle: True
     batch_size: 1
     num_workers: 0
+    white_bg: False
 
   renderer:
     name: "splatting"

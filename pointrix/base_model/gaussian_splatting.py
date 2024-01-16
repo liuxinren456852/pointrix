@@ -111,7 +111,7 @@ class GaussianSplatting(DefaultTrainer):
         self.denom = torch.zeros((num_points, 1)).to(self.device)
 
         # TODO: use camera to get the extent
-        self.white_bg = True
+        self.white_bg = self.datapipline.white_bg
 
         bg_color = [1, 1, 1] if self.white_bg else [0, 0, 0]
         self.background = torch.tensor(
