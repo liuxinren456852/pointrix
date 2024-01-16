@@ -66,6 +66,7 @@ def splatting_render(
         sh_degree=active_sh_degree,
         campos=camera_center.cuda(),
         prefiltered=False,
+        computer_xyz=render_xyz,
         debug=False,
     )
 
@@ -85,7 +86,7 @@ def splatting_render(
     colors_precomp = None
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
-    rendered_image, radii = rasterizer(
+    num_rendered, rendered_image, opacity, depth, render_xyz, radii = rasterizer(
         means3D = means3D.contiguous(),
         means2D = means2D.contiguous(),
         shs = shs.contiguous(),

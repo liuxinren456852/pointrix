@@ -13,8 +13,9 @@ from pointrix.dataset.utils.dataset_utils import fov2focal, focal2fov
 class NerfReFormat(BaseReFormatData):
     def __init__(self,
                  data_root: Path,
-                 split: str = 'train'):
-        super().__init__(data_root, split)
+                 split: str = 'train',
+                 fully_loaded: bool = False):
+        super().__init__(data_root, split, fully_loaded)
 
     def load_camera(self, split: str) -> List[Camera]:
         if split == 'train':

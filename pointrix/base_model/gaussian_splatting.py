@@ -75,7 +75,7 @@ class GaussianSplatting(DefaultTrainer):
         self.active_sh_degree = 0
 
         # Set up scheduler for points cloud position
-        self.cameras_extent = self.datapipline.validation_dataset.radius
+        self.cameras_extent = self.datapipline.training_dataset.radius
         if self.cfg.scheduler is not None:
             self.schedulers = parse_scheduler(
                 self.cfg.scheduler, self.cameras_extent)
@@ -136,13 +136,13 @@ class GaussianSplatting(DefaultTrainer):
             )
             return render_pkg
 
-        FovX = batch["camera"]["fovX"]
-        FovY = batch["camera"]["fovY"]
-        height = batch["camera"]["height"]
-        width = batch["camera"]["width"]
-        world_view_transform = batch["camera"]["_world_view_transform"]
-        full_proj_transform = batch["camera"]["_full_proj_transform"]
-        camera_center = batch["camera"]["_full_proj_transform"]
+        FovX = batch["camera"]["fovX"].cuda()
+        FovY = batch["camera"]["fovY"].cuda()
+        height = batch["camera"]["height"].cuda()
+        width = batch["camera"]["width"].cuda()
+        world_view_transform = batch["camera"]["_world_view_transform"].cuda()
+        full_proj_transform = batch["camera"]["_full_proj_transform"].cuda()
+        camera_center = batch["camera"]["_full_proj_transform"].cuda()
 
         batch_size = batch["camera"]["fovX"].shape[0]
         batch_info = [{"FovX": FovX[i],

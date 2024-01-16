@@ -7,7 +7,7 @@ from jaxtyping import Float
 from abc import abstractmethod
 from torch.utils.data import Dataset
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, Union, List, NamedTuple
+from typing import Any, Dict, Union, List, NamedTuple, Optional
 
 from pointrix.utils.config import parse_structured
 from pointrix.camera.camera import Camera, TrainableCamera
@@ -24,6 +24,8 @@ class BaseDataFormat:
     image_filenames: List[Path]
     """camera image filenames"""
     Cameras: List[Camera]
+    """camera image list"""
+    images: Optional[List[Image.Image]] = None
     """camera parameters"""
     PointCloud: Union[BasicPointCloud, None] = None
     """precompute pointcloud"""
@@ -40,10 +42,14 @@ class BaseDataFormat:
 class BaseReFormatData:
 
     def __init__(self, data_root: Path,
-                 split: str = "train"):
+                 split: str = "train",
+                 fully_loaded: bool = False):
         self.data_root = data_root
         self.split = split
         self.data_list = self.load_data_list(self.split)
+
+        if fully_loaded:
+            self.data_list.images = self.load_all_images()
 
     def load_data_list(self, split) -> BaseDataFormat:
         camera = self.load_camera(split=split)
@@ -63,13 +69,26 @@ class BaseReFormatData:
     @abstractmethod
     def load_metadata(self, split) -> Dict[str, Any]:
         raise NotImplementedError
+    
+    def load_all_images(self) -> List[Image.Image]:
+        return [np.array(Image.open(image_filename), dtype="uint8") for image_filename in self.data_list.image_filenames]
 
-
+def PILtoTorch(pil_image, resolution):
+    if resolution is not None:
+        resized_image_PIL = pil_image.resize(resolution)
+    else:
+        resized_image_PIL = pil_image
+    resized_image = torch.from_numpy(np.array(resized_image_PIL)) / 255.0
+    if len(resized_image.shape) == 3:
+        return resized_image.permute(2, 0, 1)
+    else:
+        return resized_image.unsqueeze(dim=-1).permute(2, 0, 1)
 # TODO: support cached dataset and lazy init
 # TODO: support different dataset (Meta information (depth) support)
 class BaseImageDataset(Dataset):
-    def __init__(self, format_data: BaseDataFormat) -> None:
+    def __init__(self, format_data: BaseDataFormat, full_index:bool=True) -> None:
         self.format_data = format_data
+        self.full_index = full_index
         cameras = self.format_data.Cameras
         Rs, Ts = [], []
         for camera in cameras:
@@ -85,16 +104,21 @@ class BaseImageDataset(Dataset):
 
     def __getitem__(self, idx):
         image_file_name, camera = self.format_data[idx]
-        image = self.load_image(image_file_name, camera.bg)
+
+        if self.format_data.images is not None:
+            image = self.format_data.images[idx]
+        else:
+            image = None
+        image = self.load_image(image_file_name, image, camera.bg)
         camera.height = image.shape[1]
         camera.width = image.shape[2]
         return {"image": image,
                 "camera": asdict(camera)}
 
-    def load_image(self, image_filename, bg=[1., 1., 1.]) -> Float[Tensor, "3 h w"]:
-        pil_image = Image.open(image_filename)
+    def load_image(self, image_filename, image=None, bg=[1., 1., 1.]) -> Float[Tensor, "3 h w"]:
+        pil_image = np.array(Image.open(image_filename), dtype="uint8") if image is None else image
         # shape is (h, w) or (h, w, 3 or 4)
-        image = np.array(pil_image, dtype="uint8") / 255.0
+        image = pil_image / 255.
 
         if len(image.shape) == 2:
             image = image[:, :, None].repeat(3, axis=2)
@@ -105,9 +129,10 @@ class BaseImageDataset(Dataset):
         if image.shape[2] == 4:
             image = image[:, :, :3] * image[:, :, 3:4] + \
                 bg * (1 - image[:, :, 3:4])
-
-        image_tensor = torch.Tensor(image).float()
-        return image_tensor.permute(2, 0, 1)
+        image = Image.fromarray(np.array(image*255.0, dtype=np.byte), "RGB")
+        image_tensor = PILtoTorch(image, (800, 800))
+        
+        return image_tensor.clamp(0.0, 1.0)
 
 
 class BaseDataPipline:
@@ -124,7 +149,7 @@ class BaseDataPipline:
 
     def __init__(self, cfg) -> None:
         self.cfg = parse_structured(self.Config, cfg)
-        self._fully_initialized = False
+        self._fully_initialized = True
 
         # TODO: use registry
         if self.cfg.data_type == "colmap":
@@ -132,10 +157,11 @@ class BaseDataPipline:
         elif self.cfg.data_type == "nerf_synthetic":
             from pointrix.dataset.nerf_data import NerfReFormat as ReFormat
 
+
         self.train_format_data = ReFormat(
-            data_root=self.cfg.data_path, split="train").data_list
+            data_root=self.cfg.data_path, split="train", fully_loaded=self._fully_initialized).data_list
         self.validation_format_data = ReFormat(
-            data_root=self.cfg.data_path, split="val").data_list
+            data_root=self.cfg.data_path, split="val", fully_loaded=self._fully_initialized).data_list
         
         self.point_cloud = self.train_format_data.PointCloud
         self.loaddata()
