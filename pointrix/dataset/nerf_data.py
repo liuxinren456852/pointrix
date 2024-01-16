@@ -14,7 +14,7 @@ class NerfReFormat(BaseReFormatData):
     def __init__(self,
                  data_root: Path,
                  split: str = 'train',
-                 cached_image: bool = False):
+                 cached_image: bool = True):
         super().__init__(data_root, split, cached_image)
 
     def load_camera(self, split: str) -> List[Camera]:
@@ -50,9 +50,9 @@ class NerfReFormat(BaseReFormatData):
             fovy = focal2fov(fov2focal(fovx, image.shape[0]), image.shape[1])
             FovY = fovy
             FovX = fovx
-
-            cameras.append(Camera(idx=idx, R=R, T=T, width=image.shape[1], height=image.shape[2],
-                                  rgb_file_name=image_path, fovX=FovX, fovY=FovY, bg=1.0))
+            camera = Camera(idx=idx, R=R, T=T, width=image.shape[1], height=image.shape[2],
+                                  rgb_file_name=image_path, fovX=FovX, fovY=FovY, bg=1.0)
+            cameras.append(camera)
 
         return cameras
 

@@ -49,10 +49,10 @@ trainer:
   dataset:
     data_path: "/home/clz/code_remote/Pointrix/pointrix/data/truck"
     data_type: "colmap"
-    cached_image: False
+    cached_image: True
     shuffle: True
     batch_size: 1
-    num_workers: 1
+    num_workers: 0
 
   renderer:
     name: "splatting"

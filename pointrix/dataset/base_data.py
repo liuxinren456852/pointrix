@@ -44,7 +44,7 @@ class BaseReFormatData:
 
     def __init__(self, data_root: Path,
                  split: str = "train",
-                 cached_image: bool = False):
+                 cached_image: bool = True):
         self.data_root = data_root
         self.split = split
         self.data_list = self.load_data_list(self.split)
@@ -72,8 +72,8 @@ class BaseReFormatData:
         raise NotImplementedError
 
     def load_all_images(self) -> List[Image.Image]:
-        return [np.array(Image.open(image_filename), dtype="uint8") for image_filename in self.data_list.image_filenames]
-
+        return [np.array(Image.open(image_filename), dtype="uint8")
+                for image_filename in self.data_list.image_filenames]
 
 
 # TODO: support different dataset (Meta information (depth) support)
@@ -100,15 +100,17 @@ class BaseImageDataset(Dataset):
             image = self.format_data.images[idx]
         else:
             image = None
-        image = self.load_image(image_file_name, image, camera.bg).cuda()
-        camera.load2device("cuda")
+        image = self.load_image(image_file_name, image, camera.bg)
         camera.height = image.shape[1]
         camera.width = image.shape[2]
-        return {"image": image, "camera": camera.__dict__}
+        return {"image": image, "camera": camera}
 
     def load_image(self, image_filename, image=None, bg=[1., 1., 1.]) -> Float[Tensor, "3 h w"]:
-        pil_image = np.array(Image.open(image_filename),
-                             dtype="uint8") if image is None else image
+        if image is None:
+            pil_image = np.array(Image.open(image_filename),
+                                 dtype="uint8")
+        else:
+            pil_image = image
         # shape is (h, w) or (h, w, 3 or 4)
         image = pil_image / 255.
         if len(image.shape) == 2:
@@ -172,13 +174,15 @@ class BaseDataPipline:
             self.training_dataset,
             batch_size=self.cfg.batch_size,
             shuffle=self.cfg.shuffle,
-            num_workers=self.cfg.num_workers
+            num_workers=self.cfg.num_workers,
+            collate_fn=list
         )
         self.validation_loader = torch.utils.data.DataLoader(
             self.validation_dataset,
             batch_size=self.cfg.batch_size,
             shuffle=self.cfg.shuffle,
-            num_workers=self.cfg.num_workers
+            num_workers=self.cfg.num_workers,
+            collate_fn=list
         )
         self.iter_train_image_dataloader = iter(self.training_loader)
         self.iter_val_image_dataloader = iter(self.validation_loader)

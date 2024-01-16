@@ -135,31 +135,14 @@ class GaussianSplatting(DefaultTrainer):
                 bg_color=self.background,
             )
             return render_pkg
-
-        FovX = batch["camera"]["fovX"]
-        FovY = batch["camera"]["fovY"]
-        height = batch["camera"]["height"]
-        width = batch["camera"]["width"]
-        world_view_transform = batch["camera"]["_world_view_transform"]
-        full_proj_transform = batch["camera"]["_full_proj_transform"]
-        camera_center = batch["camera"]["_camera_center"]
-
-        batch_size = batch["camera"]["fovX"].shape[0]
-        batch_info = [{"FovX": FovX[i],
-                       "FovY": FovY[i],
-                       "height": height[i],
-                       "width": width[i],
-                       "world_view_transform": world_view_transform[i],
-                       "full_proj_transform": full_proj_transform[i],
-                       "camera_center": camera_center[i]} for i in range(batch_size)]
-
+        
         (
             images,
             self.radii,
             self.visibility,
             viewspace_points
-        ) = render_batch(render_func, batch_info)
-        gt_images = batch["image"].cuda()
+        ) = render_batch(render_func, batch)
+        gt_images = torch.cat([batch[i]["image"].cuda().unsqueeze(0) for i in range(len(batch))], dim=0).float()
         L1_loss = l1_loss(images, gt_images)
         ssim_loss = 1.0 - ssim(images, gt_images)
         loss = (

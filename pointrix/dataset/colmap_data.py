@@ -14,7 +14,7 @@ class ColmapReFormat(BaseReFormatData):
     def __init__(self,
                  data_root: Path,
                  split: str = 'train',
-                 cached_image: bool = False):
+                 cached_image: bool = True):
         super().__init__(data_root, split, cached_image)
         
     def load_data_list(self, split) -> BaseDataFormat:
