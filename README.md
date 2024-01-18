@@ -21,11 +21,24 @@
   </p>
 </div>
 
-### Prerequisites
+## Prerequisites
 
-TODO: add some instruction here
+### Installations
 
-### Getting Started
+```bash
+# Install official diff-gaussian-rasterization
+python -m pip install git+https://github.com/graphdeco-inria/diff-gaussian-rasterization.git
+
+# Install pointrix
+git clone https://github.com/NJU-3DV/Pointrix.git
+cd Pointrix
+python -m pip install .
+
+# use -e if you want to modify the code
+python -m pip install -e .
+```
+
+## Getting Started
 
 ```bash
 cd projects/gaussian_splatting
