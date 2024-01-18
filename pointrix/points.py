@@ -38,6 +38,16 @@ def points_init(init_cfg, point_cloud):
         pos = np.asarray(point_cloud.points)
         pos = torch.from_numpy(pos).float()
         features = RGB2SH(torch.tensor(np.asarray(point_cloud.colors)).float())
+        
+        if "random" in init_type:
+            print("Extend the initialiased point with random : ", num_points)
+            max_dis = torch.abs(pos).max().item()
+            pos_ext = get_random_points(num_points, max_dis * init_cfg.radius)
+            features_ext = get_random_feauture(num_points, features.shape[1])
+            
+            pos = torch.cat((pos, pos_ext), dim=0)
+            features = torch.cat((features, features_ext), dim=0)
+            
     return pos, features
 
 class PointsCloud(BaseObject):

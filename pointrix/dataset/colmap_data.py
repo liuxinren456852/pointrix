@@ -14,8 +14,9 @@ class ColmapReFormat(BaseReFormatData):
     def __init__(self,
                  data_root: Path,
                  split: str = 'train',
-                 cached_image: bool = True):
-        super().__init__(data_root, split, cached_image)
+                 cached_image: bool = True,
+                 scale: float = 1.0):
+        super().__init__(data_root, split, cached_image, scale)
         
     def load_data_list(self, split) -> BaseDataFormat:
         camera = self.load_camera(split=split)
@@ -43,19 +44,19 @@ class ColmapReFormat(BaseReFormatData):
         for idx, key in enumerate(cam_extrinsics):
             extr = cam_extrinsics[key]
             intr = cam_intrinsics[extr.camera_id]
-            height = intr.height
-            width = intr.width
+            height = intr.height * self.scale
+            width = intr.width * self.scale
 
             uid = intr.id
             R = np.transpose(qvec2rotmat(extr.qvec))
             T = np.array(extr.tvec)
 
             if intr.model == "SIMPLE_PINHOLE":
-                focal_length_x = intr.params[0]
+                focal_length_x = intr.params[0] * self.scale
                 focal_length_y = focal_length_x
             elif intr.model == "PINHOLE":
-                focal_length_x = intr.params[0]
-                focal_length_y = intr.params[1]
+                focal_length_x = intr.params[0] * self.scale
+                focal_length_y = intr.params[1] * self.scale
             else:
                 assert False, "Colmap camera model not handled: only undistorted datasets (PINHOLE or SIMPLE_PINHOLE cameras) supported!"
 

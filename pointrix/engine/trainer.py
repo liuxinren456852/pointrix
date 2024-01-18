@@ -1,4 +1,5 @@
 import os
+import random
 from tqdm import tqdm
 from typing import Any, Optional, Union
 from dataclasses import dataclass, field
@@ -12,7 +13,7 @@ from pointrix.utils.optimizer import parse_scheduler, parse_optimizer
 
 from torch.utils.tensorboard import SummaryWriter
 
-class DefaultTrainer(nn.Module):
+class DefaultTrainer:
     @dataclass
     class Config:
         # Modules
@@ -88,7 +89,6 @@ class DefaultTrainer(nn.Module):
         for iteration in self.loop_range:
             self.update_lr()
             batch = self.datapipline.next_train()
-            
             step_dict = self.train_step(batch)
             self.update_state()
             self.optimization()
@@ -130,11 +130,42 @@ class DefaultTrainer(nn.Module):
                     lr = self.schedulers[name](self.global_step)
                     param_group['lr'] = lr
                     
+    def saving_base(self):
+        data_list = {
+            "global_step": self.global_step,
+            "optimizer": self.optimizer.state_dict(),
+        }
+        return data_list
+
+    def saving(self):
+        pass
+    
+    def get_saving(self):
+        data_list = self.saving_base()
+        data_list.update(self.saving())
+        return data_list
+                    
     def save_model(self, path=None) -> None:
         if path is None:
             path = os.path.join(self.cfg.output_path, "chkpnt" + str(self.global_step) + ".pth")
-        torch.save(self.state_dict(), path)
+        data_list = self.get_saving()
+        torch.save(data_list, path)
                 
+    def load_model(self, path=None) -> None:
+        if path is None:
+            path = os.path.join(self.cfg.output_path, "chkpnt" + str(self.global_step) + ".pth")
+        data_list = torch.load(path)
+        self.global_step = data_list["global_step"]
+        self.optimizer.load_state_dict(data_list["optimizer"])
+        
+        for k, v in data_list.items():
+            print(f"Loaded {k} from checkpoint")
+            # get arrtibute from model
+            arrt = getattr(self, k)
+            if isinstance(arrt, nn.Module):
+                arrt.load_state_dict(v)
+            else:
+                setattr(self, k, v)
     
     
     

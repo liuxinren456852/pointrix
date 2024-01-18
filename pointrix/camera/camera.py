@@ -27,6 +27,7 @@ class Camera:
     bg: float = 0.0
     rgb_file_name: str = None
     radius: float = 0.0
+    scene_scale: float = 1.0
     _world_view_transform: Float[Tensor, "4 4"] = field(init=False)
     _projection_matrix: Float[Tensor, "4 4"] = field(init=False)
     _intrinsics_matrix: Float[Tensor, "3 3"] = field(init=False)
@@ -51,7 +52,7 @@ class Camera:
         if not isinstance(self.T, Tensor):
             self.T = torch.tensor(self.T)
         self._world_view_transform = torch.tensor(
-            self.getWorld2View(self.R, self.T)).transpose(0, 1)
+            self.getWorld2View(self.R, self.T, self.scene_scale)).transpose(0, 1)
         self._projection_matrix = self.getProjectionMatrix(
             self.fovX, self.fovY).transpose(0, 1)
         self._full_proj_transform = (self.world_view_transform.unsqueeze(
@@ -68,11 +69,22 @@ class Camera:
         self._camera_center = self._camera_center.to(device)
 
     @staticmethod
-    def getWorld2View(R: Float[Tensor, "3 3"], t: Float[Tensor, "3 1"]) -> Float[Tensor, "4 4"]:
+    def getWorld2View(
+        R: Float[Tensor, "3 3"], 
+        t: Float[Tensor, "3 1"], 
+        translate: Float[Tensor, "3"] = torch.tensor([0., 0., 0.]),
+        scale: float=1.0
+    ) -> Float[Tensor, "4 4"]:
         Rt = torch.zeros((4, 4))
         Rt[:3, :3] = R.transpose(0, 1)
         Rt[:3, 3] = t
         Rt[3, 3] = 1.0
+    
+        C2W = torch.linalg.inv(Rt)
+        cam_center = C2W[:3, 3]
+        cam_center = (cam_center + translate) * scale
+        C2W[:3, 3] = cam_center
+        Rt = torch.linalg.inv(C2W)
         return Rt.float()
 
     @staticmethod

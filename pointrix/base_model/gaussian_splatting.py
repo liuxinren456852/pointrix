@@ -61,6 +61,13 @@ class GaussianSplatting(DefaultTrainer):
         min_opacity: float = 0.005
 
     cfg: Config
+    
+    def saving(self):
+        data_list = {
+            "active_sh_degree": self.active_sh_degree,
+            "points_cloud": self.points_cloud.state_dict(),
+        }
+        return data_list
 
     def setup(self, point_cloud):
         # Activation funcitons
@@ -123,18 +130,19 @@ class GaussianSplatting(DefaultTrainer):
     def train_step(self, batch) -> Dict:
         self.update_sh_degree()
 
+        atributes_dict = {
+            "position": self.get_position,
+            "opacity": self.get_opacity,
+            "scaling": self.get_scaling,
+            "rotation": self.get_rotation,
+            "shs": self.get_shs,
+            "active_sh_degree": self.active_sh_degree,
+            "bg_color": self.background,
+        }
+
         def render_func(data):
-            render_pkg = self.renderer(
-                **data,
-                position=self.get_position,
-                opacity=self.get_opacity,
-                scaling=self.get_scaling,
-                rotation=self.get_rotation,
-                shs=self.get_shs,
-                active_sh_degree=self.active_sh_degree,
-                bg_color=self.background,
-            )
-            return render_pkg
+            data.update(atributes_dict)
+            return self.renderer(**data)
         
         (
             images,
@@ -142,7 +150,11 @@ class GaussianSplatting(DefaultTrainer):
             self.visibility,
             viewspace_points
         ) = render_batch(render_func, batch)
-        gt_images = torch.cat([batch[i]["image"].cuda().unsqueeze(0) for i in range(len(batch))], dim=0).float()
+        gt_images = torch.stack(
+            [batch[i]["image"].to(self.device) for i in range(len(batch))], 
+            dim=0
+        )        
+        
         L1_loss = l1_loss(images, gt_images)
         ssim_loss = 1.0 - ssim(images, gt_images)
         loss = (
@@ -170,6 +182,11 @@ class GaussianSplatting(DefaultTrainer):
             "num_pt": len(self.points_cloud),
             "pos_lr": pos_lr,
         }
+        
+    def upd_bar_info(self, info: dict) -> None:
+        info.update({
+            "num_pt": f"{len(self.points_cloud)}",
+        })
 
     def update_sh_degree(self):
         # Every 1000 its we increase the levels of SH up to a maximum degree

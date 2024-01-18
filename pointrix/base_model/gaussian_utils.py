@@ -86,47 +86,39 @@ def validation_process(render_func, datapipeline, global_step=0, logger=None):
     psnr_test = 0.0
     ssims_test = 0.0
     lpips_test = 0.0
-    val_dataset_size = datapipeline.validation_dataset_size
+    val_dataset = datapipeline.validation_dataset
+    val_dataset_size = len(val_dataset)
     progress_bar = tqdm(
         range(0, val_dataset_size),
         desc="Validation progress",
         leave=False,
     )
     for i in range(0, val_dataset_size):
-        batch = datapipeline.next_val()
-        for b_i in batch:
-            data = {"FovX": b_i["camera"].fovX,
-                    "FovY": b_i["camera"].fovY,
-                    "height": b_i["camera"].image_height,
-                    "width": b_i["camera"].image_width,
-                    "world_view_transform": b_i["camera"].world_view_transform,
-                    "full_proj_transform": b_i["camera"].full_proj_transform,
-                    "camera_center": b_i["camera"].camera_center}
+        b_i = val_dataset[i]
+        render_results = render_func(b_i)
+        image = torch.clamp(render_results["render"], 0.0, 1.0)
+        gt_image = torch.clamp(b_i['image'].to("cuda").float(), 0.0, 1.0)
+        # opacity = render_results["opacity"]
+        # depth = render_results["depth"]
+        # depth_normal = (depth - depth.min()) / (depth.max() - depth.min())
 
-            render_results = render_func(data)
-            image = torch.clamp(render_results["render"], 0.0, 1.0)
-            gt_image = torch.clamp(b_i['image'].to("cuda").float(), 0.0, 1.0)
-            # opacity = render_results["opacity"]
-            # depth = render_results["depth"]
-            # depth_normal = (depth - depth.min()) / (depth.max() - depth.min())
+        if logger:
+            image_name = os.path.basename(b_i['camera'].rgb_file_name)
+            iteration = global_step
+            logger.add_images(
+                "test" + f"_view_{image_name}/render", image[None], global_step=iteration)
+            logger.add_images(
+                "test" + f"_view_{image_name}/ground_truth", gt_image[None], global_step=iteration)
+            # logger.add_images("test" + f"_view_{image_name}/opacity", opacity[None], global_step=iteration)
+            # logger.add_images("test" + f"_view_{image_name}/depth", depth_normal[None], global_step=iteration)
 
-            if logger:
-                image_name = os.path.basename(b_i['camera'].rgb_file_name)
-                iteration = global_step
-                logger.add_images(
-                    "test" + f"_view_{image_name}/render", image[None], global_step=iteration)
-                logger.add_images(
-                    "test" + f"_view_{image_name}/ground_truth", gt_image[None], global_step=iteration)
-                # logger.add_images("test" + f"_view_{image_name}/opacity", opacity[None], global_step=iteration)
-                # logger.add_images("test" + f"_view_{image_name}/depth", depth_normal[None], global_step=iteration)
-
-            l1_test += l1_loss(image, gt_image).mean().double()
-            psnr_test += psnr(image, gt_image).mean().double()
-            ssims_test += ms_ssim(
-                image[None], gt_image[None], data_range=1, size_average=True
-            )
-            lpips_test += lpips_fn(image, gt_image).item()
-            progress_bar.update(1)
+        l1_test += l1_loss(image, gt_image).mean().double()
+        psnr_test += psnr(image, gt_image).mean().double()
+        ssims_test += ms_ssim(
+            image[None], gt_image[None], data_range=1, size_average=True
+        )
+        lpips_test += lpips_fn(image, gt_image).item()
+        progress_bar.update(1)
     progress_bar.close()
     l1_test /= val_dataset_size
     psnr_test /= val_dataset_size
@@ -165,15 +157,7 @@ def render_batch(render_func, batch):
     visibilitys = []
     radiis = []
     for b_i in batch:
-        b_i["camera"].load2device('cuda')
-        render_info = {"FovX": b_i["camera"].fovX,
-                       "FovY": b_i["camera"].fovY,
-                       "height": b_i["camera"].image_height,
-                       "width": b_i["camera"].image_width,
-                       "world_view_transform": b_i["camera"].world_view_transform,
-                       "full_proj_transform": b_i["camera"].full_proj_transform,
-                       "camera_center": b_i["camera"].camera_center}
-        render_results = render_func(render_info)
+        render_results = render_func(b_i)
         renders.append(render_results["render"])
         viewspace_points.append(render_results["viewspace_points"])
         visibilitys.append(render_results["visibility_filter"].unsqueeze(0))

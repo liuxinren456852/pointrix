@@ -44,9 +44,11 @@ class BaseReFormatData:
 
     def __init__(self, data_root: Path,
                  split: str = "train",
-                 cached_image: bool = True):
+                 cached_image: bool = True,
+                 scale: float = 1.0):
         self.data_root = data_root
         self.split = split
+        self.scale = scale
         self.data_list = self.load_data_list(self.split)
 
         if cached_image:
@@ -72,9 +74,18 @@ class BaseReFormatData:
         raise NotImplementedError
 
     def load_all_images(self) -> List[Image.Image]:
-        return [np.array(Image.open(image_filename), dtype="uint8")
-                for image_filename in self.data_list.image_filenames]
-
+        image_lists = []
+        for image_filename in self.data_list.image_filenames:
+            temp_image = Image.open(image_filename)
+            w, h = temp_image.size
+            resize_image = temp_image.resize((
+                int(w * self.scale), 
+                int(h * self.scale)
+            ))
+            image_lists.append(
+                np.array(resize_image, dtype="uint8")
+            )
+        return image_lists
 
 # TODO: support different dataset (Meta information (depth) support)
 class BaseImageDataset(Dataset):
@@ -109,7 +120,7 @@ class BaseImageDataset(Dataset):
         if image.shape[2] == 4:
             image = image[:, :, :3] * image[:, :, 3:4] + \
                 bg * (1 - image[:, :, 3:4])
-        image = torch.from_numpy(np.array(image)).permute(2, 0, 1)
+        image = torch.from_numpy(np.array(image)).permute(2, 0, 1).float()
         return image.clamp(0.0, 1.0)
 
     def __getitem__(self, idx):
@@ -119,7 +130,17 @@ class BaseImageDataset(Dataset):
             image_file_name) if self.images is None else self.images[idx]
         camera.height = image.shape[1]
         camera.width = image.shape[2]
-        return {"image": image, "camera": camera}
+        return {
+            "image": image, 
+            "camera": camera,
+            "FovX": camera.fovX,
+            "FovY": camera.fovY,
+            "height": camera.image_height,
+            "width": camera.image_width,
+            "world_view_transform": camera.world_view_transform,
+            "full_proj_transform": camera.full_proj_transform,
+            "camera_center": camera.camera_center,
+        }
 
     def _load_transform_image(self, image_filename, bg=[1., 1., 1.]) -> Float[Tensor, "3 h w"]:
         pil_image = np.array(Image.open(image_filename),
@@ -139,6 +160,7 @@ class BaseDataPipline:
         batch_size: int = 1
         num_workers: int = 1
         white_bg: bool = False
+        scale: float = 1.0
     cfg: Config
 
     def __init__(self, cfg) -> None:
@@ -152,9 +174,17 @@ class BaseDataPipline:
             from pointrix.dataset.nerf_data import NerfReFormat as ReFormat
 
         self.train_format_data = ReFormat(
-            data_root=self.cfg.data_path, split="train", cached_image=self.cfg.cached_image).data_list
+            data_root=self.cfg.data_path, 
+            split="train", 
+            cached_image=self.cfg.cached_image,
+            scale=self.cfg.scale,
+        ).data_list
         self.validation_format_data = ReFormat(
-            data_root=self.cfg.data_path, split="val", cached_image=self.cfg.cached_image).data_list
+            data_root=self.cfg.data_path, 
+            split="val", 
+            cached_image=self.cfg.cached_image,
+            scale=self.cfg.scale,
+        ).data_list
 
         self.point_cloud = self.train_format_data.PointCloud
         self.white_bg = self.cfg.white_bg
@@ -184,7 +214,6 @@ class BaseDataPipline:
         self.validation_loader = torch.utils.data.DataLoader(
             self.validation_dataset,
             batch_size=self.cfg.batch_size,
-            shuffle=self.cfg.shuffle,
             num_workers=self.cfg.num_workers,
             collate_fn=list
         )
