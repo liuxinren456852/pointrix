@@ -42,5 +42,8 @@ python -m pip install -e .
 
 ```bash
 cd projects/gaussian_splatting
-python launch.py --configs ./configs/nerf.yaml
+
+python launch.py --config configs/nerf.yaml \
+        trainer.output_path='output/lego' \
+        dataset.data_path='nerf_synthetic/lego'
 ```
