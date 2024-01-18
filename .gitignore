@@ -161,3 +161,4 @@ cython_debug/
 pointrix/data/
 output/
 outputs/
+.vscode/launch.json
