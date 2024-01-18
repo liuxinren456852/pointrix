@@ -4,12 +4,11 @@ from typing import Any, Dict, List
 from pathlib import Path
 
 from pointrix.camera.camera import Camera
-from pointrix.dataset.base_data import BaseReFormatData, BasicPointCloud, BaseDataFormat
+from pointrix.dataset.base_data import BaseReFormatData, BasicPointCloud, BaseDataFormat, DATA_FORMAT_REGISTRY
 from pointrix.dataset.utils.colmap_utils import (read_extrinsics_binary,
                                                  read_intrinsics_binary,
                                                  qvec2rotmat, fetchPly)
-
-
+@DATA_FORMAT_REGISTRY.register()
 class ColmapReFormat(BaseReFormatData):
     def __init__(self,
                  data_root: Path,
@@ -65,10 +64,10 @@ class ColmapReFormat(BaseReFormatData):
             cameras.append(camera)
         if split == 'train':
             cameras_results = [c for idx, c in enumerate(
-                sorted(cameras.copy(), key=lambda x: x.rgb_file_name)) if idx % llffhold != 0]
+                sorted(cameras.copy(), key=lambda x: x.rgb_file_name))]
         elif split == 'val':
             cameras_results = [c for idx, c in enumerate(
-                sorted(cameras.copy(), key=lambda x: x.rgb_file_name)) if idx % llffhold == 0]
+                sorted(cameras.copy(), key=lambda x: x.rgb_file_name)) if idx in list(range(5, 30, 5))]
         return cameras_results
 
     def load_image_filenames(self, cameras: List[Camera], split) -> list[Path]:

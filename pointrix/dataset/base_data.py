@@ -9,10 +9,13 @@ from torch.utils.data import Dataset
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, Union, List, NamedTuple, Optional
 
+from pointrix.utils.registry import Registry
 from pointrix.utils.config import parse_structured
 from pointrix.camera.camera import Camera, TrainableCamera
 from pointrix.dataset.utils.dataset_utils import force_full_init, getNerfppNorm
 
+DATA_FORMAT_REGISTRY = Registry("DATA_FORMAT", modules=["pointrix.dataset"])
+DATA_FORMAT_REGISTRY.__doc__ = ""
 
 class BasicPointCloud(NamedTuple):
     points: np.array
@@ -38,7 +41,6 @@ class BaseDataFormat:
 
     def __len__(self) -> int:
         return len(self.image_filenames)
-
 
 class BaseReFormatData:
 
@@ -166,29 +168,27 @@ class BaseDataPipline:
     def __init__(self, cfg) -> None:
         self.cfg = parse_structured(self.Config, cfg)
         self._fully_initialized = True
+        dataformat = self.parse_data_format()
 
-        # TODO: use registry
-        if self.cfg.data_type == "colmap":
-            from pointrix.dataset.colmap_data import ColmapReFormat as ReFormat
-        elif self.cfg.data_type == "nerf_synthetic":
-            from pointrix.dataset.nerf_data import NerfReFormat as ReFormat
-
-        self.train_format_data = ReFormat(
-            data_root=self.cfg.data_path, 
-            split="train", 
-            cached_image=self.cfg.cached_image,
-            scale=self.cfg.scale,
-        ).data_list
-        self.validation_format_data = ReFormat(
-            data_root=self.cfg.data_path, 
-            split="val", 
-            cached_image=self.cfg.cached_image,
-            scale=self.cfg.scale,
-        ).data_list
+        self.train_format_data = dataformat(
+            data_root=self.cfg.data_path, split="train", 
+            cached_image=self.cfg.cached_image).data_list
+        self.validation_format_data = dataformat(
+            data_root=self.cfg.data_path, split="val", 
+            cached_image=self.cfg.cached_image).data_list
 
         self.point_cloud = self.train_format_data.PointCloud
         self.white_bg = self.cfg.white_bg
         self.loaddata()
+
+    def parse_data_format(self):
+        data_type = self.cfg.data_type
+        dataformat = DATA_FORMAT_REGISTRY.get(data_type)
+
+        assert dataformat is not None, "Data format is not registered: {}".format(
+            data_type
+        )
+        return dataformat
 
     # TODO use rigistry
     def get_training_dataset(self) -> BaseImageDataset:

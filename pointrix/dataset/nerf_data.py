@@ -6,10 +6,11 @@ from typing import Any, Dict, List
 from pathlib import Path
 
 from pointrix.camera.camera import Camera
-from pointrix.dataset.base_data import BaseReFormatData
+from pointrix.dataset.base_data import BaseReFormatData, DATA_FORMAT_REGISTRY
 from pointrix.dataset.utils.dataset_utils import fov2focal, focal2fov
 
 
+@DATA_FORMAT_REGISTRY.register()
 class NerfReFormat(BaseReFormatData):
     def __init__(self,
                  data_root: Path,
@@ -39,7 +40,8 @@ class NerfReFormat(BaseReFormatData):
 
             # get the world-to-camera transform and set R, T
             w2c = np.linalg.inv(c2w)
-            R = np.transpose(w2c[:3,:3])  # R is stored transposed due to 'glm' in CUDA code
+            # R is stored transposed due to 'glm' in CUDA code
+            R = np.transpose(w2c[:3, :3])
             T = w2c[:3, 3]
 
             image_path = os.path.join(self.data_root, cam_name)
@@ -51,7 +53,7 @@ class NerfReFormat(BaseReFormatData):
             FovY = fovy
             FovX = fovx
             camera = Camera(idx=idx, R=R, T=T, width=image.shape[1], height=image.shape[0],
-                                  rgb_file_name=image_path, fovX=FovX, fovY=FovY, bg=1.0)
+                            rgb_file_name=image_path, fovX=FovX, fovY=FovY, bg=1.0)
             cameras.append(camera)
 
         return cameras

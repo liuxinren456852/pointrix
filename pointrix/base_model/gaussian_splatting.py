@@ -406,7 +406,7 @@ class GaussianSplatting(DefaultTrainer):
         return self.covariance_activation(
             self.get_scaling,
             scaling_modifier,
-            self.get_rotation,
+            self.points_cloud.rotation,
         )
 
     @property

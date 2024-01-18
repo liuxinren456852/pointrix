@@ -44,8 +44,8 @@ trainer:
         lr: 0.05
 
   dataset:
-    data_path: "/home/loyot/workspace/SSD_1T/Datasets/NeRF/nerf_synthetic/lego"
-    data_type: "nerf_synthetic"
+    data_path: "/home/clz/data/nerf_synthetic/lego"
+    data_type: "NerfReFormat"
     cached_image: True
     shuffle: True
     batch_size: 1

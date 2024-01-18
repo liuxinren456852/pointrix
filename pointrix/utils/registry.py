@@ -1,60 +1,75 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-
-from typing import Any
-import pydoc
-from fvcore.common.registry import Registry  # for backward compatibility.
-
-"""
-``Registry`` and `locate` provide ways to map a string (typically found
-in config files) to callable objects.
-"""
-
-__all__ = ["Registry", "locate"]
+from tabulate import tabulate
+from importlib import import_module
+from typing import Any, Dict, Iterable, Iterator, Tuple
 
 
-def _convert_target_to_string(t: Any) -> str:
-    """
-    Inverse of ``locate()``.
+class Registry(Iterable[Tuple[str, Any]]):
 
-    Args:
-        t: any object with ``__module__`` and ``__qualname__``
-    """
-    module, qualname = t.__module__, t.__qualname__
+    def __init__(self, name: str, modules: list = []) -> None:
+        """
+        Args:
+            name (str): the name of this registry
+        """
+        self._name: str = name
+        self._obj_map: Dict[str, Any] = {}
+        self.modules = modules
+        self.imported = False
 
-    # Compress the path to this object, e.g. ``module.submodule._impl.class``
-    # may become ``module.submodule.class``, if the later also resolves to the same
-    # object. This simplifies the string, and also is less affected by moving the
-    # class implementation.
-    module_parts = module.split(".")
-    for k in range(1, len(module_parts)):
-        prefix = ".".join(module_parts[:k])
-        candidate = f"{prefix}.{qualname}"
-        try:
-            if locate(candidate) is t:
-                return candidate
-        except ImportError:
-            pass
-    return f"{module}.{qualname}"
+    def _do_register(self, name: str, obj: Any) -> None:
+        assert (
+            name not in self._obj_map
+        ), "An object named '{}' was already registered in '{}' registry!".format(
+            name, self._name
+        )
+        self._obj_map[name] = obj
 
+    def register(self, obj: Any = None) -> Any:
+        """
+        Register the given object under the the name `obj.__name__`.
+        Can be used as either a decorator or not. See docstring of this class for usage.
+        """
+        if obj is None:
+            # used as a decorator
+            def deco(func_or_class: Any) -> Any:
+                name = func_or_class.__name__
+                self._do_register(name, func_or_class)
+                return func_or_class
 
-def locate(name: str) -> Any:
-    """
-    Locate and return an object ``x`` using an input string ``{x.__module__}.{x.__qualname__}``,
-    such as "module.submodule.class_name".
+            return deco
 
-    Raise Exception if it cannot be found.
-    """
-    obj = pydoc.locate(name)
+        # used as a function call
+        name = obj.__name__
+        self._do_register(name, obj)
 
-    # Some cases (e.g. torch.optim.sgd.SGD) not handled correctly
-    # by pydoc.locate. Try a private function from hydra.
-    if obj is None:
-        try:
-            # from hydra.utils import get_method - will print many errors
-            from hydra.utils import _locate
-        except ImportError as e:
-            raise ImportError(f"Cannot dynamically locate object {name}!") from e
-        else:
-            obj = _locate(name)  # it raises if fails
+    def get(self, name: str) -> Any:
+        self._import_module()
+        ret = self._obj_map.get(name)
+        if ret is None:
+            raise KeyError(
+                "No object named '{}' found in '{}' registry!".format(
+                    name, self._name)
+            )
+        return ret
 
-    return obj
+    def _import_module(self):
+        if len(self.modules) != 0 and self.imported == False: 
+            for loc in self.modules:
+                import_module(loc)
+        
+        self.imported = True
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._obj_map
+
+    def __repr__(self) -> str:
+        table_headers = ["Names", "Objects"]
+        table = tabulate(
+            self._obj_map.items(), headers=table_headers, tablefmt="fancy_grid"
+        )
+        return "Registry of {}:\n".format(self._name) + table
+
+    def __iter__(self) -> Iterator[Tuple[str, Any]]:
+        return iter(self._obj_map.items())
+
+    # pyre-fixme[4]: Attribute must be annotated.
+    __str__ = __repr__
