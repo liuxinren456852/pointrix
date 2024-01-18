@@ -51,8 +51,9 @@ class Camera:
             self.R = torch.tensor(self.R)
         if not isinstance(self.T, Tensor):
             self.T = torch.tensor(self.T)
-        self._world_view_transform = torch.tensor(
-            self.getWorld2View(self.R, self.T, self.scene_scale)).transpose(0, 1)
+        self._world_view_transform = self.getWorld2View(
+            self.R, self.T, self.scene_scale
+        ).transpose(0, 1)
         self._projection_matrix = self.getProjectionMatrix(
             self.fovX, self.fovY).transpose(0, 1)
         self._full_proj_transform = (self.world_view_transform.unsqueeze(
