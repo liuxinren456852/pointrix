@@ -107,7 +107,7 @@ class DefaultTrainer:
                 self.progress_bar.set_postfix(bar_info)
                 self.progress_bar.update(self.cfg.bar_upd_interval)
             
-            if iteration % self.cfg.val_interval == 0:
+            if iteration % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
                 self.val_step()
             
             self.global_step += 1
