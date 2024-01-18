@@ -25,10 +25,10 @@ def get_random_feauture(num_points, feat_dim):
     return feart
 
 def points_init(init_cfg, point_cloud):
-    num_points = init_cfg.num_points
     init_type = init_cfg.init_type
     
     if init_type == 'random' and point_cloud is None:
+        num_points = init_cfg.num_points
         print("Number of points at initialisation : ", num_points)
         pos = get_random_points(num_points, init_cfg.radius)
         features = get_random_feauture(num_points, init_cfg.feat_dim)
@@ -40,6 +40,7 @@ def points_init(init_cfg, point_cloud):
         features = RGB2SH(torch.tensor(np.asarray(point_cloud.colors)).float())
         
         if "random" in init_type:
+            num_points = init_cfg.num_points
             print("Extend the initialiased point with random : ", num_points)
             max_dis = torch.abs(pos).max().item()
             pos_ext = get_random_points(num_points, max_dis * init_cfg.radius)
