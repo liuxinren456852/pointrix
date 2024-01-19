@@ -135,8 +135,8 @@ class GaussianSplattingTrainer(DefaultTrainer):
                 keepdim=True
             )
             self.gaussian_points.denom[visibility] += 1
+            self.gaussian_points.size_threshold = 20 if self.global_step > self.cfg.opacity_reset_interval else None
             if self.global_step > self.cfg.densify_start_iter:
-                self.gaussian_points.size_threshold = 20 if self.global_step > self.cfg.opacity_reset_interval else None
                 # import pdb; pdb.set_trace()
                 if self.global_step % self.cfg.duplicate_interval == 0:
                     self.gaussian_points.densify()
