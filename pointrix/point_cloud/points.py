@@ -5,7 +5,7 @@ import torch
 from torch import Tensor, nn
 import numpy as np
 
-from pointrix.base_model.base import BaseObject
+from pointrix.point_cloud.base import BaseObject
 
 def RGB2SH(rgb):
     C0 = 0.28209479177387814

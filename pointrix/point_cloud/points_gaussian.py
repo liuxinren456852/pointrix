@@ -8,14 +8,13 @@ from torch import nn
 from pointrix.utils.sh_utils import RGB2SH
 from pointrix.engine.trainer import DefaultTrainer
 from pointrix.point_cloud.points import PointsCloud
+from pointrix.point_cloud.base import BaseObject
 from pointrix.utils.losses import l1_loss, l2_loss, ssim
-from pointrix.utils.optimizer import parse_scheduler
-from pointrix.base_model.gaussian_utils import (
-    build_covariance_from_scaling_rotation,
-    inverse_sigmoid,
-    build_rotation,
-    validation_process,
-    render_batch,
+from pointrix.utils.optimizer import parse_scheduler, parse_optimizer
+from pointrix.point_cloud.utils import (
+        build_covariance_from_scaling_rotation,
+        inverse_sigmoid,
+        build_rotation,
 )
 
 from simple_knn._C import distCUDA2
@@ -41,27 +40,19 @@ def gaussian_point_init(position, max_sh_degree, device):
     return scales, rots, opacities, features_rest
 
 
-class GaussianSplatting(DefaultTrainer):
+class GaussianSplatting(BaseObject):
     @dataclass
-    class Config(DefaultTrainer.Config):
+    class Config:
         max_sh_degree: int = 3
-
-        # Train cfg
         percent_dense: float = 0.01
-        lambda_dssim: float = 0.2
-        spatial_lr_scale: bool = True
-
-        # Densification
-        densify_stop_iter: int = 15000
-        densify_start_iter: int = 500
-        prune_interval: int = 100
-        duplicate_interval: int = 100
-        opacity_reset_interval: int = 3000
         densify_grad_threshold: float = 0.0002
         min_opacity: float = 0.005
+        optimizer: dict = field(default_factory=dict)
+        scheduler: dict = field(default_factory=dict)
+        points_cloud: dict = field(default_factory=dict)
 
     cfg: Config
-    
+
     def saving(self):
         data_list = {
             "active_sh_degree": self.active_sh_degree,
@@ -69,7 +60,7 @@ class GaussianSplatting(DefaultTrainer):
         }
         return data_list
 
-    def setup(self, point_cloud):
+    def setup(self, point_cloud, radius):
         # Activation funcitons
         self.scaling_activation = torch.exp
         self.scaling_inverse_activation = torch.log
@@ -80,15 +71,17 @@ class GaussianSplatting(DefaultTrainer):
 
         # Training variables
         self.active_sh_degree = 0
+        self.size_threshold = None
 
         # Set up scheduler for points cloud position
-        self.cameras_extent = self.datapipline.training_dataset.radius
+        self.cameras_extent = radius
         if self.cfg.scheduler is not None:
             self.schedulers = parse_scheduler(
                 self.cfg.scheduler, self.cameras_extent)
 
         # Set up points cloud
-        self.points_cloud = PointsCloud(self.cfg.points_cloud, point_cloud).to(self.device)
+        self.points_cloud = PointsCloud(
+            self.cfg.points_cloud, point_cloud).to(self.device)
         num_points = len(self.points_cloud)
 
         scales, rots, opacities, features_rest = gaussian_point_init(
@@ -117,82 +110,12 @@ class GaussianSplatting(DefaultTrainer):
         ).to(self.device)
         self.denom = torch.zeros((num_points, 1)).to(self.device)
 
-        # TODO: use camera to get the extent
-        self.white_bg = self.datapipline.white_bg
-
-        bg_color = [1, 1, 1] if self.white_bg else [0, 0, 0]
-        self.background = torch.tensor(
-            bg_color,
-            dtype=torch.float32,
-            device=self.device,
-        )
-
-    def train_step(self, batch) -> Dict:
-        self.update_sh_degree()
-
-        atributes_dict = {
-            "position": self.get_position,
-            "opacity": self.get_opacity,
-            "scaling": self.get_scaling,
-            "rotation": self.get_rotation,
-            "shs": self.get_shs,
-            "active_sh_degree": self.active_sh_degree,
-            "bg_color": self.background,
-        }
-
-        def render_func(data):
-            data.update(atributes_dict)
-            return self.renderer(**data)
-        
-        (
-            images,
-            self.radii,
-            self.visibility,
-            viewspace_points
-        ) = render_batch(render_func, batch)
-        gt_images = torch.stack(
-            [batch[i]["image"].to(self.device) for i in range(len(batch))], 
-            dim=0
-        )        
-        
-        L1_loss = l1_loss(images, gt_images)
-        ssim_loss = 1.0 - ssim(images, gt_images)
-        loss = (
-            (1.0 - self.cfg.lambda_dssim) * L1_loss
-        ) + (
-            self.cfg.lambda_dssim * ssim_loss
-        )
-
-        loss.backward()
-
-        self.accumulate_viewspace_grad(viewspace_points)
-
-        # print("viewspace_grad: ", self.viewspace_grad)
-        # TODO: log the learning rate of each elements in optimizer
-        for param_group in self.optimizer.param_groups:
-            name = param_group['name']
-            if name == "points_cloud.position":
-                pos_lr = param_group['lr']
-                break
-
-        return {
-            "loss": loss,
-            "L1_loss": L1_loss,
-            "ssim_loss": ssim_loss,
-            "num_pt": len(self.points_cloud),
-            "pos_lr": pos_lr,
-        }
-        
-    def upd_bar_info(self, info: dict) -> None:
-        info.update({
-            "num_pt": f"{len(self.points_cloud)}",
-        })
+        self.optimizer = parse_optimizer(self.cfg.optimizer, self.points_cloud)
 
     def update_sh_degree(self):
         # Every 1000 its we increase the levels of SH up to a maximum degree
-        if self.global_step % 1000 == 0:
-            if self.active_sh_degree < self.cfg.max_sh_degree:
-                self.active_sh_degree += 1
+        if self.active_sh_degree < self.cfg.max_sh_degree:
+            self.active_sh_degree += 1
 
     @torch.no_grad()
     def accumulate_viewspace_grad(self, viewspace_points):
@@ -202,62 +125,6 @@ class GaussianSplatting(DefaultTrainer):
         )
         for vp in viewspace_points:
             self.viewspace_grad += vp.grad
-
-    @torch.no_grad()
-    def val_step(self):
-        def render_func(data):
-            render_pkg = self.renderer(
-                **data,
-                position=self.get_position,
-                opacity=self.get_opacity,
-                scaling=self.get_scaling,
-                rotation=self.get_rotation,
-                shs=self.get_shs,
-                active_sh_degree=self.active_sh_degree,
-                bg_color=self.background,
-            )
-            return render_pkg
-
-        validation_process(
-            render_func,
-            self.datapipline,
-            self.global_step,
-            self.logger
-        )
-
-    @torch.no_grad()
-    def test(self):
-        pass
-
-    @torch.no_grad()
-    def update_state(self) -> None:
-        if self.global_step < self.cfg.densify_stop_iter:
-            # Keep track of max radii in image-space for pruning
-            visibility = self.visibility
-            self.max_radii2D[visibility] = torch.max(
-                self.max_radii2D[visibility],
-                self.radii[visibility]
-            )
-            self.pos_gradient_accum[visibility] += torch.norm(
-                self.viewspace_grad[visibility, :2],
-                dim=-1,
-                keepdim=True
-            )
-            self.denom[visibility] += 1
-            if self.global_step > self.cfg.densify_start_iter:
-                # import pdb; pdb.set_trace()
-                self.densification()
-
-            if self.global_step % self.cfg.opacity_reset_interval == 0 or (self.white_bg and self.global_step == self.cfg.densify_start_iter):
-                self.reset_opacity()
-        super().update_state()
-
-    def densification(self):
-        if self.global_step % self.cfg.duplicate_interval == 0:
-            self.densify()
-        if self.global_step % self.cfg.prune_interval == 0:
-            self.prune()
-        torch.cuda.empty_cache()
 
     # TODO: make this function more readable and modular
     def densify(self):
@@ -350,14 +217,13 @@ class GaussianSplatting(DefaultTrainer):
 
     def prune(self):
         # TODO: fix me
-        size_threshold = 20 if self.global_step > self.cfg.opacity_reset_interval else None
         cameras_extent = self.cameras_extent
 
         prune_filter = (
             self.get_opacity < self.cfg.min_opacity
         ).squeeze()
-        if size_threshold:
-            big_points_vs = self.max_radii2D > size_threshold
+        if self.size_threshold:
+            big_points_vs = self.max_radii2D > self.size_threshold
             big_points_ws = self.get_scaling.max(
                 dim=1).values > 0.1 * cameras_extent
             prune_filter = torch.logical_or(prune_filter, big_points_vs)

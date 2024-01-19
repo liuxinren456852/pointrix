@@ -17,7 +17,7 @@ class DefaultTrainer:
     @dataclass
     class Config:
         # Modules
-        points_cloud: dict = field(default_factory=dict)
+        gaussian_points: dict = field(default_factory=dict)
         optimizer: dict = field(default_factory=dict)
         renderer: dict = field(default_factory=dict)
         scheduler: Optional[dict] = field(default_factory=dict)
@@ -47,14 +47,14 @@ class DefaultTrainer:
         self.cfg = parse_structured(self.Config, cfg)
         
         self.datapipline = BaseDataPipline(self.cfg.dataset)
-        if self.cfg.scheduler is not None:
+        if len(self.cfg.scheduler) > 0:
             self.schedulers = parse_scheduler(self.cfg.scheduler)
             
         self.renderer = parse_renderer(self.cfg.renderer)  
         # all trainers should implement setup
-        self.setup(self.datapipline.point_cloud)    
+        self.setup()    
         # set up optimizer in the end, so that all parameters are registered      
-        self.optimizer = parse_optimizer(self.cfg.optimizer, self)
+        # self.optimizer = parse_optimizer(self.cfg.optimizer, self)
         
         self.start_steps = 1
         self.global_step = 0
@@ -123,7 +123,7 @@ class DefaultTrainer:
 
     def update_lr(self) -> None:
         # Leraning rate scheduler
-        if self.cfg.scheduler is not None:
+        if len(self.cfg.scheduler) > 0:
             for param_group in self.optimizer.param_groups:
                 name = param_group['name']
                 if name in self.schedulers.keys():
