@@ -5,8 +5,6 @@ trainer:
   max_steps: 30000
   val_interval: 7000
 
-  max_sh_degree: 3
-  percent_dense: 0.01
   lambda_dssim: 0.2
 
   densify_start_iter: 500
@@ -14,15 +12,20 @@ trainer:
   prune_interval: 100
   duplicate_interval: 100
   opacity_reset_interval: 1000
-  densify_grad_threshold: 0.0002
-  min_opacity: 0.005
 
-  points_cloud:
-    trainable: true
-    initializer:
-      init_type: 'colmap'
-      # num_points: 10000
-      # radius: 5
+  gaussian_points:
+    gaussian_type: "GaussianSplatting"
+    max_sh_degree: 3
+    percent_dense: 0.01
+    densify_grad_threshold: 0.0002
+    min_opacity: 0.005
+    points_cloud:
+      trainable: true
+      initializer:
+        init_type: 'random'
+        num_points: 100000
+        radius: 1.3
+        feat_dim: 3
 
   optimizer:
     name: Adam

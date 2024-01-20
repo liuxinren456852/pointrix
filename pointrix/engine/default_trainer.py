@@ -7,9 +7,10 @@ from dataclasses import dataclass, field
 import torch
 from torch import nn
 from pointrix.renderer import parse_renderer
+from pointrix.dataset import build_data_pipline
 from pointrix.utils.config import parse_structured
-from pointrix.dataset.base_data import BaseDataPipline
 from pointrix.utils.optimizer import parse_scheduler, parse_optimizer
+from pointrix.point_cloud import build_gaussian
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -34,7 +35,6 @@ class DefaultTrainer:
         
         # Progress bar
         bar_upd_interval: int = 10
-        
         # Output path
         output_path: str = "output"
         
@@ -44,14 +44,22 @@ class DefaultTrainer:
         super().__init__()
         self.exp_dir = exp_dir
         self.device = device
+        # build config
         self.cfg = parse_structured(self.Config, cfg)
         
-        self.datapipline = BaseDataPipline(self.cfg.dataset)
-        if len(self.cfg.scheduler) > 0:
-            self.schedulers = parse_scheduler(self.cfg.scheduler)
-            
+        # build datapipeline
+        self.datapipline = build_data_pipline(self.cfg.dataset)
+        # build renderer
         self.renderer = parse_renderer(self.cfg.renderer)  
-        # all trainers should implement setup
+        # build model
+        self.gaussian_points = build_gaussian(self.cfg.gaussian_points, self.datapipline)
+        # build optimizer
+        self.optimizer = parse_optimizer(self.cfg.optimizer, self.gaussian_points)
+        
+        self.schedulers = parse_scheduler(self.cfg.scheduler, self.datapipline.training_dataset.radius)
+        
+        # To remove and add points
+        self.gaussian_points.load_optimizer(self.optimizer)
         self.setup()    
         # set up optimizer in the end, so that all parameters are registered      
         # self.optimizer = parse_optimizer(self.cfg.optimizer, self)
@@ -68,6 +76,7 @@ class DefaultTrainer:
         
         self.progress_bar_info = {}
         
+        # build logger
         self.logger = SummaryWriter(exp_dir)
     
     def train_step(self, batch) -> None:

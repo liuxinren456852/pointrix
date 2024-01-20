@@ -6,7 +6,6 @@ from typing import Optional, Dict
 import torch
 from torch import nn
 from pointrix.utils.sh_utils import RGB2SH
-from pointrix.engine.trainer import DefaultTrainer
 from pointrix.point_cloud.points import PointsCloud
 from pointrix.point_cloud.base import BaseObject
 from pointrix.utils.losses import l1_loss, l2_loss, ssim
@@ -16,9 +15,12 @@ from pointrix.point_cloud.utils import (
         inverse_sigmoid,
         build_rotation,
 )
+from pointrix.utils.registry import Registry
 
 from simple_knn._C import distCUDA2
 
+GAUSSIAN_REGISTRY = Registry("GAUSSIAN_REGISTRY", modules=["pointrix.point_cloud"])
+GAUSSIAN_REGISTRY.__doc__ = ""
 
 def gaussian_point_init(position, max_sh_degree, device):
     num_points = len(position)
@@ -39,10 +41,11 @@ def gaussian_point_init(position, max_sh_degree, device):
 
     return scales, rots, opacities, features_rest
 
-
+@GAUSSIAN_REGISTRY.register()
 class GaussianSplatting(BaseObject):
     @dataclass
     class Config:
+        gaussian_type: str = "GaussianSplatting"
         max_sh_degree: int = 3
         percent_dense: float = 0.01
         densify_grad_threshold: float = 0.0002
@@ -75,9 +78,6 @@ class GaussianSplatting(BaseObject):
 
         # Set up scheduler for points cloud position
         self.cameras_extent = radius
-        if self.cfg.scheduler is not None:
-            self.schedulers = parse_scheduler(
-                self.cfg.scheduler, self.cameras_extent)
 
         # Set up points cloud
         self.points_cloud = PointsCloud(
@@ -110,7 +110,8 @@ class GaussianSplatting(BaseObject):
         ).to(self.device)
         self.denom = torch.zeros((num_points, 1)).to(self.device)
 
-        self.optimizer = parse_optimizer(self.cfg.optimizer, self.points_cloud)
+    def load_optimizer(self, optimizer):
+        self.optimizer = optimizer
 
     def update_sh_degree(self):
         # Every 1000 its we increase the levels of SH up to a maximum degree

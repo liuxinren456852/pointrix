@@ -17,6 +17,7 @@ from pointrix.dataset.utils.dataset_utils import force_full_init, getNerfppNorm
 DATA_FORMAT_REGISTRY = Registry("DATA_FORMAT", modules=["pointrix.dataset"])
 DATA_FORMAT_REGISTRY.__doc__ = ""
 
+
 class BasicPointCloud(NamedTuple):
     points: np.array
     colors: np.array
@@ -41,6 +42,7 @@ class BaseDataFormat:
 
     def __len__(self) -> int:
         return len(self.image_filenames)
+
 
 class BaseReFormatData:
 
@@ -81,7 +83,7 @@ class BaseReFormatData:
             temp_image = Image.open(image_filename)
             w, h = temp_image.size
             resize_image = temp_image.resize((
-                int(w * self.scale), 
+                int(w * self.scale),
                 int(h * self.scale)
             ))
             image_lists.append(
@@ -90,6 +92,8 @@ class BaseReFormatData:
         return image_lists
 
 # TODO: support different dataset (Meta information (depth) support)
+
+
 class BaseImageDataset(Dataset):
     def __init__(self, format_data: BaseDataFormat) -> None:
         self.cameras = format_data.Cameras
@@ -133,7 +137,7 @@ class BaseImageDataset(Dataset):
         camera.height = image.shape[1]
         camera.width = image.shape[2]
         return {
-            "image": image, 
+            "image": image,
             "camera": camera,
             "FovX": camera.fovX,
             "FovY": camera.fovY,
@@ -165,30 +169,20 @@ class BaseDataPipline:
         scale: float = 1.0
     cfg: Config
 
-    def __init__(self, cfg) -> None:
+    def __init__(self, cfg, dataformat) -> None:
         self.cfg = parse_structured(self.Config, cfg)
         self._fully_initialized = True
-        dataformat = self.parse_data_format()
 
         self.train_format_data = dataformat(
-            data_root=self.cfg.data_path, split="train", 
+            data_root=self.cfg.data_path, split="train",
             cached_image=self.cfg.cached_image).data_list
         self.validation_format_data = dataformat(
-            data_root=self.cfg.data_path, split="val", 
+            data_root=self.cfg.data_path, split="val",
             cached_image=self.cfg.cached_image).data_list
 
         self.point_cloud = self.train_format_data.PointCloud
         self.white_bg = self.cfg.white_bg
         self.loaddata()
-
-    def parse_data_format(self):
-        data_type = self.cfg.data_type
-        dataformat = DATA_FORMAT_REGISTRY.get(data_type)
-
-        assert dataformat is not None, "Data format is not registered: {}".format(
-            data_type
-        )
-        return dataformat
 
     # TODO use rigistry
     def get_training_dataset(self) -> BaseImageDataset:

@@ -4,10 +4,8 @@ from torch import nn
 from tqdm import tqdm
 from dataclasses import dataclass, field
 from typing import Optional, Dict
-from pointrix.point_cloud.points_gaussian import GaussianSplatting
 
-
-from pointrix.engine.trainer import DefaultTrainer
+from pointrix.engine.default_trainer import DefaultTrainer
 from pointrix.utils.losses import l1_loss, l2_loss, ssim
 from pointrix.point_cloud.utils import (
     validation_process,
@@ -31,9 +29,6 @@ class GaussianSplattingTrainer(DefaultTrainer):
     cfg: Config
 
     def setup(self):
-        self.gaussian_points = GaussianSplatting(
-            self.cfg.gaussian_points, self.datapipline.point_cloud, self.datapipline.training_dataset.radius)
-
         self.white_bg = self.datapipline.white_bg
 
         bg_color = [1, 1, 1] if self.white_bg else [0, 0, 0]
@@ -90,9 +85,9 @@ class GaussianSplattingTrainer(DefaultTrainer):
 
         # print("viewspace_grad: ", self.viewspace_grad)
         # TODO: log the learning rate of each elements in optimizer
-        for param_group in self.gaussian_points.optimizer.param_groups:
+        for param_group in self.optimizer.param_groups:
             name = param_group['name']
-            if name == "position":
+            if name == "points_cloud.position":
                 pos_lr = param_group['lr']
                 break
 
@@ -103,18 +98,6 @@ class GaussianSplattingTrainer(DefaultTrainer):
             "num_pt": len(self.gaussian_points.points_cloud),
             "pos_lr": pos_lr,
         }
-
-    def optimization(self) -> None:
-        self.gaussian_points.optimizer.step()
-        self.gaussian_points.optimizer.zero_grad(set_to_none=True)
-
-    def update_lr(self) -> None:
-        # Leraning rate scheduler
-        for param_group in self.gaussian_points.optimizer.param_groups:
-            name = param_group['name']
-            if name in self.gaussian_points.schedulers.keys():
-                lr = self.gaussian_points.schedulers[name](self.global_step)
-                param_group['lr'] = lr
 
     def upd_bar_info(self, info: dict) -> None:
         info.update({
@@ -135,7 +118,8 @@ class GaussianSplattingTrainer(DefaultTrainer):
                 keepdim=True
             )
             self.gaussian_points.denom[visibility] += 1
-            self.gaussian_points.size_threshold = 20 if self.global_step > self.cfg.opacity_reset_interval else None
+            self.gaussian_points.size_threshold = 20 if \
+                self.global_step > self.cfg.opacity_reset_interval else None
             if self.global_step > self.cfg.densify_start_iter:
                 # import pdb; pdb.set_trace()
                 if self.global_step % self.cfg.duplicate_interval == 0:
@@ -144,7 +128,8 @@ class GaussianSplattingTrainer(DefaultTrainer):
                     self.gaussian_points.prune()
                 torch.cuda.empty_cache()
 
-            if self.global_step % self.cfg.opacity_reset_interval == 0 or (self.white_bg and self.global_step == self.cfg.densify_start_iter):
+            if self.global_step % self.cfg.opacity_reset_interval == 0 or \
+                    (self.white_bg and self.global_step == self.cfg.densify_start_iter):
                 self.gaussian_points.reset_opacity()
         super().update_state()
 
@@ -169,3 +154,6 @@ class GaussianSplattingTrainer(DefaultTrainer):
             self.global_step,
             self.logger
         )
+
+    def test(self) -> None:
+        pass

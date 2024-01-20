@@ -2,9 +2,8 @@ import os
 import argparse
 
 import sys
-sys.path.append("../../")
 from pointrix.utils.config import load_config
-from pointrix.engine.gaussian_splatting import GaussianSplattingTrainer
+from pointrix.engine.gaussian_trainer import GaussianSplattingTrainer
 
 def main(args, extras) -> None:
     
