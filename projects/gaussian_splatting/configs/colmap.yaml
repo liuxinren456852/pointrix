@@ -47,7 +47,7 @@ trainer:
         lr: 0.05
 
   dataset:
-    data_path: "/home/clz/code_remote/truck"
+    data_path: ""
     data_type: "ColmapReFormat"
     cached_image: True
     shuffle: True

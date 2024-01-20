@@ -54,7 +54,7 @@ trainer:
       #   final: 0.0001
 
   dataset:
-    data_path: "/home/clz/data/nerf_synthetic/lego"
+    data_path: ""
     data_type: "NerfReFormat"
     cached_image: True
     shuffle: True
