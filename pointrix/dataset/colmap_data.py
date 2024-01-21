@@ -60,7 +60,7 @@ class ColmapReFormat(BaseReFormatData):
                 assert False, "Colmap camera model not handled: only undistorted datasets (PINHOLE or SIMPLE_PINHOLE cameras) supported!"
 
             camera = Camera(idx=idx, R=R, T=T, width=width, height=height, rgb_file_name=os.path.basename(extr.name),
-                            fx=focal_length_x, fy=focal_length_y, cx=width/2, cy=height/2, bg=0.0)
+                            fx=focal_length_x, fy=focal_length_y, cx=width/2, cy=height/2, bg=0.0, scene_scale=self.scale)
             cameras.append(camera)
         if split == 'train':
             cameras_results = [c for idx, c in enumerate(

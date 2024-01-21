@@ -22,7 +22,7 @@ trainer:
     points_cloud:
       trainable: true
       initializer:
-        init_type: 'random'
+        init_type: 'colmap-random'
         num_points: 100000
         radius: 1.3
         feat_dim: 3

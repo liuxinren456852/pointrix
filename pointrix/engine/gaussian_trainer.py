@@ -59,7 +59,6 @@ class GaussianSplattingTrainer(DefaultTrainer):
         def render_func(data):
             data.update(atributes_dict)
             return self.renderer(**data)
-
         (
             images,
             self.radii,

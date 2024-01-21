@@ -73,8 +73,8 @@ class Camera:
     def getWorld2View(
         R: Float[Tensor, "3 3"], 
         t: Float[Tensor, "3 1"], 
-        translate: Float[Tensor, "3"] = torch.tensor([0., 0., 0.]),
-        scale: float=1.0
+        scale: float=1.0,
+        translate: Float[Tensor, "3"] = torch.tensor([0., 0., 0.])
     ) -> Float[Tensor, "4 4"]:
         Rt = torch.zeros((4, 4))
         Rt[:3, :3] = R.transpose(0, 1)

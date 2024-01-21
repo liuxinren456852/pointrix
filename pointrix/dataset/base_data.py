@@ -175,10 +175,12 @@ class BaseDataPipline:
 
         self.train_format_data = dataformat(
             data_root=self.cfg.data_path, split="train",
-            cached_image=self.cfg.cached_image).data_list
+            cached_image=self.cfg.cached_image,
+            scale = self.cfg.scale).data_list
         self.validation_format_data = dataformat(
             data_root=self.cfg.data_path, split="val",
-            cached_image=self.cfg.cached_image).data_list
+            cached_image=self.cfg.cached_image,
+            scale = self.cfg.scale).data_list
 
         self.point_cloud = self.train_format_data.PointCloud
         self.white_bg = self.cfg.white_bg

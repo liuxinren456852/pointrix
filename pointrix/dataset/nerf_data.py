@@ -15,6 +15,7 @@ class NerfReFormat(BaseReFormatData):
     def __init__(self,
                  data_root: Path,
                  split: str = 'train',
+                 scale: float = 1.0,
                  cached_image: bool = True):
         super().__init__(data_root, split, cached_image)
 
