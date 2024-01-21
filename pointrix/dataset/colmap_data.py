@@ -64,10 +64,10 @@ class ColmapReFormat(BaseReFormatData):
             cameras.append(camera)
         if split == 'train':
             cameras_results = [c for idx, c in enumerate(
-                sorted(cameras.copy(), key=lambda x: x.rgb_file_name))]
+                sorted(cameras.copy(), key=lambda x: x.rgb_file_name)) if idx % llffhold != 0]
         elif split == 'val':
             cameras_results = [c for idx, c in enumerate(
-                sorted(cameras.copy(), key=lambda x: x.rgb_file_name)) if idx in list(range(5, 30, 5))]
+                sorted(cameras.copy(), key=lambda x: x.rgb_file_name)) if idx % llffhold == 0]
         return cameras_results
 
     def load_image_filenames(self, cameras: List[Camera], split) -> list[Path]:
