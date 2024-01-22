@@ -49,7 +49,7 @@ trainer:
     data_type: "ColmapReFormat"
     cached_image: True
     shuffle: True
-    batch_size: 2
+    batch_size: 1
     num_workers: 0
     scale: 0.25
     white_bg: False

@@ -125,18 +125,20 @@ class GaussianSplatting(DefaultTrainer):
 
     @torch.no_grad()
     def val_step(self):
+        
+        atributes_dict = {
+            "position": self.point_cloud.position,
+            "opacity": self.point_cloud.get_opacity,
+            "scaling": self.point_cloud.get_scaling,
+            "rotation": self.point_cloud.get_rotation,
+            "shs": self.point_cloud.get_shs,
+            "active_sh_degree": self.active_sh_degree,
+            "bg_color": self.background,
+        }
+
         def render_func(data):
-            render_pkg = self.renderer(
-                **data,
-                position=self.point_cloud.position,
-                opacity=self.point_cloud.get_opacity,
-                scaling=self.point_cloud.get_scaling,
-                rotation=self.point_cloud.get_rotation,
-                shs=self.point_cloud.get_shs,
-                active_sh_degree=self.active_sh_degree,
-                bg_color=self.background,
-            )
-            return render_pkg
+            data.update(atributes_dict)
+            return self.renderer(**data)
 
         validation_process(
             render_func,
