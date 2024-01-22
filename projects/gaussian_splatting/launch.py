@@ -3,12 +3,12 @@ import argparse
 
 import sys
 from pointrix.utils.config import load_config
-from pointrix.engine.gaussian_trainer import GaussianSplattingTrainer
+from pointrix.model.gaussian_splatting import GaussianSplatting
 
 def main(args, extras) -> None:
     
     cfg = load_config(args.config, cli_args=extras)
-    gaussian_trainer = GaussianSplattingTrainer(
+    gaussian_trainer = GaussianSplatting(
         cfg.trainer,
         cfg.exp_dir,
     )

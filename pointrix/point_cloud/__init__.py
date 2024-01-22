@@ -1,23 +1,23 @@
-import os
-import sys
 
-path = os.path.dirname(os.path.abspath(__file__))
+# path = os.path.dirname(os.path.abspath(__file__))
 
-for py in [f[:-3] for f in os.listdir(path) if f.endswith('.py') and f != '__init__.py']:
-    mod = __import__('.'.join([__name__, py]), fromlist=[py])
-    classes = [getattr(mod, x) for x in dir(mod) if isinstance(getattr(mod, x), type)]
-    for cls in classes:
-        setattr(sys.modules[__name__], cls.__name__, cls)
+# for py in [f[:-3] for f in os.listdir(path) if f.endswith('.py') and f != '__init__.py']:
+#     mod = __import__('.'.join([__name__, py]), fromlist=[py])
+#     classes = [getattr(mod, x) for x in dir(mod) if isinstance(getattr(mod, x), type)]
+#     for cls in classes:
+#         setattr(sys.modules[__name__], cls.__name__, cls)
 
-from .points_gaussian import GAUSSIAN_REGISTRY
+from .points import PointCloud
 
-def build_gaussian(cfg, datapipline):
+from .points import POINTSCLOUD_REGISTRY
+
+def parse_point_cloud(cfg, datapipline):
     
     if len(cfg) == 0:
         return None
-    gaussian_type = cfg.gaussian_type
-    gaussian = GAUSSIAN_REGISTRY.get(gaussian_type)
-    assert gaussian is not None, "Gaussian is not registered: {}".format(
-        gaussian_type
+    point_cloud_type = cfg.point_cloud_type
+    point_cloud = POINTSCLOUD_REGISTRY.get(point_cloud_type)
+    assert point_cloud is not None, "Point Cloud is not registered: {}".format(
+        point_cloud_type
     )
-    return gaussian(cfg, datapipline.point_cloud, datapipline.training_dataset.radius)
+    return point_cloud(cfg, datapipline.point_cloud)

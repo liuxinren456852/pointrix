@@ -22,7 +22,7 @@ def get_rank():
 def get_device():
     return torch.device(f"cuda:{get_rank()}")
 
-class BaseObject(nn.Module):
+class BaseObject:
     @dataclass
     class Config:
         pass
@@ -40,3 +40,6 @@ class BaseObject(nn.Module):
 
     def setup(self, *args, **kwargs) -> None:
         pass
+    
+class BaseModule(BaseObject, nn.Module):
+    pass

@@ -1,59 +1,24 @@
 
-from dataclasses import dataclass, field
 
 import torch
-from torch import Tensor, nn
-import numpy as np
+from torch import nn, Tensor
+from dataclasses import dataclass, field
+from pointrix.utils.base import BaseModule
+from pointrix.utils.registry import Registry
 
-from pointrix.point_cloud.base import BaseObject
+from .utils import (
+    unwarp_name,
+    points_init,
+)
 
-def RGB2SH(rgb):
-    C0 = 0.28209479177387814
-    return (rgb - 0.5) / C0
+POINTSCLOUD_REGISTRY = Registry("POINTSCLOUD", modules=["pointrix.point_cloud"])
+POINTSCLOUD_REGISTRY.__doc__ = ""
 
-def unwarp_name(name):
-    return name.replace("points_cloud.", "")
-
-def get_random_points(num_points, radius):
-    pos = np.random.random((num_points, 3)) * 2 * radius - radius
-    pos = torch.from_numpy(pos).float()
-    return pos
-
-def get_random_feauture(num_points, feat_dim):
-    feart = np.random.random((num_points, feat_dim)) / 255.0
-    feart = torch.from_numpy(feart).float()
-    return feart
-
-def points_init(init_cfg, point_cloud):
-    init_type = init_cfg.init_type
-    
-    if init_type == 'random' and point_cloud is None:
-        num_points = init_cfg.num_points
-        print("Number of points at initialisation : ", num_points)
-        pos = get_random_points(num_points, init_cfg.radius)
-        features = get_random_feauture(num_points, init_cfg.feat_dim)
-        
-    else:
-        print("Number of points at initialisation : ", point_cloud.points.shape[0])
-        pos = np.asarray(point_cloud.points)
-        pos = torch.from_numpy(pos).float()
-        features = RGB2SH(torch.tensor(np.asarray(point_cloud.colors)).float())
-        
-        if "random" in init_type:
-            num_points = init_cfg.num_points
-            print("Extend the initialiased point with random : ", num_points)
-            max_dis = torch.abs(pos).max().item()
-            pos_ext = get_random_points(num_points, max_dis * init_cfg.radius)
-            features_ext = get_random_feauture(num_points, features.shape[1])
-            
-            pos = torch.cat((pos, pos_ext), dim=0)
-            features = torch.cat((features, features_ext), dim=0)
-            
-    return pos, features
-
-class PointsCloud(BaseObject):
+@POINTSCLOUD_REGISTRY.register()
+class PointCloud(BaseModule):
     @dataclass
     class Config:
+        point_cloud_type: str = ""
         initializer: dict = field(default_factory=dict)
         trainable: bool = True
     
@@ -74,13 +39,23 @@ class PointsCloud(BaseObject):
         })
         
         if self.cfg.trainable:
-            self.position = nn.Parameter(position.requires_grad_(True))
-            self.features = nn.Parameter(features.requires_grad_(True))
+            self.position = nn.Parameter(
+                position.contiguous().requires_grad_(True)
+            )
+            self.features = nn.Parameter(
+                features.contiguous().requires_grad_(True)
+            )
     
     def register_atribute(self, name, value, trainable=True):
         self.register_buffer(name, value)
         if self.cfg.trainable and trainable:
-            setattr(self, name, nn.Parameter(value.requires_grad_(True)))
+            setattr(
+                self, 
+                name, 
+                nn.Parameter(
+                    value.contiguous().requires_grad_(True)
+                )
+            )
         self.atributes.append({
             'name': name,
             'trainable': trainable,
@@ -113,7 +88,7 @@ class PointsCloud(BaseObject):
                 name = key
                 value = getattr(self, name)
                 replace_atribute = nn.Parameter(
-                    value.requires_grad_(True)
+                    value.contiguous().requires_grad_(True)
                 )
                 setattr(self, key, replace_atribute)
     
@@ -133,7 +108,7 @@ class PointsCloud(BaseObject):
                     torch.cat((
                         value, 
                         new_atributes['name']
-                    ), dim=0).requires_grad_(True)
+                    ), dim=0).contiguous().requires_grad_(True)
                 )
                 setattr(self, key, extend_atribute)
     
@@ -151,7 +126,7 @@ class PointsCloud(BaseObject):
                 prune_value = nn.Parameter(
                     getattr(
                         self, name
-                    )[mask].requires_grad_(True)
+                    )[mask].contiguous().requires_grad_(True)
                 )
                 setattr(self, key, prune_value)
     
@@ -166,14 +141,14 @@ class PointsCloud(BaseObject):
 
                 del optimizer.state[group['params'][0]]
                 group["params"][0] = nn.Parameter(
-                    (group["params"][0][mask].requires_grad_(True))
+                    (group["params"][0][mask].contiguous().requires_grad_(True))
                 )
                 optimizer.state[group['params'][0]] = stored_state
 
                 optimizable_tensors[unwarp_ground] = group["params"][0]
             else:
                 group["params"][0] = nn.Parameter(
-                    group["params"][0][mask].requires_grad_(True)
+                    group["params"][0][mask].contiguous().requires_grad_(True)
                 )
                 optimizable_tensors[unwarp_ground] = group["params"][0]
         return optimizable_tensors
@@ -201,7 +176,7 @@ class PointsCloud(BaseObject):
                     torch.cat((
                         group["params"][0], 
                         extension_tensor
-                    ), dim=0).requires_grad_(True)
+                    ), dim=0).contiguous().requires_grad_(True)
                 )
                 optimizer.state[group['params'][0]] = stored_state
 
@@ -211,7 +186,7 @@ class PointsCloud(BaseObject):
                     torch.cat((
                         group["params"][0], 
                         extension_tensor
-                    ), dim=0).requires_grad_(True)
+                    ), dim=0).contiguous().requires_grad_(True)
                 )
                 new_tensors[unwarp_ground] = group["params"][0]
 
@@ -229,7 +204,7 @@ class PointsCloud(BaseObject):
 
                     del optimizer.state[group['params'][0]]
                     group["params"][0] = nn.Parameter(
-                        replace_tensor.requires_grad_(True)
+                        replace_tensor.contiguous().requires_grad_(True)
                     )
                     optimizer.state[group['params'][0]] = stored_state
 

@@ -52,7 +52,7 @@ class Camera:
         if not isinstance(self.T, Tensor):
             self.T = torch.tensor(self.T)
         self._world_view_transform = self.getWorld2View(
-            self.R, self.T, self.scene_scale
+            self.R, self.T, scale=self.scene_scale
         ).transpose(0, 1)
         self._projection_matrix = self.getProjectionMatrix(
             self.fovX, self.fovY).transpose(0, 1)

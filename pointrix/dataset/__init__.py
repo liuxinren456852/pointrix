@@ -12,7 +12,7 @@ for py in [f[:-3] for f in os.listdir(path) if f.endswith('.py') and f != '__ini
         setattr(sys.modules[__name__], cls.__name__, cls)
 
 
-def build_data_pipline(cfg):
+def parse_data_pipline(cfg):
     if len(cfg) == 0:
         return None
     data_type = cfg.data_type
