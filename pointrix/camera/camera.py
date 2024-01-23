@@ -52,7 +52,7 @@ class Camera:
         if not isinstance(self.T, Tensor):
             self.T = torch.tensor(self.T)
         self._world_view_transform = self.getWorld2View(
-            self.R, self.T, self.scene_scale
+            self.R, self.T, scale=self.scene_scale
         ).transpose(0, 1)
         self._projection_matrix = self.getProjectionMatrix(
             self.fovX, self.fovY).transpose(0, 1)
@@ -73,8 +73,8 @@ class Camera:
     def getWorld2View(
         R: Float[Tensor, "3 3"], 
         t: Float[Tensor, "3 1"], 
-        translate: Float[Tensor, "3"] = torch.tensor([0., 0., 0.]),
-        scale: float=1.0
+        scale: float=1.0,
+        translate: Float[Tensor, "3"] = torch.tensor([0., 0., 0.])
     ) -> Float[Tensor, "4 4"]:
         Rt = torch.zeros((4, 4))
         Rt[:3, :3] = R.transpose(0, 1)

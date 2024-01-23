@@ -9,9 +9,13 @@ from torch.utils.data import Dataset
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, Union, List, NamedTuple, Optional
 
+from pointrix.utils.registry import Registry
 from pointrix.utils.config import parse_structured
 from pointrix.camera.camera import Camera, TrainableCamera
 from pointrix.dataset.utils.dataset_utils import force_full_init, getNerfppNorm
+
+DATA_FORMAT_REGISTRY = Registry("DATA_FORMAT", modules=["pointrix.dataset"])
+DATA_FORMAT_REGISTRY.__doc__ = ""
 
 
 class BasicPointCloud(NamedTuple):
@@ -79,7 +83,7 @@ class BaseReFormatData:
             temp_image = Image.open(image_filename)
             w, h = temp_image.size
             resize_image = temp_image.resize((
-                int(w * self.scale), 
+                int(w * self.scale),
                 int(h * self.scale)
             ))
             image_lists.append(
@@ -88,6 +92,8 @@ class BaseReFormatData:
         return image_lists
 
 # TODO: support different dataset (Meta information (depth) support)
+
+
 class BaseImageDataset(Dataset):
     def __init__(self, format_data: BaseDataFormat) -> None:
         self.cameras = format_data.Cameras
@@ -131,7 +137,7 @@ class BaseImageDataset(Dataset):
         camera.height = image.shape[1]
         camera.width = image.shape[2]
         return {
-            "image": image, 
+            "image": image,
             "camera": camera,
             "FovX": camera.fovX,
             "FovY": camera.fovY,
@@ -163,28 +169,18 @@ class BaseDataPipline:
         scale: float = 1.0
     cfg: Config
 
-    def __init__(self, cfg) -> None:
+    def __init__(self, cfg, dataformat) -> None:
         self.cfg = parse_structured(self.Config, cfg)
         self._fully_initialized = True
 
-        # TODO: use registry
-        if self.cfg.data_type == "colmap":
-            from pointrix.dataset.colmap_data import ColmapReFormat as ReFormat
-        elif self.cfg.data_type == "nerf_synthetic":
-            from pointrix.dataset.nerf_data import NerfReFormat as ReFormat
-
-        self.train_format_data = ReFormat(
-            data_root=self.cfg.data_path, 
-            split="train", 
+        self.train_format_data = dataformat(
+            data_root=self.cfg.data_path, split="train",
             cached_image=self.cfg.cached_image,
-            scale=self.cfg.scale,
-        ).data_list
-        self.validation_format_data = ReFormat(
-            data_root=self.cfg.data_path, 
-            split="val", 
+            scale = self.cfg.scale).data_list
+        self.validation_format_data = dataformat(
+            data_root=self.cfg.data_path, split="val",
             cached_image=self.cfg.cached_image,
-            scale=self.cfg.scale,
-        ).data_list
+            scale = self.cfg.scale).data_list
 
         self.point_cloud = self.train_format_data.PointCloud
         self.white_bg = self.cfg.white_bg

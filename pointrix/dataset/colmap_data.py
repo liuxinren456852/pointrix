@@ -4,12 +4,11 @@ from typing import Any, Dict, List
 from pathlib import Path
 
 from pointrix.camera.camera import Camera
-from pointrix.dataset.base_data import BaseReFormatData, BasicPointCloud, BaseDataFormat
+from pointrix.dataset.base_data import BaseReFormatData, BasicPointCloud, BaseDataFormat, DATA_FORMAT_REGISTRY
 from pointrix.dataset.utils.colmap_utils import (read_extrinsics_binary,
                                                  read_intrinsics_binary,
                                                  qvec2rotmat, fetchPly)
-
-
+@DATA_FORMAT_REGISTRY.register()
 class ColmapReFormat(BaseReFormatData):
     def __init__(self,
                  data_root: Path,

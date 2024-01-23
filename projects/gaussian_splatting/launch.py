@@ -3,7 +3,7 @@ import argparse
 
 import sys
 from pointrix.utils.config import load_config
-from pointrix.base_model.gaussian_splatting import GaussianSplatting
+from pointrix.model.gaussian_splatting import GaussianSplatting
 
 def main(args, extras) -> None:
     
@@ -13,8 +13,7 @@ def main(args, extras) -> None:
         cfg.exp_dir,
     )
     
-    gaussian_trainer.train_loop()
-    
+    gaussian_trainer.train_loop()    
     model_path = os.path.join(
         cfg.exp_dir, 
         "chkpnt" + str(gaussian_trainer.global_step) + ".pth"

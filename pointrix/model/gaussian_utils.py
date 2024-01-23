@@ -1,9 +1,11 @@
 import os
 import torch
+import numpy as np
+from tqdm import tqdm
 from pytorch_msssim import ms_ssim
 from pointrix.utils.losses import l1_loss
 
-from tqdm import tqdm
+from simple_knn._C import distCUDA2
 
 # FIXME: this is a hack to build lpips loss and lpips metric
 from lpips import LPIPS
@@ -168,3 +170,43 @@ def render_batch(render_func, batch):
     images = torch.stack(renders)
 
     return images, radii, visibility, viewspace_points
+
+
+def gaussian_point_init(position, max_sh_degree):
+    num_points = len(position)
+    avg_dist = torch.clamp_min(
+        distCUDA2(position.cuda()), 
+        0.0000001
+    )[..., None].cpu()
+    # position_np = position.detach().cpu().numpy()
+    # Build the nearest neighbors model
+    # from sklearn.neighbors import NearestNeighbors
+
+    # k = 3
+    # nn_model = NearestNeighbors(
+    #     n_neighbors=k + 1, 
+    #     algorithm="auto", 
+    #     metric="euclidean"
+    # ).fit(position_np)
+    
+    # distances, indices = nn_model.kneighbors(position_np)
+    # distances = distances[:, 1:].astype(np.float32)
+    # distances = torch.from_numpy(distances)
+    # avg_dist = distances.mean(dim=-1, keepdim=True)
+    
+    # avg_dist = torch.clamp_min(avg_dist, 0.0000001)
+    scales = torch.log(torch.sqrt(avg_dist)).repeat(1, 3)
+    rots = torch.zeros((num_points, 4))
+    rots[:, 0] = 1
+
+    init_one = torch.ones(
+        (num_points, 1),
+        dtype=torch.float32
+    )
+    opacities = inverse_sigmoid(0.1 * init_one)
+    features_rest = torch.zeros(
+        (num_points, (max_sh_degree+1) ** 2 - 1, 3),
+        dtype=torch.float32
+    )
+
+    return scales, rots, opacities, features_rest

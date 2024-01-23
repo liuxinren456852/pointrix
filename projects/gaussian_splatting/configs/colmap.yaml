@@ -3,48 +3,50 @@ name: "garden"
 trainer:
   output_path: ""
   max_steps: 30000
-  val_interval: 7000
-
-  max_sh_degree: 3
-  percent_dense: 0.01
+  val_interval: 5000
   lambda_dssim: 0.2
 
-  densify_start_iter: 500
-  densify_stop_iter: 15000
-  prune_interval: 100
-  duplicate_interval: 100
-  opacity_reset_interval: 1000
-  densify_grad_threshold: 0.0002
-  min_opacity: 0.005
+  max_sh_degree: 3
 
-  points_cloud:
+  point_cloud:
+    point_cloud_type: "GaussianPointCloud"  
+    max_sh_degree: ${trainer.max_sh_degree}
     trainable: true
     initializer:
       init_type: 'colmap'
       # num_points: 10000
       # radius: 5
 
+  densification:
+    densify_start_iter: 500
+    densify_stop_iter: 15000
+    prune_interval: 100
+    duplicate_interval: 100
+    opacity_reset_interval: [500, 1000, 3000, 15000]
+    densify_grad_threshold: [500, 0.0002, 0.001, 15000]
+    min_opacity: [500, 0.005, 0.001, 15000]
+
   optimizer:
     name: Adam
     args:
       eps: 1e-15
     params:
-      points_cloud.position:
+      point_cloud.position:
         lr: 0.00016
-      points_cloud.features:
+      point_cloud.features:
         lr: 0.0025
-      points_cloud.features_rest:
+      point_cloud.features_rest:
         lr: 0.000125 # features/20
-      points_cloud.scaling:
+      point_cloud.scaling:
         lr: 0.005
-      points_cloud.rotation:
+      point_cloud.rotation:
         lr: 0.001
-      points_cloud.opacity:
+      point_cloud.opacity:
         lr: 0.05
 
   dataset:
     data_path: ""
-    data_type: "colmap"
+    data_type: "ColmapReFormat"
     cached_image: True
     shuffle: True
     batch_size: 1
@@ -59,7 +61,7 @@ trainer:
     name: "get_expon_lr_func"
     max_steps: ${trainer.max_steps}
     params:
-      points_cloud.position:
+      point_cloud.position:
         init:  0.00016
         final: 0.0000016
       # points_cloud.rotation:
