@@ -12,6 +12,20 @@ from pointrix.dataset.utils.dataset_utils import fov2focal, focal2fov
 
 @DATA_FORMAT_REGISTRY.register()
 class NerfReFormat(BaseReFormatData):
+    """
+    The foundational classes for formating the nerf_synthetic data.
+
+    Parameters
+    ----------
+    data_root: Path
+        The root of the data.
+    split: str
+        The split of the data.
+    cached_image: bool
+        Whether to cache the image in memory.
+    scale: float
+        The scene scale of data.
+    """
     def __init__(self,
                  data_root: Path,
                  split: str = 'train',
@@ -20,6 +34,13 @@ class NerfReFormat(BaseReFormatData):
         super().__init__(data_root, split, cached_image)
 
     def load_camera(self, split: str) -> List[Camera]:
+        """
+        The function for loading the camera typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         if split == 'train':
             with open(os.path.join(self.data_root, "transforms_train.json")) as json_file:
                 json_file = json.load(json_file)
@@ -60,6 +81,13 @@ class NerfReFormat(BaseReFormatData):
         return cameras
 
     def load_image_filenames(self, cameras: List[Camera], split) -> list[Path]:
+        """
+        The function for loading the image files names typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         image_filenames = []
         for camera in cameras:
             image_filenames.append(os.path.join(
@@ -67,4 +95,11 @@ class NerfReFormat(BaseReFormatData):
         return image_filenames
 
     def load_metadata(self, split) -> Dict[str, Any]:
+        """
+        The function for loading other information that is required for the dataset typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         return {}

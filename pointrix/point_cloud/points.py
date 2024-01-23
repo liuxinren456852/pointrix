@@ -25,6 +25,14 @@ class PointCloud(BaseModule):
     cfg: Config
     
     def setup(self, point_cloud=None):
+        """
+        The function for setting up the point cloud.
+        
+        Parameters
+        ----------
+        point_cloud: PointCloud
+            The point cloud for initialisation.
+        """
         self.atributes = []
         position, features = points_init(self.cfg.initializer, point_cloud)
         self.register_buffer('position', position)
@@ -47,6 +55,24 @@ class PointCloud(BaseModule):
             )
     
     def register_atribute(self, name, value, trainable=True):
+        """
+        register trainable atribute of the point cloud.
+        
+        Parameters
+        ----------
+        name: str
+            The name of the atribute.
+        value: Tensor
+            The value of the atribute.
+        trainable: bool
+            Whether the atribute is trainable.
+
+        Examples
+        --------
+        >>> point_cloud = PointsCloud(cfg)
+        >>> point_cloud.register_atribute('position', position)
+        >>> point_cloud.register_atribute('rgb', rgb)
+        """
         self.register_buffer(name, value)
         if self.cfg.trainable and trainable:
             setattr(
@@ -65,9 +91,30 @@ class PointCloud(BaseModule):
         return len(self.position)
     
     def get_all_atributes(self):
+        """
+        return all atribute of the point cloud.
+        
+        Returns
+        -------
+        atributes: list
+            The list of all atributes of the point cloud.
+        """
         return self.atributes
     
     def select_atributes(self, mask):
+        """
+        select atribute of the point cloud by input mask.
+        
+        Parameters
+        ----------
+        mask: Tensor
+            The mask for selecting the atributes.
+        
+        Returns
+        -------
+        selected_atributes: dict
+            The dict of selected atributes.
+        """
         selected_atributes = {}
         for atribute in self.atributes:
             name = atribute['name']
@@ -76,6 +123,16 @@ class PointCloud(BaseModule):
         return selected_atributes
     
     def replace(self, new_atributes, optimizer=None):
+        """
+        replace atribute of the point cloud with new atribute.
+        
+        Parameters
+        ----------
+        new_atributes: dict
+            The dict of new atributes.
+        optimizer: Optimizer
+            The optimizer for the point cloud.
+        """
         if optimizer is not None:
             replace_tensor = self.replace_optimizer(
                 new_atributes, 
@@ -93,6 +150,16 @@ class PointCloud(BaseModule):
                 setattr(self, key, replace_atribute)
     
     def extand_points(self, new_atributes, optimizer=None):
+        """
+        extand atribute of the point cloud with new atribute.
+        
+        Parameters
+        ----------
+        new_atributes: dict
+            The dict of new atributes.
+        optimizer: Optimizer
+            The optimizer for the point cloud.
+        """
         if optimizer is not None:
             extended_tensor = self.extend_optimizer(
                 new_atributes, 
@@ -113,6 +180,14 @@ class PointCloud(BaseModule):
                 setattr(self, key, extend_atribute)
     
     def remove_points(self, mask, optimizer=None):
+        """
+        remove points of the point cloud with mask.
+        
+        Parameters
+        ----------
+        mask: Tensor
+            The mask for removing the points.
+        """
         if optimizer is not None:
             prune_tensor = self.prune_optimizer(
                 mask, 
@@ -131,6 +206,16 @@ class PointCloud(BaseModule):
                 setattr(self, key, prune_value)
     
     def prune_optimizer(self, mask, optimizer):
+        """
+        prune the point cloud in optimizer with mask.
+        
+        Parameters
+        ----------
+        mask: Tensor
+            The mask for removing the points.
+        optimizer: Optimizer
+            The optimizer for the point cloud.
+        """
         optimizable_tensors = {}
         for group in optimizer.param_groups:
             unwarp_ground = unwarp_name(group["name"])
@@ -154,6 +239,16 @@ class PointCloud(BaseModule):
         return optimizable_tensors
     
     def extend_optimizer(self, new_atributes, optimizer):
+        """
+        extend the point cloud in optimizer with new atribute.
+        
+        Parameters
+        ----------
+        new_atributes: dict
+            The dict of new atributes.
+        optimizer: Optimizer
+            The optimizer for the point cloud.
+        """
         new_tensors = {}
         for group in optimizer.param_groups:
             assert len(group["params"]) == 1
@@ -193,6 +288,16 @@ class PointCloud(BaseModule):
         return new_tensors
     
     def replace_optimizer(self, new_atributes, optimizer):
+        """
+        replace the point cloud in optimizer with new atribute.
+        
+        Parameters
+        ----------
+        new_atributes: dict
+            The dict of new atributes.
+        optimizer: Optimizer
+            The optimizer for the point cloud.
+        """
         optimizable_tensors = {}
         for group in optimizer.param_groups:
             for key, replace_tensor in new_atributes.items():

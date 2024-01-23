@@ -26,6 +26,33 @@ class BasicPointCloud(NamedTuple):
 
 @dataclass
 class BaseDataFormat:
+    """
+    Pointrix standard data format in Datapipeline.
+
+    Parameters
+    ----------
+    image_filenames: List[Path]
+        The filenames of the images in data.
+    Cameras: List[Camera]
+        The camera parameters of the images in data.
+    images: Optional[List[Image.Image]] = None
+        The images in data, which are only needed when cached image is enabled in dataset.
+    PointCloud: Union[BasicPointCloud, None] = None
+        The pointclouds of the scene, which are used to initialize the gaussian model, enabling better results.
+    metadata: Dict[str, Any] = field(default_factory=lambda: dict({}))
+        Other information that is required for the dataset.
+
+    Notes
+    -----
+    1. The order of all data needs to be consistent.
+    2. The length of all data needs to be consistent.
+
+    Examples
+    --------
+    >>> data = BaseDataFormat(image_filenames, camera, metadata=metadata)
+
+    """
+
     image_filenames: List[Path]
     """camera image filenames"""
     Cameras: List[Camera]
@@ -45,6 +72,20 @@ class BaseDataFormat:
 
 
 class BaseReFormatData:
+    """
+    The foundational classes for formating the data.
+
+    Parameters
+    ----------
+    data_root: Path
+        The root of the data.
+    split: str
+        The split of the data.
+    cached_image: bool
+        Whether to cache the image in memory.
+    scale: float
+        The scene scale of data.
+    """
 
     def __init__(self, data_root: Path,
                  split: str = "train",
@@ -59,6 +100,13 @@ class BaseReFormatData:
             self.data_list.images = self.load_all_images()
 
     def load_data_list(self, split) -> BaseDataFormat:
+        """
+        The foundational function for formating the data
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         camera = self.load_camera(split=split)
         image_filenames = self.load_image_filenames(camera, split=split)
         metadata = self.load_metadata(split=split)
@@ -67,17 +115,45 @@ class BaseReFormatData:
 
     @abstractmethod
     def load_camera(self, split) -> List[Camera]:
+        """
+        The function for loading the camera typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def load_image_filenames(self, split) -> list[Path]:
+        """
+        The function for loading the image files names typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def load_metadata(self, split) -> Dict[str, Any]:
+        """
+        The function for loading other information that is required for the dataset typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         raise NotImplementedError
 
     def load_all_images(self) -> List[Image.Image]:
+        """
+        The function for loading cached images typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         image_lists = []
         for image_filename in self.data_list.image_filenames:
             temp_image = Image.open(image_filename)
@@ -95,6 +171,19 @@ class BaseReFormatData:
 
 
 class BaseImageDataset(Dataset):
+    """
+    Basic dataset used in Datapipeline.
+
+    Parameters
+    ----------
+    format_data: BaseDataFormat
+        the standard data format in Datapipeline.
+
+    Notes
+    -----
+    Cameras and image_file_names are necessary.
+
+    """
     def __init__(self, format_data: BaseDataFormat) -> None:
         self.cameras = format_data.Cameras
         self.images = format_data.images
@@ -116,6 +205,16 @@ class BaseImageDataset(Dataset):
         return len(self.cameras)
 
     def _transform_image(self, image, bg=[1., 1., 1.]):
+        """
+        Transform image to torch tensor and normalize to [0, 1]
+
+        Parameters
+        ----------
+        image: np.array()
+            The image to be transformed.
+        bg: List[float]
+            The background color.
+        """
         image = image / 255.
         if len(image.shape) == 2:
             image = image[:, :, None].repeat(3, axis=2)
@@ -149,13 +248,38 @@ class BaseImageDataset(Dataset):
         }
 
     def _load_transform_image(self, image_filename, bg=[1., 1., 1.]) -> Float[Tensor, "3 h w"]:
+        """
+        Load image, transform it to torch tensor and normalize to [0, 1]
+
+        Parameters
+        ----------
+        image: np.array()
+            The image to be transformed.
+        bg: List[float]
+            The background color.
+        """
         pil_image = np.array(Image.open(image_filename),
                              dtype="uint8")
 
-        return self._transform_image(pil_image)
+        return self._transform_image(pil_image, bg)
 
 
 class BaseDataPipline:
+    """
+    Basic Pipline used in Pointrix
+
+    Parameters
+    ----------
+    cfg: Config
+        the configuration of the dataset.
+    dataformat: standard data format in Pointrix
+
+
+    Notes
+    -----
+    BaseDataPipline is always called by build_data_pipline
+
+    """
     @dataclass
     class Config:
         # Datatype
@@ -169,18 +293,18 @@ class BaseDataPipline:
         scale: float = 1.0
     cfg: Config
 
-    def __init__(self, cfg, dataformat) -> None:
+    def __init__(self, cfg:Config, dataformat) -> None:
         self.cfg = parse_structured(self.Config, cfg)
         self._fully_initialized = True
 
         self.train_format_data = dataformat(
             data_root=self.cfg.data_path, split="train",
             cached_image=self.cfg.cached_image,
-            scale = self.cfg.scale).data_list
+            scale=self.cfg.scale).data_list
         self.validation_format_data = dataformat(
             data_root=self.cfg.data_path, split="val",
             cached_image=self.cfg.cached_image,
-            scale = self.cfg.scale).data_list
+            scale=self.cfg.scale).data_list
 
         self.point_cloud = self.train_format_data.PointCloud
         self.white_bg = self.cfg.white_bg
@@ -188,15 +312,24 @@ class BaseDataPipline:
 
     # TODO use rigistry
     def get_training_dataset(self) -> BaseImageDataset:
+        """
+            Return training dataset
+        """
         # TODO: use registry
         self.training_dataset = BaseImageDataset(
             format_data=self.train_format_data)
 
     def get_validation_dataset(self) -> BaseImageDataset:
+        """
+        Return validation dataset
+        """
         self.validation_dataset = BaseImageDataset(
             format_data=self.validation_format_data)
 
     def loaddata(self) -> None:
+        """
+        Load dataset into dataloader.
+        """
         self.get_training_dataset()
         self.get_validation_dataset()
 
@@ -217,6 +350,14 @@ class BaseDataPipline:
         self.iter_val_image_dataloader = iter(self.validation_loader)
 
     def next_train(self, step: int = -1):
+        """
+        Generate batch data for trainer
+        
+        Parameters
+        ----------
+        cfg: step
+            the training step in trainer.
+        """
         try:
             return next(self.iter_train_image_dataloader)
         except StopIteration:
@@ -224,6 +365,14 @@ class BaseDataPipline:
             return next(self.iter_train_image_dataloader)
 
     def next_val(self, step: int = -1):
+        """
+        Generate batch data for validation
+        
+        Parameters
+        ----------
+        cfg: step
+            the validation step in validate progress.
+        """
         try:
             return next(self.iter_val_image_dataloader)
         except StopIteration:
@@ -232,11 +381,20 @@ class BaseDataPipline:
 
     @property
     def training_dataset_size(self) -> int:
+        """
+        Return training dataset size
+        """
         return len(self.training_dataset)
 
     @property
     def validation_dataset_size(self) -> int:
+        """
+        Return validation dataset size
+        """
         return len(self.validation_dataset)
 
     def get_param_groups(self) -> Any:
+        """
+        Return trainable parameters.
+        """
         raise NotImplementedError

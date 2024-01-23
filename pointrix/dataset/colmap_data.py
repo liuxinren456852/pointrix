@@ -10,6 +10,21 @@ from pointrix.dataset.utils.colmap_utils import (read_extrinsics_binary,
                                                  qvec2rotmat, fetchPly)
 @DATA_FORMAT_REGISTRY.register()
 class ColmapReFormat(BaseReFormatData):
+    """
+    The foundational classes for formating the colmap data.
+
+    Parameters
+    ----------
+    data_root: Path
+        The root of the data.
+    split: str
+        The split of the data.
+    cached_image: bool
+        Whether to cache the image in memory.
+    scale: float
+        The scene scale of data.
+    """
+    
     def __init__(self,
                  data_root: Path,
                  split: str = 'train',
@@ -18,6 +33,13 @@ class ColmapReFormat(BaseReFormatData):
         super().__init__(data_root, split, cached_image, scale)
         
     def load_data_list(self, split) -> BaseDataFormat:
+        """
+        The foundational function for formating the data
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         camera = self.load_camera(split=split)
         image_filenames = self.load_image_filenames(camera, split=split)
         metadata = self.load_metadata(split=split)
@@ -26,11 +48,21 @@ class ColmapReFormat(BaseReFormatData):
         return data
 
     def load_pointcloud(self) -> BasicPointCloud:
+        """
+        The function for loading the Pointcloud for initialization of gaussian model.
+        """
         ply_path = os.path.join(self.data_root, "sparse/0/points3D.ply")
         positions, colors, normals = fetchPly(ply_path)
         return BasicPointCloud(points=positions, colors=colors, normals=normals)
 
     def load_camera(self, split: str) -> List[Camera]:
+        """
+        The function for loading the camera typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         cameras_extrinsic_file = os.path.join(
             self.data_root, "sparse/0", "images.bin")
         cameras_intrinsic_file = os.path.join(
@@ -71,6 +103,13 @@ class ColmapReFormat(BaseReFormatData):
         return cameras_results
 
     def load_image_filenames(self, cameras: List[Camera], split) -> list[Path]:
+        """
+        The function for loading the image files names typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         image_filenames = []
         for camera in cameras:
             image_filenames.append(os.path.join(
@@ -78,4 +117,11 @@ class ColmapReFormat(BaseReFormatData):
         return image_filenames
 
     def load_metadata(self, split) -> Dict[str, Any]:
+        """
+        The function for loading other information that is required for the dataset typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         return {}
