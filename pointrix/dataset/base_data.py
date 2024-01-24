@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, Union, List, NamedTuple, Optional
 
+from pointrix.camera.cameras import Cameras
 from pointrix.utils.registry import Registry
 from pointrix.utils.config import parse_structured
 from pointrix.camera.camera import Camera, TrainableCamera
@@ -55,7 +56,7 @@ class BaseDataFormat:
 
     image_filenames: List[Path]
     """camera image filenames"""
-    Cameras: List[Camera]
+    Camera_list: List[Camera]
     """camera image list"""
     images: Optional[List[Image.Image]] = None
     """camera parameters"""
@@ -65,7 +66,7 @@ class BaseDataFormat:
     """other information that is required for the dataset"""
 
     def __getitem__(self, item) -> tuple[Path, Camera]:
-        return self.image_filenames[item], self.Cameras[item]
+        return self.image_filenames[item], self.Camera_list[item]
 
     def __len__(self) -> int:
         return len(self.image_filenames)
@@ -185,7 +186,7 @@ class BaseImageDataset(Dataset):
 
     """
     def __init__(self, format_data: BaseDataFormat) -> None:
-        self.cameras = format_data.Cameras
+        self.camera_list = format_data.Camera_list
         self.images = format_data.images
         self.image_file_names = format_data.image_filenames
         Rs, Ts = [], []
@@ -194,7 +195,9 @@ class BaseImageDataset(Dataset):
             Ts.append(camera.T)
         Rs = torch.stack(Rs, dim=0)
         Ts = torch.stack(Ts, dim=0)
-        self.radius = getNerfppNorm(Rs.numpy(), Ts.numpy())["radius"]
+
+        self.cameras = Cameras(self.camera_list)
+        self.radius = self.cameras.radius
 
         if self.images is not None:
             self.images = [self._transform_image(

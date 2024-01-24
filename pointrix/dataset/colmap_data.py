@@ -52,6 +52,16 @@ class ColmapReFormat(BaseReFormatData):
         The function for loading the Pointcloud for initialization of gaussian model.
         """
         ply_path = os.path.join(self.data_root, "sparse/0/points3D.ply")
+        bin_path = os.path.join(self.data_root, "sparse/0/points3D.bin")
+        txt_path = os.path.join(self.data_root, "sparse/0/points3D.txt")
+        if not os.path.exists(ply_path):
+            print("Converting point3d.bin to .ply, will happen only the first time you open the scene.")
+            from .utils.colmap_utils import read_points3D_binary, read_points3D_text, storePly
+            try:
+                xyz, rgb, _ = read_points3D_binary(bin_path)
+            except:
+                xyz, rgb, _ = read_points3D_text(txt_path)
+            storePly(ply_path, xyz, rgb)
         positions, colors, normals = fetchPly(ply_path)
         return BasicPointCloud(points=positions, colors=colors, normals=normals)
 
