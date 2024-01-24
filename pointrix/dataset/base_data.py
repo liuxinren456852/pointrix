@@ -9,10 +9,9 @@ from torch.utils.data import Dataset
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, Union, List, NamedTuple, Optional
 
-from pointrix.camera.cameras import Cameras
 from pointrix.utils.registry import Registry
 from pointrix.utils.config import parse_structured
-from pointrix.camera.camera import Camera, TrainableCamera
+from pointrix.camera.camera import Camera, Cameras, TrainableCamera
 from pointrix.dataset.utils.dataset_utils import force_full_init, getNerfppNorm
 
 DATA_FORMAT_REGISTRY = Registry("DATA_FORMAT", modules=["pointrix.dataset"])
@@ -185,6 +184,7 @@ class BaseImageDataset(Dataset):
     Cameras and image_file_names are necessary.
 
     """
+
     def __init__(self, format_data: BaseDataFormat) -> None:
         self.camera_list = format_data.Camera_list
         self.images = format_data.images
@@ -296,7 +296,7 @@ class BaseDataPipline:
         scale: float = 1.0
     cfg: Config
 
-    def __init__(self, cfg:Config, dataformat) -> None:
+    def __init__(self, cfg: Config, dataformat) -> None:
         self.cfg = parse_structured(self.Config, cfg)
         self._fully_initialized = True
 
@@ -355,7 +355,7 @@ class BaseDataPipline:
     def next_train(self, step: int = -1):
         """
         Generate batch data for trainer
-        
+
         Parameters
         ----------
         cfg: step
@@ -370,7 +370,7 @@ class BaseDataPipline:
     def next_val(self, step: int = -1):
         """
         Generate batch data for validation
-        
+
         Parameters
         ----------
         cfg: step
