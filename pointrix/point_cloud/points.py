@@ -1,8 +1,12 @@
 
 
+import os
 import torch
+import numpy as np
 from torch import nn, Tensor
+from plyfile import PlyData, PlyElement
 from dataclasses import dataclass, field
+from pointrix.utils.system import mkdir_p
 from pointrix.utils.base import BaseModule
 from pointrix.utils.registry import Registry
 
@@ -89,6 +93,21 @@ class PointCloud(BaseModule):
             
     def __len__(self):
         return len(self.position)
+    
+    def set_all_atributes_trainable(self):
+        """
+        set all atributes of the point cloud trainable.
+        """
+        for atribute in self.atributes:
+            name = atribute['name']
+            value = getattr(self, name)
+            setattr(
+                self, 
+                name, 
+                nn.Parameter(
+                    value.contiguous().requires_grad_(True)
+                )
+            )
     
     def get_all_atributes(self):
         """
@@ -316,3 +335,53 @@ class PointCloud(BaseModule):
                     optimizable_tensors[unwarp_name(group["name"])] = group["params"][0]
 
         return optimizable_tensors
+    
+    def list_of_attributes(self):
+        l = ['x', 'y', 'z', 'nx', 'ny', 'nz']
+        # All channels except the 3 DC
+        for atribute in self.atributes:
+            name = atribute['name']
+            if name != 'position':
+                for i in range(np.prod(getattr(self, name).shape[1:])):
+                    l.append('{}_{}'.format(name, i))
+        return l
+    
+    def save_ply(self, path):
+        mkdir_p(os.path.dirname(path))
+        num_points = self.position.shape[0]
+        normals = np.zeros_like(self.position.detach().cpu().numpy())
+        ply_atribute_list = [self.position.detach().cpu().numpy(), normals]
+
+        for atribute in self.atributes:
+            name = atribute['name']
+            if name != 'position':
+                ply_atribute_list.append(getattr(self, name).reshape(num_points, -1).detach().cpu().numpy())
+
+        ply_atributes = np.concatenate(ply_atribute_list, axis=1)
+        dtype_full = [(attribute, 'f4') for attribute in self.list_of_attributes()]
+
+        elements = np.empty(num_points, dtype=dtype_full)
+        elements[:] = list(map(tuple, ply_atributes))
+        el = PlyElement.describe(elements, 'vertex')
+        PlyData([el]).write(path)
+
+    def load_ply(self, path):
+        plydata = PlyData.read(path)
+        if self.cfg.trainable:
+            self.position = nn.Parameter(torch.from_numpy(np.stack((np.asarray(plydata.elements[0]["x"]),
+                        np.asarray(plydata.elements[0]["y"]),
+                        np.asarray(plydata.elements[0]["z"])), axis=1)).float())
+        else:
+            self.position = np.stack((np.asarray(plydata.elements[0]["x"]),
+                            np.asarray(plydata.elements[0]["y"]),
+                            np.asarray(plydata.elements[0]["z"])), axis=1)
+        
+        for attribute in self.atributes:
+            name = attribute['name']
+            shapes = getattr(self, name).shape[1:]
+            if name != 'position':
+                value = np.stack([np.asarray(plydata.elements[0][name + '_{}'.format(i)]) for i in range(np.prod(shapes))], axis=1)
+                if self.cfg.trainable:
+                    setattr(self, name, nn.Parameter(torch.from_numpy(value.reshape(-1, *shapes)).float()))
+                else:
+                    setattr(self, name, value.reshape(-1, *shapes))

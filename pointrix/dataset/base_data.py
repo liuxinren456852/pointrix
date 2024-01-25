@@ -189,12 +189,6 @@ class BaseImageDataset(Dataset):
         self.camera_list = format_data.Camera_list
         self.images = format_data.images
         self.image_file_names = format_data.image_filenames
-        Rs, Ts = [], []
-        for camera in self.cameras:
-            Rs.append(camera.R)
-            Ts.append(camera.T)
-        Rs = torch.stack(Rs, dim=0)
-        Ts = torch.stack(Ts, dim=0)
 
         self.cameras = Cameras(self.camera_list)
         self.radius = self.cameras.radius
@@ -205,7 +199,7 @@ class BaseImageDataset(Dataset):
 
     # TODO: full init
     def __len__(self):
-        return len(self.cameras)
+        return len(self.camera_list)
 
     def _transform_image(self, image, bg=[1., 1., 1.]):
         """
@@ -233,7 +227,7 @@ class BaseImageDataset(Dataset):
 
     def __getitem__(self, idx):
         image_file_name = self.image_file_names[idx]
-        camera = self.cameras[idx]
+        camera = self.camera_list[idx]
         image = self._load_transform_image(
             image_file_name) if self.images is None else self.images[idx]
         camera.height = image.shape[1]
@@ -312,6 +306,8 @@ class BaseDataPipline:
         self.point_cloud = self.train_format_data.PointCloud
         self.white_bg = self.cfg.white_bg
         self.loaddata()
+
+        self.training_cameras = self.training_dataset.cameras
 
     # TODO use rigistry
     def get_training_dataset(self) -> BaseImageDataset:

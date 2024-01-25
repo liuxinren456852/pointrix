@@ -126,6 +126,8 @@ class DefaultTrainer:
             
             if iteration % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
                 self.val_step()
+            if iteration % 5000 == 0:
+                self.point_cloud.save_ply(os.path.join(self.cfg.output_path, "{}.ply".format(iteration)))
             
             self.global_step += 1
         
