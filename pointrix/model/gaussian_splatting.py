@@ -5,6 +5,7 @@ import torch
 from pointrix.utils.sh_utils import RGB2SH
 from pointrix.engine.default_trainer import DefaultTrainer
 from pointrix.utils.losses import l1_loss, l2_loss, ssim
+from pointrix.exporter.novel_view import test_view_render, novel_view_render
 from .gaussian_densification import DensificationContraller
 from .gaussian_utils import (
     validation_process,
@@ -37,13 +38,13 @@ class GaussianSplatting(DefaultTrainer):
         
     def before_train_start(self):
         # Densification setup
-        self.densification_control = DensificationContraller(
-            self.cfg.densification,
-            optimizer=self.optimizer,
-            point_cloud=self.point_cloud,
-            cameras_extent=self.cameras_extent,
-        )
-        self.densification_control.updata_hypers(step=0)
+        # self.densification_control = DensificationContraller(
+        #     self.cfg.densification,
+        #     optimizer=self.optimizer,
+        #     point_cloud=self.point_cloud,
+        #     cameras_extent=self.cameras_extent,
+        # )
+        # self.densification_control.updata_hypers(step=0)
         
         self.point_cloud = self.point_cloud.to(self.device)
 
@@ -83,15 +84,11 @@ class GaussianSplatting(DefaultTrainer):
             self.cfg.lambda_dssim * ssim_loss
         )
 
-        loss.backward()
-
-        self.accumulate_viewspace_grad(viewspace_points)
-
         # print("viewspace_grad: ", self.viewspace_grad)
         # TODO: log the learning rate of each elements in optimizer
         for param_group in self.optimizer.param_groups:
             name = param_group['name']
-            if name == "point_cloud.position":
+            if name == "position":
                 pos_lr = param_group['lr']
                 break
 
@@ -101,6 +98,12 @@ class GaussianSplatting(DefaultTrainer):
             "ssim_loss": ssim_loss,
             "num_pt": len(self.point_cloud),
             "pos_lr": pos_lr,
+            "optimizer_params":{
+                "loss": loss,
+                "viewspace_points": viewspace_points,
+                "visibility": self.visibility,
+                "radii": self.radii,
+                "white_bg":self.white_bg}
         }
         
     def upd_bar_info(self, info: dict) -> None:
@@ -113,15 +116,6 @@ class GaussianSplatting(DefaultTrainer):
         if self.global_step % 1000 == 0:
             if self.active_sh_degree < self.cfg.max_sh_degree:
                 self.active_sh_degree += 1
-
-    @torch.no_grad()
-    def accumulate_viewspace_grad(self, viewspace_points):
-        # Accumulate viewspace gradients for batch
-        self.viewspace_grad = torch.zeros_like(
-            viewspace_points[0]
-        )
-        for vp in viewspace_points:
-            self.viewspace_grad += vp.grad
 
     @torch.no_grad()
     def val_step(self):
@@ -149,20 +143,10 @@ class GaussianSplatting(DefaultTrainer):
 
     @torch.no_grad()
     def test(self):
-        pass
-
-    @torch.no_grad()
-    def update_state(self) -> None:       
-        self.densification_control.update_state(
-            step=self.global_step,
-            visibility=self.visibility,
-            viewspace_grad=self.viewspace_grad,
-            radii=self.radii,
-            white_bg=self.white_bg,
-        )
-        self.densification_control.updata_hypers(
-            step=self.global_step,
-        )
+        self.point_cloud.load_ply('/home/clz/code_remote/Pointrix/projects/gaussian_splatting/garden/30000.ply')
+        self.point_cloud.to(self.device)
+        test_view_render(self.point_cloud, self.renderer, self.datapipline, output_path=self.cfg.output_path)
+        novel_view_render(self.point_cloud, self.renderer, self.datapipline, output_path=self.cfg.output_path)
         
     def saving(self):
         data_list = {

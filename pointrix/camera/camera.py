@@ -630,8 +630,24 @@ class Cameras:
             return self.dolly(c2w, [focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
         elif mode == "Zoom":
             return self.Zoom(c2w, [focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
+        elif mode == "Spiral":
+            return self.Spiral(c2w, [focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
 
     def pose_to_cam(self, poses, focals, width, height):
+        """
+        Generate the camera path from poses.
+
+        Parameters
+        ----------
+        poses: Float[Tensor, "num_frames 3 4"]
+            The poses of the camera path.
+        focals: Float[Tensor, "num_frames"]
+            The focal lengths of the camera path.
+        width: int
+            The width of the image.
+        height: int 
+            The height of the image.
+        """
         camera_list = []
         for idx in range(focals.shape[0]):
             pose = poses[idx]
@@ -732,7 +748,7 @@ class Cameras:
         camera_path: Float[Tensor, "num_frames 4 4"]
             The camera path.
         """
-        max_disp = 2.0
+        max_disp = 20.0
 
         max_trans = max_disp / focal[0] * sc
         zoom_poses = []
@@ -771,3 +787,67 @@ class Cameras:
         zoom_poses = np.stack(zoom_poses, 0)[:, :3]
         zoom_focals = np.stack(zoom_focals, 0)
         return self.pose_to_cam(zoom_poses, zoom_focals, width, height)
+
+    def Spiral(self, c2w, focal, width, height, sc, length, num_frames):
+        """
+        Generate the camera path with spiral.
+
+        Parameters
+        ----------
+        c2w: Float[Tensor, "3 4"]
+            The camera to world transform.
+        focal: list[float]
+            The focal length of the camera.
+        width: int
+            The width of the image.
+        height: int
+            The height of the image.
+        sc: float
+            The scale of the scene.
+        length: int
+            The length of the camera path.
+        num_frames: int
+            The number of frames of the camera path.
+        """
+        max_disp = 20.0
+
+        max_trans = max_disp / focal[0] * sc
+        
+        spiral_poses = []
+        spiral_focals = []
+        # Rendering teaser. Add translation.
+        for i in range(num_frames):
+            x_trans = max_trans * 1.5 * np.sin(2.0 * np.pi * float(i) / float(30)) * 2.0
+            y_trans = (
+                max_trans
+                * 1.5
+                * (np.cos(2.0 * np.pi * float(i) / float(30)) - 1.0)
+                * 2.0
+                / 3.0
+            )
+            z_trans = 0.0
+
+            i_pose = np.concatenate(
+                [
+                    np.concatenate(
+                        [np.eye(3), np.array([x_trans, y_trans, z_trans])[:, np.newaxis]],
+                        axis=1,
+                    ),
+                    np.array([0.0, 0.0, 0.0, 1.0])[np.newaxis, :],
+                ],
+                axis=0,
+            )
+
+            i_pose = np.linalg.inv(i_pose)
+
+            ref_pose = np.concatenate(
+                [c2w[:3, :4], np.array([0.0, 0.0, 0.0, 1.0])[np.newaxis, :]], axis=0
+            )
+
+            render_pose = np.dot(ref_pose, i_pose)
+            # output_poses.append(np.concatenate([render_pose[:3, :], hwf], 1))
+            spiral_poses.append(render_pose[:3, :])
+            spiral_focals.append(focal[0])
+        spiral_poses = np.stack(spiral_poses, 0)[:, :3]
+        spiral_focals = np.stack(spiral_focals, 0)
+        return self.pose_to_cam(spiral_poses, spiral_focals, width, height)

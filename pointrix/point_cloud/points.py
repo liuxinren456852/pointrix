@@ -320,7 +320,7 @@ class PointCloud(BaseModule):
         optimizable_tensors = {}
         for group in optimizer.param_groups:
             for key, replace_tensor in new_atributes.items():
-                if group["name"] == "points_cloud." + key:
+                if group["name"] == key:
                     stored_state = optimizer.state.get(group['params'][0], None)
 
                     stored_state["exp_avg"] = torch.zeros_like(replace_tensor)

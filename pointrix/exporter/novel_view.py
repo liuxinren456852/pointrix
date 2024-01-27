@@ -58,38 +58,40 @@ def test_view_render(point_cloud, renderer, datapipeline, output_path, device='c
     psnr_test /= val_dataset_size
     print(f"Test results: L1 {l1_test:.5f} PSNR {psnr_test:.5f}")
 
-def novel_view_render(point_cloud, renderer, datapipeline, output_path, device='cuda'):
+def novel_view_render(point_cloud, renderer, datapipeline, output_path, novel_view_list=["Dolly", "Zoom", "Spiral"], device='cuda'):
     cameras = datapipeline.training_cameras
-    novel_view_camera_list = cameras.generate_camera_path(20, "Dolly")
-    atributes_dict = {
-        "position": point_cloud.position,
-        "opacity": point_cloud.get_opacity,
-        "scaling": point_cloud.get_scaling,
-        "rotation": point_cloud.get_rotation,
-        "shs": point_cloud.get_shs,
-        "active_sh_degree": 3
-    }
-    atributes_dict['bg_color'] = torch.tensor([
-        1., 1., 1.]).float().to(device) if datapipeline.white_bg \
-        else torch.tensor([0., 0., 0.]).float().to(device)
-    atributes_dict['bg_color'].to(device)
-    for i, camera in enumerate(novel_view_camera_list):
-        render_dict = {
-            "camera": camera,
-            "FovX": camera.fovX,
-            "FovY": camera.fovY,
-            "height": camera.image_height,
-            "width": camera.image_width,
-            "world_view_transform": camera.world_view_transform,
-            "full_proj_transform": camera.full_proj_transform,
-            "camera_center": camera.camera_center,
+
+    for novel_view in novel_view_list:
+        novel_view_camera_list = cameras.generate_camera_path(20, novel_view)
+        atributes_dict = {
+            "position": point_cloud.position,
+            "opacity": point_cloud.get_opacity,
+            "scaling": point_cloud.get_scaling,
+            "rotation": point_cloud.get_rotation,
+            "shs": point_cloud.get_shs,
+            "active_sh_degree": 3
         }
-        render_dict.update(atributes_dict)
-        render_results = renderer(**render_dict)
-        image = torch.clamp(render_results["render"], 0.0, 1.0)
-        mkdir_p(os.path.join(output_path, 'novel_view'))
-        imageio.imwrite(os.path.join(output_path, 'novel_view', "{}.png".format(i)),
-                        to8b(image.cpu().numpy()).transpose(1, 2, 0))
+        atributes_dict['bg_color'] = torch.tensor([
+            1., 1., 1.]).float().to(device) if datapipeline.white_bg \
+            else torch.tensor([0., 0., 0.]).float().to(device)
+        atributes_dict['bg_color'].to(device)
+        for i, camera in enumerate(novel_view_camera_list):
+            render_dict = {
+                "camera": camera,
+                "FovX": camera.fovX,
+                "FovY": camera.fovY,
+                "height": camera.image_height,
+                "width": camera.image_width,
+                "world_view_transform": camera.world_view_transform,
+                "full_proj_transform": camera.full_proj_transform,
+                "camera_center": camera.camera_center,
+            }
+            render_dict.update(atributes_dict)
+            render_results = renderer(**render_dict)
+            image = torch.clamp(render_results["render"], 0.0, 1.0)
+            mkdir_p(os.path.join(output_path, 'novel_view_' + novel_view))
+            imageio.imwrite(os.path.join(output_path, 'novel_view_' + novel_view, "{}.png".format(i)),
+                            to8b(image.cpu().numpy()).transpose(1, 2, 0))
         
     
 
