@@ -165,8 +165,20 @@ class GaussianSplatting(DefaultTrainer):
         )
         
     def saving(self):
+        params = self.point_cloud.get_params()
         data_list = {
             "active_sh_degree": self.active_sh_degree,
-            "point_cloud": self.point_cloud.state_dict(),
         }
+        data_list.update(params)
         return data_list
+    
+    def loading(self, data_list):
+        
+        saving_keys = self.point_cloud.get_params().keys()
+        new_atributes = {}
+        for key in saving_keys:
+            new_atributes.update({key: data_list[key]})
+            
+        self.point_cloud.replace(new_atributes)
+        self.point_cloud = self.point_cloud.to(self.device)
+        self.active_sh_degree = data_list["active_sh_degree"]

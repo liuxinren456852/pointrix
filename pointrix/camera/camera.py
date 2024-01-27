@@ -24,6 +24,8 @@ class Camera:
     cy: Union[float, None] = None
     fovX: Union[float, None] = None
     fovY: Union[float, None] = None
+    timestamp: Union[float, None] = None
+    max_timestamp: Union[float, None] = None
     bg: float = 0.0
     rgb_file_name: str = None
     radius: float = 0.0

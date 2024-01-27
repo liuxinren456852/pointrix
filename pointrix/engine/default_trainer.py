@@ -175,14 +175,15 @@ class DefaultTrainer:
         self.global_step = data_list["global_step"]
         self.optimizer.load_state_dict(data_list["optimizer"])
         
-        for k, v in data_list.items():
-            print(f"Loaded {k} from checkpoint")
-            # get arrtibute from model
-            arrt = getattr(self, k)
-            if isinstance(arrt, nn.Module):
-                arrt.load_state_dict(v)
-            else:
-                setattr(self, k, v)
+        self.loading(data_list)
+        # for k, v in data_list.items():
+        #     print(f"Loaded {k} from checkpoint")
+        #     # get arrtibute from model
+        #     arrt = getattr(self, k)
+        #     if isinstance(arrt, nn.Module):
+        #         arrt.load_state_dict(v)
+        #     else:
+        #         setattr(self, k, v)
     
     
     

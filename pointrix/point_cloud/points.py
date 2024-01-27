@@ -45,6 +45,17 @@ class PointCloud(BaseModule):
             self.features = nn.Parameter(
                 features.contiguous().requires_grad_(True)
             )
+            
+    def get_params(self):
+        params = {}
+        for arr in self.atributes:
+            name = arr['name']
+            params.update({name: getattr(self, name)})
+        return params
+    
+    def set_params(self, params):
+        for name, value in params.items():
+            setattr(self, name, value)
     
     def register_atribute(self, name, value, trainable=True):
         self.register_buffer(name, value)

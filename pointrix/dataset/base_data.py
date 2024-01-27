@@ -110,6 +110,12 @@ class BaseImageDataset(Dataset):
         if self.images is not None:
             self.images = [self._transform_image(
                 image) for image in self.images]
+            
+        if self.cameras[0].timestamp is not None:
+            # timestamps = [camera.timestamp for camera in self.cameras]
+            # self.timestamps = torch.stack(timestamps, dim=0)
+            # self.max_timestamp = max(self.timestamps)
+            self.max_timestamp = self.cameras[0].max_timestamp
 
     # TODO: full init
     def __len__(self):
