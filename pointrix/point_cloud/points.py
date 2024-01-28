@@ -21,6 +21,7 @@ class PointCloud(BaseModule):
         point_cloud_type: str = ""
         initializer: dict = field(default_factory=dict)
         trainable: bool = True
+        unwarp_prefix: str = "point_cloud"
     
     cfg: Config
     
@@ -45,6 +46,10 @@ class PointCloud(BaseModule):
             self.features = nn.Parameter(
                 features.contiguous().requires_grad_(True)
             )
+        self.prefix_name = self.cfg.unwarp_prefix + "."
+            
+    def unwarp(self, name):
+        return unwarp_name(name, self.prefix_name)
             
     def get_params(self):
         params = {}
@@ -144,62 +149,64 @@ class PointCloud(BaseModule):
     def prune_optimizer(self, mask, optimizer):
         optimizable_tensors = {}
         for group in optimizer.param_groups:
-            unwarp_ground = unwarp_name(group["name"])
-            stored_state = optimizer.state.get(group['params'][0], None)
-            if stored_state is not None:
-                stored_state["exp_avg"] = stored_state["exp_avg"][mask]
-                stored_state["exp_avg_sq"] = stored_state["exp_avg_sq"][mask]
+            if self.prefix_name in group["name"]:
+                unwarp_ground = self.unwarp(group["name"])
+                stored_state = optimizer.state.get(group['params'][0], None)
+                if stored_state is not None:
+                    stored_state["exp_avg"] = stored_state["exp_avg"][mask]
+                    stored_state["exp_avg_sq"] = stored_state["exp_avg_sq"][mask]
 
-                del optimizer.state[group['params'][0]]
-                group["params"][0] = nn.Parameter(
-                    (group["params"][0][mask].contiguous().requires_grad_(True))
-                )
-                optimizer.state[group['params'][0]] = stored_state
+                    del optimizer.state[group['params'][0]]
+                    group["params"][0] = nn.Parameter(
+                        (group["params"][0][mask].contiguous().requires_grad_(True))
+                    )
+                    optimizer.state[group['params'][0]] = stored_state
 
-                optimizable_tensors[unwarp_ground] = group["params"][0]
-            else:
-                group["params"][0] = nn.Parameter(
-                    group["params"][0][mask].contiguous().requires_grad_(True)
-                )
-                optimizable_tensors[unwarp_ground] = group["params"][0]
+                    optimizable_tensors[unwarp_ground] = group["params"][0]
+                else:
+                    group["params"][0] = nn.Parameter(
+                        group["params"][0][mask].contiguous().requires_grad_(True)
+                    )
+                    optimizable_tensors[unwarp_ground] = group["params"][0]
         return optimizable_tensors
     
     def extend_optimizer(self, new_atributes, optimizer):
         new_tensors = {}
         for group in optimizer.param_groups:
             assert len(group["params"]) == 1
-            unwarp_ground = unwarp_name(group["name"])
-            extension_tensor = new_atributes[unwarp_ground]
-            stored_state = optimizer.state.get(group['params'][0], None)
-            if stored_state is not None:
+            if self.prefix_name in group["name"]:
+                unwarp_ground = self.unwarp(group["name"])
+                extension_tensor = new_atributes[unwarp_ground]
+                stored_state = optimizer.state.get(group['params'][0], None)
+                if stored_state is not None:
 
-                stored_state["exp_avg"] = torch.cat((
-                    stored_state["exp_avg"], 
-                    torch.zeros_like(extension_tensor)
-                ), dim=0)
-                stored_state["exp_avg_sq"] = torch.cat((
-                    stored_state["exp_avg_sq"], 
-                    torch.zeros_like(extension_tensor)
-                ), dim=0)
+                    stored_state["exp_avg"] = torch.cat((
+                        stored_state["exp_avg"], 
+                        torch.zeros_like(extension_tensor)
+                    ), dim=0)
+                    stored_state["exp_avg_sq"] = torch.cat((
+                        stored_state["exp_avg_sq"], 
+                        torch.zeros_like(extension_tensor)
+                    ), dim=0)
 
-                del optimizer.state[group['params'][0]]
-                group["params"][0] = nn.Parameter(
-                    torch.cat((
-                        group["params"][0], 
-                        extension_tensor
-                    ), dim=0).contiguous().requires_grad_(True)
-                )
-                optimizer.state[group['params'][0]] = stored_state
+                    del optimizer.state[group['params'][0]]
+                    group["params"][0] = nn.Parameter(
+                        torch.cat((
+                            group["params"][0], 
+                            extension_tensor
+                        ), dim=0).contiguous().requires_grad_(True)
+                    )
+                    optimizer.state[group['params'][0]] = stored_state
 
-                new_tensors[unwarp_ground] = group["params"][0]
-            else:
-                group["params"][0] = nn.Parameter(
-                    torch.cat((
-                        group["params"][0], 
-                        extension_tensor
-                    ), dim=0).contiguous().requires_grad_(True)
-                )
-                new_tensors[unwarp_ground] = group["params"][0]
+                    new_tensors[unwarp_ground] = group["params"][0]
+                else:
+                    group["params"][0] = nn.Parameter(
+                        torch.cat((
+                            group["params"][0], 
+                            extension_tensor
+                        ), dim=0).contiguous().requires_grad_(True)
+                    )
+                    new_tensors[unwarp_ground] = group["params"][0]
 
         return new_tensors
     
@@ -207,7 +214,7 @@ class PointCloud(BaseModule):
         optimizable_tensors = {}
         for group in optimizer.param_groups:
             for key, replace_tensor in new_atributes.items():
-                if group["name"] == "points_cloud." + key:
+                if group["name"] == self.prefix_name + key:
                     stored_state = optimizer.state.get(group['params'][0], None)
 
                     stored_state["exp_avg"] = torch.zeros_like(replace_tensor)
@@ -219,6 +226,6 @@ class PointCloud(BaseModule):
                     )
                     optimizer.state[group['params'][0]] = stored_state
 
-                    optimizable_tensors[unwarp_name(group["name"])] = group["params"][0]
+                    optimizable_tensors[self.unwarp(group["name"])] = group["params"][0]
 
         return optimizable_tensors

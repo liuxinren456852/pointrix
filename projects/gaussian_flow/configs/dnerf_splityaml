@@ -1,29 +1,35 @@
-name: "jumpingjacks"
+name: "lego"
 
 trainer:
   output_path: ""
   max_steps: 10000
   val_interval: 2000
+  lambda_dssim: 0.2
   max_sh_degree: 3
 
-  # loss
-  lambda_dssim: 0.2
-  # lambda_param_l1: 0.01
-
   point_cloud:
-    point_cloud_type: "GaussianFlowPointCloud"  
+    point_cloud_type: "GaussianPointCloud"  
     max_sh_degree: ${trainer.max_sh_degree}
-    pos_traj_dim: 8
-    rot_traj_dim: 8
-    feat_traj_dim: 4
-    rescale_value: 0.9
-    offset_value: 0.
     trainable: true
-    random_noise: true
     initializer:
       init_type: 'random'
       num_points: 10000
-      radius: 1.3
+      radius: 2
+      feat_dim: 3
+
+  point_cloud_flow:
+    unwarp_prefix: "point_cloud_flow"
+    point_cloud_type: "GaussianFlowPointCloud"  
+    max_sh_degree: ${trainer.max_sh_degree}
+    pos_traj_dim: 2
+    rot_traj_dim: 1
+    rescale_value: 0.5
+    offset_value: 0.1
+    trainable: true
+    initializer:
+      init_type: 'random'
+      num_points: 10000
+      radius: 2
       feat_dim: 3
 
   densification:
@@ -31,9 +37,10 @@ trainer:
     densify_stop_iter: 5_000
     prune_interval: 100
     duplicate_interval: 100
-    opacity_reset_interval: 3000
-    densify_grad_threshold: 0.0002
-    min_opacity: 0.001
+    opacity_reset_interval: [500, 1000, 3000, 5_000]
+    densify_grad_threshold: [500, 0.00001, 0.0002, 5_000]
+    min_opacity: [500, 0.0005, 0.0005, 5_000]
+
 
   optimizer:
     name: Adam
@@ -42,24 +49,30 @@ trainer:
     params:
       point_cloud.position:
         lr: 0.00016
-      point_cloud.pos_params:
-        lr: 0.002
-      point_cloud.rotation:
-        lr: 0.001
-      point_cloud.rot_params:
-        lr: 0.005
       point_cloud.features:
-        lr: 0.0025
-      point_cloud.feat_params:
         lr: 0.0025
       point_cloud.features_rest:
         lr: 0.000125 # features/20
       point_cloud.scaling:
         lr: 0.005
+      point_cloud.rotation:
+        lr: 0.001
       point_cloud.opacity:
         lr: 0.05
-      point_cloud.time_center:
+      point_cloud_flow.position:
+        lr: 0.00016
+      point_cloud_flow.features:
+        lr: 0.0025
+      point_cloud_flow.features_rest:
+        lr: 0.000125 # features/20
+      point_cloud_flow.scaling:
+        lr: 0.005
+      point_cloud_flow.rotation:
         lr: 0.001
+      point_cloud_flow.opacity:
+        lr: 0.05
+      point_cloud_flow.time_center:
+        lr: 0.0001
 
   scheduler:
     name: "get_expon_lr_func"
@@ -68,9 +81,9 @@ trainer:
       point_cloud.position:
         init:  0.00016
         final: 0.0000016
-      point_cloud.pos_params:
-        init:  0.002
-        final: 0.0002
+      point_cloud_flow.position:
+        init:  0.00016
+        final: 0.0000016
       # point_cloud.rotation:
       #   init:  0.001
       #   final: 0.0001

@@ -1,9 +1,14 @@
 import os
+import time
 import torch
 import numpy as np
 from tqdm import tqdm
+from datetime import datetime
 from pytorch_msssim import ms_ssim
 from pointrix.utils.losses import l1_loss
+
+import imageio
+from collections import defaultdict
 
 from simple_knn._C import distCUDA2
 
@@ -210,3 +215,62 @@ def gaussian_point_init(position, max_sh_degree):
     )
 
     return scales, rots, opacities, features_rest
+
+
+def video_process(render_func, datapipeline, render_path, save_npz=False, pcd=None):
+    to8b = lambda x : (255*np.clip(x.cpu().numpy(),0,1)).astype(np.uint8)
+    dataset = datapipeline.video_dataset
+    dataset_size = len(dataset)
+    progress_bar = tqdm(
+        range(0, dataset_size),
+        desc="Video progress",
+        leave=False,
+    )
+    render_images = []
+    if save_npz:
+        gaussian_collect = defaultdict(list)
+    for i in range(0, dataset_size):
+        b_i = dataset[i]
+        render_results = render_func(b_i)
+        image = torch.clamp(render_results["render"], 0.0, 1.0)
+        render_images.append(to8b(image).transpose(1,2,0))
+        if save_npz:
+            gaussian_collect['means3D'].append(
+                pcd.get_position_flow.detach().cpu().numpy()
+            )
+            gaussian_collect['unnorm_rotations'].append(
+                pcd.get_rotation_flow.detach().cpu().numpy()
+            )
+            gaussian_collect['shs'].append(
+                pcd.get_shs.detach().cpu().numpy()
+            )
+            gaussian_collect['logit_opacities'] = (
+                pcd.opacity.detach().cpu().numpy()
+            )
+            gaussian_collect['log_scales'] = (
+                pcd.scaling.detach().cpu().numpy()
+            )
+        
+        progress_bar.update(1)
+    progress_bar.close()
+    
+    timestamp = time.time()
+    formatted_timestamp = datetime.fromtimestamp(timestamp).strftime('%Y%m%d-%H%M%S')
+    
+    imageio.mimwrite(
+        os.path.join(
+            render_path, 
+            f"video@{formatted_timestamp}", 
+            'video_rgb.mp4'
+        ), 
+        render_images, fps=25, quality=8
+    )
+    if save_npz:
+        np.savez(        
+            os.path.join(
+                render_path, 
+                f"video@{formatted_timestamp}", 
+                'params.npz',
+            ),
+            **gaussian_collect,
+        )

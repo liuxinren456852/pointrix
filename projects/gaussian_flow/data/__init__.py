@@ -1,1 +1,1 @@
-import dnerf_data
+from . import dnerf_data

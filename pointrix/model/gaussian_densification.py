@@ -130,7 +130,7 @@ class DensificationContraller(BaseObject):
         
     def new_pos_scale(self, mask):
         scaling = self.point_cloud.get_scaling
-        position = self.point_cloud.position
+        position = self.point_cloud.get_position
         rotation = self.point_cloud.rotation
         split_num = self.split_num
         

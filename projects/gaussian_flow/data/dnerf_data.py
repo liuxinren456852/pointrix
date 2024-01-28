@@ -9,6 +9,8 @@ from pointrix.camera.camera import Camera
 from pointrix.dataset.base_data import BaseReFormatData, DATA_FORMAT_REGISTRY
 from pointrix.dataset.utils.dataset_utils import fov2focal, focal2fov
 
+from .utils import generateCamerasFromTransforms
+
 
 @DATA_FORMAT_REGISTRY.register()
 class DNerfReFormat(BaseReFormatData):
@@ -25,8 +27,17 @@ class DNerfReFormat(BaseReFormatData):
         with open(os.path.join(self.data_root, "transforms_test.json")) as json_file:
             val_json = json.load(json_file)
             
+            
         time_line = [frame["time"] for frame in train_json["frames"]] + [frame["time"] for frame in val_json["frames"]]
         max_timestamp = max(time_line)
+        
+        if split == 'video':
+            cameras = generateCamerasFromTransforms(
+                self.data_root, 
+                "transforms_train.json", "png",
+                maxtime=max_timestamp
+            )
+            return cameras
 
         if split == 'train':
             json_file = train_json
@@ -65,7 +76,7 @@ class DNerfReFormat(BaseReFormatData):
             FovX = fovx
             camera = Camera(
                 idx=idx, R=R, T=T,
-                width=image.shape[1], 
+                width=image .shape[1], 
                 height=image.shape[0],
                 rgb_file_name=image_path, 
                 fovX=FovX, fovY=FovY, 

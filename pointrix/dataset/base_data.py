@@ -173,6 +173,7 @@ class BaseDataPipline:
         num_workers: int = 1
         white_bg: bool = False
         scale: float = 1.0
+        video: bool = False
     cfg: Config
 
     def __init__(self, cfg, dataformat) -> None:
@@ -187,6 +188,12 @@ class BaseDataPipline:
             data_root=self.cfg.data_path, split="val",
             cached_image=self.cfg.cached_image,
             scale = self.cfg.scale).data_list
+        
+        if self.cfg.video:
+            self.video_format_data = dataformat(
+                data_root=self.cfg.data_path, split="video",
+                cached_image=self.cfg.cached_image,
+                scale = self.cfg.scale).data_list
 
         self.point_cloud = self.train_format_data.PointCloud
         self.white_bg = self.cfg.white_bg
@@ -201,10 +208,17 @@ class BaseDataPipline:
     def get_validation_dataset(self) -> BaseImageDataset:
         self.validation_dataset = BaseImageDataset(
             format_data=self.validation_format_data)
+        
+    def get_video_dataset(self) -> BaseImageDataset:
+        self.video_dataset = BaseImageDataset(
+            format_data=self.video_format_data)
 
     def loaddata(self) -> None:
         self.get_training_dataset()
         self.get_validation_dataset()
+        
+        if self.cfg.video:
+            self.get_video_dataset()
 
         self.training_loader = torch.utils.data.DataLoader(
             self.training_dataset,
