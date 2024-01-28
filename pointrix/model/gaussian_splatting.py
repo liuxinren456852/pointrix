@@ -6,7 +6,6 @@ from pointrix.utils.sh_utils import RGB2SH
 from pointrix.engine.default_trainer import DefaultTrainer
 from pointrix.utils.losses import l1_loss, l2_loss, ssim
 from pointrix.exporter.novel_view import test_view_render, novel_view_render
-from .gaussian_densification import DensificationContraller
 from .gaussian_utils import (
     validation_process,
     render_batch,
@@ -36,16 +35,7 @@ class GaussianSplatting(DefaultTrainer):
             device=self.device,
         )
         
-    def before_train_start(self):
-        # Densification setup
-        # self.densification_control = DensificationContraller(
-        #     self.cfg.densification,
-        #     optimizer=self.optimizer,
-        #     point_cloud=self.point_cloud,
-        #     cameras_extent=self.cameras_extent,
-        # )
-        # self.densification_control.updata_hypers(step=0)
-        
+    def before_train_start(self):        
         self.point_cloud = self.point_cloud.to(self.device)
 
     def train_step(self, batch) -> Dict:

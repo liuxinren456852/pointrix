@@ -748,6 +748,7 @@ class Cameras:
         camera_path: Float[Tensor, "num_frames 4 4"]
             The camera path.
         """
+        # TODO: how to define the max_disp
         max_disp = 20.0
 
         max_trans = max_disp / focal[0] * sc
@@ -809,6 +810,7 @@ class Cameras:
         num_frames: int
             The number of frames of the camera path.
         """
+        # TODO: how to define the max_disp
         max_disp = 20.0
 
         max_trans = max_disp / focal[0] * sc

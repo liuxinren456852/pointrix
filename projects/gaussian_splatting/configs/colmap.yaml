@@ -17,31 +17,33 @@ trainer:
       # num_points: 10000
       # radius: 5
 
-  densification:
-    densify_start_iter: 500
-    densify_stop_iter: 15000
-    prune_interval: 100
-    duplicate_interval: 100
-    opacity_reset_interval: [500, 1000, 3000, 15000]
-    densify_grad_threshold: [500, 0.0002, 0.001, 15000]
-    min_opacity: [500, 0.005, 0.001, 15000]
-
   optimizer:
     name: Adam
+    type: GaussianSplattingOptimizer
     args:
       eps: 1e-15
+    structure:
+      percent_dense: 0.01
+      split_num: 2
+      densify_start_iter: 500
+      densify_stop_iter: 15000
+      prune_interval: 100
+      duplicate_interval: 100
+      opacity_reset_interval: [500, 1000, 3000, 15000]
+      densify_grad_threshold: [500, 0.0002, 0.001, 15000]
+      min_opacity: [500, 0.005, 0.001, 15000]
     params:
-      point_cloud.position:
+      position:
         lr: 0.00016
-      point_cloud.features:
+      features:
         lr: 0.0025
-      point_cloud.features_rest:
+      features_rest:
         lr: 0.000125 # features/20
-      point_cloud.scaling:
+      scaling:
         lr: 0.005
-      point_cloud.rotation:
+      rotation:
         lr: 0.001
-      point_cloud.opacity:
+      opacity:
         lr: 0.05
 
   dataset:
@@ -61,7 +63,7 @@ trainer:
     name: "get_expon_lr_func"
     max_steps: ${trainer.max_steps}
     params:
-      point_cloud.position:
+      position:
         init:  0.00016
         final: 0.0000016
       # points_cloud.rotation:
