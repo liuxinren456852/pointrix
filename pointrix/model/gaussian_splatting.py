@@ -21,23 +21,6 @@ class GaussianSplatting(DefaultTrainer):
 
     cfg: Config
 
-    def setup(self):
-        # Training variables
-        self.active_sh_degree = 0
-
-        # TODO: use camera to get the extent
-        self.white_bg = self.datapipline.white_bg
-
-        bg_color = [1, 1, 1] if self.white_bg else [0, 0, 0]
-        self.background = torch.tensor(
-            bg_color,
-            dtype=torch.float32,
-            device=self.device,
-        )
-        
-    def before_train_start(self):        
-        self.point_cloud = self.point_cloud.to(self.device)
-
     def train_step(self, batch) -> Dict:
         self.update_sh_degree()
 
@@ -81,26 +64,18 @@ class GaussianSplatting(DefaultTrainer):
             if name == "position":
                 pos_lr = param_group['lr']
                 break
-
-        return {
-            "loss": loss,
-            "L1_loss": L1_loss,
-            "ssim_loss": ssim_loss,
-            "num_pt": len(self.point_cloud),
-            "pos_lr": pos_lr,
-            "optimizer_params":{
-                "loss": loss,
-                "viewspace_points": viewspace_points,
-                "visibility": self.visibility,
-                "radii": self.radii,
-                "white_bg":self.white_bg}
-        }
-        
-    def upd_bar_info(self, info: dict) -> None:
-        info.update({
-            "num_pt": f"{len(self.point_cloud)}",
-        })
-
+        loss_dict = {"loss": loss,
+                    "L1_loss": L1_loss,
+                    "ssim_loss": ssim_loss,
+                    "num_pt": len(self.point_cloud),
+                    "pos_lr": pos_lr,},
+        optimizer_dict = {"loss": loss,
+                        "viewspace_points": viewspace_points,
+                        "visibility": self.visibility,
+                        "radii": self.radii,
+                        "white_bg":self.white_bg}
+        return loss_dict, optimizer_dict
+                
     def update_sh_degree(self):
         # Every 1000 its we increase the levels of SH up to a maximum degree
         if self.global_step % 1000 == 0:

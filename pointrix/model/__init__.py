@@ -1,3 +1,2 @@
-from .gaussian_densification import DensificationContraller
 from .gaussian_splatting import GaussianSplatting
 from .gaussian_points import GaussianPointCloud

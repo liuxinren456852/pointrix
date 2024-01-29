@@ -12,6 +12,8 @@ from pointrix.utils.config import parse_structured
 from pointrix.utils.optimizer import parse_scheduler
 from pointrix.optimizer import parse_optimizer
 from pointrix.point_cloud import parse_point_cloud
+from pointrix.logger import parse_writer, create_progress
+from pointrix.hook import parse_hooks
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -24,7 +26,8 @@ class DefaultTrainer:
         optimizer: dict = field(default_factory=dict)
         renderer: dict = field(default_factory=dict)
         scheduler: Optional[dict] = field(default_factory=dict)
-
+        writer: dict = field(default_factory=dict)
+        hooks: dict = field(default_factory=dict)
         # Dataset
         dataset_name: str = "NeRFDataset"
         dataset: dict = field(default_factory=dict)
@@ -45,16 +48,9 @@ class DefaultTrainer:
 
     def __init__(self, cfg, exp_dir, device="cuda") -> None:
         super().__init__()
-        self.exp_dir = exp_dir
-        self.device = device
+        
         # build config
         self.cfg = parse_structured(self.Config, cfg)
-
-        self.start_steps = 1
-        self.global_step = 0
-
-        self.loop_range = range(self.start_steps, self.cfg.max_steps+1)
-
         # build datapipeline
         self.datapipline = parse_data_pipline(self.cfg.dataset)
         # build renderer
@@ -62,26 +58,41 @@ class DefaultTrainer:
         # build model
         self.point_cloud = parse_point_cloud(
             self.cfg.point_cloud,
-            self.datapipline
-        )
+            self.datapipline).to(device)
 
         # Set up scheduler for points cloud position
-        self.cameras_extent = self.datapipline.training_dataset.radius
+        cameras_extent = self.datapipline.training_dataset.radius
         if self.cfg.scheduler is not None:
             self.schedulers = parse_scheduler(
                 self.cfg.scheduler,
-                self.cameras_extent if self.cfg.spatial_lr_scale else 1.
+                cameras_extent if self.cfg.spatial_lr_scale else 1.
             )
 
-        self.setup()
         # set up optimizer in the end, so that all parameters are registered
-        self.optimizer = parse_optimizer(self.cfg.optimizer, self.point_cloud, cameras_extent=self.cameras_extent)
-
+        self.optimizer = parse_optimizer(self.cfg.optimizer,
+                                         self.point_cloud,
+                                         cameras_extent=cameras_extent)
         # build logger
+        self.writter = parse_writer(self.cfg.writer, exp_dir)
         self.logger = SummaryWriter(exp_dir)
+        self.hooks = parse_hooks(self.cfg.hooks)
 
-    def before_train_start(self):
-        pass
+        self.exp_dir = exp_dir
+        self.device = device
+        self.active_sh_degree = 0
+
+        # TODO: use camera to get the extent
+        self.white_bg = self.datapipline.white_bg
+
+        bg_color = [1, 1, 1] if self.white_bg else [0, 0, 0]
+        self.background = torch.tensor(
+            bg_color,
+            dtype=torch.float32,
+            device=self.device,
+        )
+        self.start_steps = 1
+        self.global_step = 0
+        self.call_hook("before_run")
 
     def train_step(self, batch) -> None:
         raise NotImplementedError
@@ -92,61 +103,40 @@ class DefaultTrainer:
     def test(self) -> None:
         raise NotImplementedError
 
-    def upd_bar_info(self, info: dict) -> None:
-        pass
-
     def train_loop(self) -> None:
+        loop_range = range(self.start_steps, self.cfg.max_steps+1)
         self.progress_bar = tqdm(
             range(self.start_steps, self.cfg.max_steps),
             desc="Training progress",
             leave=False,
         )
-        bar_info = {}
         self.global_step = self.start_steps
-        ema_loss_for_log = 0.0
-        self.before_train_start()
-        for iteration in self.loop_range:
-            self.update_lr()
+        for iteration in loop_range:
+            self.call_hook("before_train_iter")
             batch = self.datapipline.next_train()
-            step_dict = self.train_step(batch)
-            # self.update_state()
-            self.optimizer.update_model(**step_dict['optimizer_params'])
-            
-            # Log to progress bar every 10 iterations
-            for key, value in step_dict.items():
-                if 'loss' in key:
-                    ema_loss_for_log = 0.4 * value.item() + 0.6 * ema_loss_for_log
-                    bar_info.update({key: f"{ema_loss_for_log:.{7}f}"})
-
-                if self.logger and key != "optimizer_params":
-                    self.logger.add_scalar(key, value, self.global_step)
-
-            if iteration % self.cfg.bar_upd_interval == 0:
-                self.upd_bar_info(bar_info)
-                self.progress_bar.set_postfix(bar_info)
-                self.progress_bar.update(self.cfg.bar_upd_interval)
-
+            self.loss_dict, self.optimizer_dict = self.train_step(batch)
+            self.optimizer.update_model(self.optimizer_dict)
+            self.call_hook("after_train_iter")
+            self.global_step += 1
             if iteration % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
                 self.val_step()
-            if iteration % 5000 == 0:
-                self.point_cloud.save_ply(os.path.join(
-                    self.cfg.output_path, "{}.ply".format(iteration)))
-
-            self.global_step += 1
-
         self.progress_bar.close()
 
-    def update_state(self) -> None:
-        pass
+    def call_hook(self, fn_name: str, **kwargs) -> None:
+        """Call all hooks.
 
-    def update_lr(self) -> None:
-        # Leraning rate scheduler
-        if len(self.cfg.scheduler) > 0:
-            for param_group in self.optimizer.param_groups:
-                name = param_group['name']
-                if name in self.schedulers.keys():
-                    lr = self.schedulers[name](self.global_step)
-                    param_group['lr'] = lr
+        Args:
+            fn_name (str): The function name in each hook to be called, such as
+                "before_train_epoch".
+            **kwargs: Keyword arguments passed to hook.
+        """
+        for hook in self.hooks:
+            # support adding additional custom hook methods
+            if hasattr(hook, fn_name):
+                try:
+                    getattr(hook, fn_name)(self, **kwargs)
+                except TypeError as e:
+                    raise TypeError(f'{e} in {hook}') from None
 
     def saving_base(self):
         data_list = {
