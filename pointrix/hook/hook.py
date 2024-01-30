@@ -26,7 +26,7 @@ class Hook:
 
     def after_load_checkpoint(self, trainner, checkpoint) -> None:
         """
-        some operations after the checkpoint is loaded.
+        some operations after the checkpoint is loaded, used for resume training.
 
         Parameters
         ----------
@@ -104,18 +104,6 @@ class Hook:
         ----------
         trainner : Trainer
             The trainer object.
-        """
-
-    def before_save_checkpoint(self, trainner, checkpoint) -> None:
-        """
-        some operations before the checkpoint is saved.
-
-        Parameters
-        ----------
-        trainner : Trainer
-            The trainer object.
-        checkpoint : Dict
-            The checkpoint to be saved.
         """
 
     def after_train(self, trainner) -> None:
