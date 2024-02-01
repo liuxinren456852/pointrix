@@ -31,7 +31,7 @@ class CheckPointHook(Hook):
         data_list = {
             "global_step": trainner.global_step,
             "optimizer": trainner.optimizer.state_dict(),
-            "active_sh_degree": trainner.active_sh_degree,
+            # "active_sh_degree": trainner.active_sh_degree, TODO: add this
             "point_cloud": trainner.point_cloud.state_dict(),
         }
 

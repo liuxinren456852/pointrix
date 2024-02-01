@@ -47,6 +47,7 @@ class GaussianSplatting(DefaultTrainer):
     def test(self):
         self.point_cloud.load_ply('/home/clz/code_remote/Pointrix/projects/gaussian_splatting/garden/30000.ply')
         self.point_cloud.to(self.device)
+        self.renderer.active_sh_degree = 3
         test_view_render(self.point_cloud, self.renderer, self.datapipline, output_path=self.cfg.output_path)
         novel_view_render(self.point_cloud, self.renderer, self.datapipline, output_path=self.cfg.output_path)
         
