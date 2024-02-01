@@ -57,7 +57,8 @@ trainer:
     white_bg: False
 
   renderer:
-    name: "splatting"
+    name: "GaussianSplattingRender"
+    max_sh_degree: ${trainer.max_sh_degree}
 
   scheduler:
     name: "get_expon_lr_func"
@@ -69,3 +70,14 @@ trainer:
       # points_cloud.rotation:
       #   init:  0.001
       #   final: 0.0001
+  
+  writer:
+    writer_type: "TensorboardWriter"
+  
+  hooks:
+    LogHook:
+      name: LogHook
+    CheckPointHook:
+      name: CheckPointHook
+    LRSchedulerHook:
+      name: LRSchedulerHook

@@ -131,7 +131,7 @@ class GaussianPointCloud(PointCloud):
         L1_loss = l1_loss(render_results['images'], gt_images)
         psnr_test = psnr(render_results['images'], gt_images).mean().double()
         ssims_test = ms_ssim(
-            render_results['images'], render_results['images'], data_range=1, size_average=True
+            render_results['images'], gt_images, data_range=1, size_average=True
         )
 
         lpips_test = lpips_fn(render_results['images'].squeeze(), gt_images.squeeze()).item()

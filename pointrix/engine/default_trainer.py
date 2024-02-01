@@ -79,8 +79,7 @@ class DefaultTrainer:
                                          cameras_extent=cameras_extent)
         
         # build logger and hooks
-        self.writter = parse_writer(self.cfg.writer, exp_dir)
-        self.logger = SummaryWriter(exp_dir)
+        self.logger = parse_writer(self.cfg.writer, exp_dir)
         self.hooks = parse_hooks(self.cfg.hooks)
 
         self.call_hook("before_train")

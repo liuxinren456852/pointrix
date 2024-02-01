@@ -60,7 +60,7 @@ class LogHook(Hook):
                     {key: f"{self.ema_loss_for_log:.{7}f}"})
 
             if trainner.logger and key != "optimizer_params":
-                trainner.logger.add_scalar(key, value, trainner.global_step)
+                trainner.logger.write_scalar(key, value, trainner.global_step)
 
         if trainner.global_step % trainner.cfg.bar_upd_interval == 0:
             self.bar_info.update({
@@ -77,11 +77,11 @@ class LogHook(Hook):
 
         image_name = os.path.basename(trainner.metric_dict['rgb_file_name'])
         iteration = trainner.global_step
-        trainner.logger.add_images(
+        trainner.logger.write_image(
             "test" + f"_view_{image_name}/render", 
             trainner.metric_dict['images'], 
             global_step=iteration)
-        trainner.logger.add_images(
+        trainner.logger.write_image(
             "test" + f"_view_{image_name}/ground_truth", 
             trainner.metric_dict['gt_images'], 
             global_step=iteration)
@@ -94,22 +94,22 @@ class LogHook(Hook):
 
         print(f"\n[ITER {trainner.global_step}] Evaluating test: L1 {self.l1_test:.5f} PSNR {self.psnr_test:.5f} SSIMS {self.ssims_test:.5f} LPIPS {self.lpips_test:.5f}")
         iteration = trainner.global_step
-        trainner.logger.add_scalar(
+        trainner.logger.write_scalar(
             "test" + '/loss_viewpoint - l1_loss',
             self.l1_test,
             iteration
         )
-        trainner.logger.add_scalar(
+        trainner.logger.write_scalar(
             "test" + '/loss_viewpoint - psnr',
             self.psnr_test,
             iteration
         )
-        trainner.logger.add_scalar(
+        trainner.logger.write_scalar(
             "test" + '/loss_viewpoint - ssims',
             self.ssims_test,
             iteration
         )
-        trainner.logger.add_scalar(
+        trainner.logger.write_scalar(
             "test" + '/loss_viewpoint - lpips',
             self.lpips_test,
             iteration
