@@ -80,11 +80,11 @@ class LogHook(Hook):
         trainner.logger.write_image(
             "test" + f"_view_{image_name}/render", 
             trainner.metric_dict['images'], 
-            global_step=iteration)
+            step=iteration)
         trainner.logger.write_image(
             "test" + f"_view_{image_name}/ground_truth", 
             trainner.metric_dict['gt_images'], 
-            global_step=iteration)
+            step=iteration)
 
     def after_val(self, trainner) -> None:
         self.l1_test /= trainner.val_dataset_size
