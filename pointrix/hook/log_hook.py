@@ -79,11 +79,11 @@ class LogHook(Hook):
         iteration = trainner.global_step
         trainner.logger.write_image(
             "test" + f"_view_{image_name}/render", 
-            trainner.metric_dict['images'], 
+            trainner.metric_dict['images'].squeeze(), 
             step=iteration)
         trainner.logger.write_image(
             "test" + f"_view_{image_name}/ground_truth", 
-            trainner.metric_dict['gt_images'], 
+            trainner.metric_dict['gt_images'].squeeze(), 
             step=iteration)
 
     def after_val(self, trainner) -> None:
