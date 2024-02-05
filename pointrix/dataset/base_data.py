@@ -261,7 +261,7 @@ class BaseImageDataset(Dataset):
         return self._transform_image(pil_image, bg)
 
 
-class BaseDataPipline:
+class BaseDataPipeline:
     """
     Basic Pipline used in Pointrix
 
@@ -274,7 +274,7 @@ class BaseDataPipline:
 
     Notes
     -----
-    BaseDataPipline is always called by build_data_pipline
+    BaseDataPipeline is always called by build_data_pipline
 
     """
     @dataclass

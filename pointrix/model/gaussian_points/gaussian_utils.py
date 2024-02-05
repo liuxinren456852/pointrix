@@ -4,18 +4,6 @@ import numpy as np
 
 from simple_knn._C import distCUDA2
 
-# FIXME: this is a hack to build lpips loss and lpips metric
-from lpips import LPIPS
-lpips_net = LPIPS(net="vgg").to("cuda")
-def lpips_norm_fn(x): return x[None, ...] * 2 - 1
-def lpips_norm_b_fn(x): return x * 2 - 1
-def lpips_fn(x, y): return lpips_net(lpips_norm_fn(x), lpips_norm_fn(y)).mean()
-
-
-def lpips_b_fn(x, y): return lpips_net(
-    lpips_norm_b_fn(x), lpips_norm_b_fn(y)).mean()
-
-
 def inverse_sigmoid(x):
     return torch.log(x/(1-x))
 

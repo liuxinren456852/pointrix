@@ -4,7 +4,9 @@ from .hook import HOOK_REGISTRY, Hook
 
 @HOOK_REGISTRY.register()
 class LRSchedulerHook(Hook):
-
+    """
+    A hook to update the learning rate using the scheduler.
+    """
     def before_train_iter(self, trainner) -> None:
         """
         some operations after the training iteration ends.

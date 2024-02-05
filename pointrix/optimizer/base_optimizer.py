@@ -12,35 +12,64 @@ OPTIMIZER_REGISTRY.__doc__ = ""
 
 @OPTIMIZER_REGISTRY.register()
 class BaseOptimizer:
-    def __init__(self, optimizer, **kwargs):
+    '''
+    Base class for all optimizers.
+    '''
+    def __init__(self, optimizer:Optimizer, **kwargs):
         self.optimizer = optimizer
-
         self.step = 1
 
     def update_model(self, loss: torch.Tensor) -> None:
+        """
+        update the model with the loss.
+
+        Parameters
+        ----------
+        loss : torch.Tensor
+            The loss tensor.
+        """
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
 
     def state_dict(self) -> dict:
-        """A wrapper of ``Optimizer.state_dict``."""
+        """
+        A wrapper of ``Optimizer.state_dict``.
+        """
         state_dict = self.optimizer.state_dict()
 
         return state_dict
 
     def load_state_dict(self, state_dict: dict) -> None:
-
+        """
+        A wrapper of ``Optimizer.load_state_dict``.
+        """
         # load state_dict of optimizer
         self.optimizer.load_state_dict(state_dict)
 
-    def get_lr(self):
+    def get_lr(self)-> Dict[str, List[float]]:
+        """
+        Get learning rate of the optimizer.
+
+        Returns
+        -------
+        Dict[str, List[float]]
+            The learning rate of the optimizer.
+        """
         res = {}
 
         res['lr'] = [group['lr'] for group in self.optimizer.param_groups]
-
         return res
 
     def get_momentum(self) -> Dict[str, List[float]]:
+        """
+        Get momentum of the optimizer.
+
+        Returns
+        -------
+        Dict[str, List[float]]
+            The momentum of the optimizer.
+        """
         momentum = []
         for group in self.optimizer.param_groups:
             # Get momentum of SGD.
@@ -55,11 +84,12 @@ class BaseOptimizer:
     
     @property
     def param_groups(self) -> List[dict]:
-        """A wrapper of ``Optimizer.param_groups``.
+        """
+        Get the parameter groups of the optimizer.
 
-        Make OptimizeWrapper compatible with :class:`_ParamScheduler`.
-
-        Returns:
-             dict: the ``param_groups`` of :attr:`optimizer`.
+        Returns
+        -------
+        List[dict]
+            The parameter groups of the optimizer.
         """
         return self.optimizer.param_groups

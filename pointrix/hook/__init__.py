@@ -3,7 +3,15 @@ from .log_hook import LogHook
 from .checkpoint_hook import CheckPointHook
 from .lr_scheduler_hook import LRSchedulerHook
 
-def parse_hooks(cfg):
+def parse_hooks(cfg:dict):
+    """
+    Parse the hooks.
+
+    Parameters
+    ----------
+    cfg : dict
+        The configuration dictionary.
+    """
     if len(cfg) == 0:
         return None
     hooks = []

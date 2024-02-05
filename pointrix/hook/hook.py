@@ -5,6 +5,9 @@ HOOK_REGISTRY = Registry("HOOK", modules=["pointrix.hook"])
 HOOK_REGISTRY.__doc__ = ""
 
 class Hook:
+    """
+    A hook is a base class that can be used to modify the behavior of the trainer.
+    """
     priority = 'NORMAL'
     locations = ('before_run', 'after_load_checkpoint',
                  'before_train', 'before_train_iter', 'after_train_iter',

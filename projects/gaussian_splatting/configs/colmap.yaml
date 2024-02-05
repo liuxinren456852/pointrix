@@ -4,18 +4,17 @@ trainer:
   output_path: ""
   max_steps: 30000
   val_interval: 5000
-  lambda_dssim: 0.2
 
-  max_sh_degree: 3
-
-  point_cloud:
-    point_cloud_type: "GaussianPointCloud"  
-    max_sh_degree: ${trainer.max_sh_degree}
-    trainable: true
-    initializer:
-      init_type: 'colmap'
-      # num_points: 10000
-      # radius: 5
+  model:
+    name: BaseModel
+    lambda_dssim: 0.2
+    point_cloud:
+      point_cloud_type: "GaussianPointCloud"  
+      max_sh_degree: 3
+      trainable: true
+      unwarp_prefix: "point_cloud"
+      initializer:
+        init_type: 'colmap'
 
   optimizer:
     name: Adam
@@ -33,17 +32,17 @@ trainer:
       densify_grad_threshold: [500, 0.0002, 0.001, 15000]
       min_opacity: [500, 0.005, 0.001, 15000]
     params:
-      position:
+      point_cloud.position:
         lr: 0.00016
-      features:
+      point_cloud.features:
         lr: 0.0025
-      features_rest:
+      point_cloud.features_rest:
         lr: 0.000125 # features/20
-      scaling:
+      point_cloud.scaling:
         lr: 0.005
-      rotation:
+      point_cloud.rotation:
         lr: 0.001
-      opacity:
+      point_cloud.opacity:
         lr: 0.05
 
   dataset:
@@ -58,19 +57,15 @@ trainer:
 
   renderer:
     name: "GaussianSplattingRender"
-    max_sh_degree: ${trainer.max_sh_degree}
+    max_sh_degree: ${trainer.model.point_cloud.max_sh_degree}
 
   scheduler:
     name: "get_expon_lr_func"
     max_steps: ${trainer.max_steps}
     params:
-      position:
+      point_cloud.position:
         init:  0.00016
         final: 0.0000016
-      # points_cloud.rotation:
-      #   init:  0.001
-      #   final: 0.0001
-  
   writer:
     writer_type: "TensorboardWriter"
   

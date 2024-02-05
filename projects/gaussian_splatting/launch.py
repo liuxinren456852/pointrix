@@ -2,14 +2,13 @@ import os
 import argparse
 
 import sys
-sys.path.append('../../')
 from pointrix.utils.config import load_config
-from pointrix.model.gaussian_splatting import GaussianSplatting
+from pointrix.engine.default_trainer import DefaultTrainer
 
 def main(args, extras) -> None:
     
     cfg = load_config(args.config, cli_args=extras)
-    gaussian_trainer = GaussianSplatting(
+    gaussian_trainer = DefaultTrainer(
         cfg.trainer,
         cfg.exp_dir,
     )

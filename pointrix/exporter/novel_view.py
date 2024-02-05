@@ -11,11 +11,25 @@ from torch import nn
 
 from pointrix.utils.losses import l1_loss
 from pointrix.utils.system import mkdir_p
-from pointrix.model.gaussian_utils import psnr
+from pointrix.model.gaussian_points.gaussian_utils import psnr
 
 def to8b(x): return (255 * np.clip(x, 0, 1)).astype(np.uint8)
 
-def test_view_render(point_cloud, renderer, datapipeline, output_path, device='cuda'):
+def test_view_render(model, renderer, datapipeline, output_path, device='cuda'):
+    """
+    Render the test view and save the images to the output path.
+
+    Parameters
+    ----------
+    model : BaseModel
+        The point cloud model.
+    renderer : Renderer
+        The renderer object.
+    datapipeline : DataPipeline
+        The data pipeline object.
+    output_path : str
+        The output path to save the images.
+    """
     l1_test = 0.0
     psnr_test = 0.0
     val_dataset = datapipeline.validation_dataset
@@ -28,7 +42,7 @@ def test_view_render(point_cloud, renderer, datapipeline, output_path, device='c
     renderings = {}
     for i in range(0, val_dataset_size):
         b_i = val_dataset[i]
-        atributes_dict = point_cloud(b_i)
+        atributes_dict = model(b_i)
         atributes_dict.update(b_i)
         image_name = os.path.basename(b_i['camera'].rgb_file_name)
         render_results = renderer.render_iter(**atributes_dict)
@@ -47,7 +61,23 @@ def test_view_render(point_cloud, renderer, datapipeline, output_path, device='c
     psnr_test /= val_dataset_size
     print(f"Test results: L1 {l1_test:.5f} PSNR {psnr_test:.5f}")
 
-def novel_view_render(point_cloud, renderer, datapipeline, output_path, novel_view_list=["Dolly", "Zoom", "Spiral"], device='cuda'):
+def novel_view_render(model, renderer, datapipeline, output_path, novel_view_list=["Dolly", "Zoom", "Spiral"], device='cuda'):
+    """
+    Render the novel view and save the images to the output path.
+
+    Parameters
+    ----------
+    model : BaseModel
+        The point cloud model.
+    renderer : Renderer
+        The renderer object.
+    datapipeline : DataPipeline
+        The data pipeline object.
+    output_path : str
+        The output path to save the images.
+    novel_view_list : list, optional
+        The list of novel views to render, by default ["Dolly", "Zoom", "Spiral"]
+    """
     cameras = datapipeline.training_cameras
 
     for novel_view in novel_view_list:
@@ -55,7 +85,7 @@ def novel_view_render(point_cloud, renderer, datapipeline, output_path, novel_vi
 
         for i, camera in enumerate(novel_view_camera_list):
             
-            atributes_dict = point_cloud(camera)
+            atributes_dict = model(camera)
             render_dict = {
                 "camera": camera,
                 "FovX": camera.fovX,

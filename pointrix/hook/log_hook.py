@@ -5,7 +5,9 @@ from pointrix.logger.writer import Writer, create_progress, Logger
 
 @HOOK_REGISTRY.register()
 class LogHook(Hook):
-
+    """
+    A hook to log the training and validation losses.
+    """
     def __init__(self):
         self.ema_loss_for_log = 0.
         self.bar_info = {}
@@ -43,14 +45,14 @@ class LogHook(Hook):
         """
         for param_group in trainner.optimizer.param_groups:
             name = param_group['name']
-            if name == "position":
+            if name == "point_cloud." + "position":
                 pos_lr = param_group['lr']
                 break
 
         log_dict = {"loss": trainner.loss_dict['loss'],
                     "l1_loss": trainner.loss_dict['L1_loss'],
                     "ssim_loss": trainner.loss_dict['ssim_loss'],
-                    "num_pt": len(trainner.point_cloud),
+                    "num_pt": len(trainner.model.point_cloud),
                     "pos_lr": pos_lr}
 
         for key, value in log_dict.items():
@@ -64,7 +66,7 @@ class LogHook(Hook):
 
         if trainner.global_step % trainner.cfg.bar_upd_interval == 0:
             self.bar_info.update({
-                "num_pt": f"{len(trainner.point_cloud)}",
+                "num_pt": f"{len(trainner.model.point_cloud)}",
             })
             trainner.progress_bar.set_postfix(self.bar_info)
             trainner.progress_bar.update(trainner.cfg.bar_upd_interval)

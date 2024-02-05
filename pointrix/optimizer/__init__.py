@@ -23,9 +23,20 @@ def get_parameters(model, name):
     return []
 
 def parse_optimizer(config, model, **kwargs):
+    """
+    Parse the optimizer.
+
+    Parameters
+    ----------
+    config : dict
+        The configuration dictionary.
+    model : BaseModel
+        The model.
+    """
+    param_groups = model.get_param_groups()
     if hasattr(config, "params"):
         params = [
-            {"params": get_parameters(model, name), "name": name, **args}
+            {"params": param_groups[name], "name": name, **args}
             for name, args in config.params.items()
         ]
     else:
@@ -40,4 +51,4 @@ def parse_optimizer(config, model, **kwargs):
 
     optimizer_type = config.type
     optimizer = OPTIMIZER_REGISTRY.get(optimizer_type)
-    return optimizer(optim, model, config.structure, **kwargs)
+    return optimizer(optim, model.point_cloud, config.structure, **kwargs)

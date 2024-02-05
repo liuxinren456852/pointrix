@@ -24,26 +24,49 @@
 ## Prerequisites
 
 ### Installations
+1. Install the following package:
+
+First,create a new conda environment and activate it:
 
 ```bash
-# Install official diff-gaussian-rasterization
-python -m pip install git+https://github.com/graphdeco-inria/diff-gaussian-rasterization.git
-
-# Install pointrix
-git clone https://github.com/NJU-3DV/Pointrix.git
-cd Pointrix
-python -m pip install .
-
-# use -e if you want to modify the code
-python -m pip install -e .
+conda create -n pointrix python=3.9
+conda activate pointrix
 ```
 
-## Getting Started
+Then, you need to install pytorch
+```bash
+conda install pytorch==2.1.1 torchvision==0.16.1 pytorch-cuda=12.1 -c pytorch -c nvidia
+
+Other dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+Finally, install the following packages:
+```bash
+# Install official diff-gaussian-rasterization
+git clone https://github.com/graphdeco-inria/diff-gaussian-rasterization.git
+cd diff-gaussian-rasterization
+python setup.py install
+pip install .
+```
+```bash
+# Install simple knn
+git clone https://gitlab.inria.fr/bkerbl/simple-knn.git
+cd simple-knn
+python setup.py install
+pip install .
+```
+
+2. Download the data and put it in your folder:
+
+http://storage.googleapis.com/gresearch/refraw360/360_v2.zip
+
+3. Run the following command to train the model:
+
+you need to modify the data path in the config file to the path of the data you downloaded.
 
 ```bash
 cd projects/gaussian_splatting
-
-python launch.py --config configs/nerf.yaml \
-        trainer.output_path='output/lego' \
-        dataset.data_path='nerf_synthetic/lego'
+python launch.py --config ./configs/colmap.yaml
 ```
