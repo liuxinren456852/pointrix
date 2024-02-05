@@ -1,20 +1,29 @@
 import torch
 from torch import nn
-
+from pytorch_msssim import ms_ssim
 from dataclasses import dataclass
 
 from pointrix.point_cloud import PointCloud, POINTSCLOUD_REGISTRY
+from pointrix.utils.losses import l1_loss, l2_loss, ssim
 from .gaussian_utils import (
     build_covariance_from_scaling_rotation,
     inverse_sigmoid,
-    gaussian_point_init,
+    gaussian_point_init
 )
-
 @POINTSCLOUD_REGISTRY.register()
 class GaussianPointCloud(PointCloud):
+    """
+    A class for Gaussian point cloud.
+
+    Parameters
+    ----------
+    PointCloud : PointCloud
+        The point cloud for initialisation.
+    """
     @dataclass
     class Config(PointCloud.Config):
         max_sh_degree: int = 3
+        lambda_dssim: float = 0.2
         
     cfg: Config
     
@@ -74,3 +83,4 @@ class GaussianPointCloud(PointCloud):
     @property
     def get_position(self):
         return self.position
+        

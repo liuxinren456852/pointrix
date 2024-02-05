@@ -6,175 +6,194 @@ from dataclasses import dataclass, field
 
 import torch
 from torch import nn
+from pathlib import Path
 from pointrix.renderer import parse_renderer
-from pointrix.dataset import parse_data_pipline
+from pointrix.dataset import parse_data_pipeline
 from pointrix.utils.config import parse_structured
-from pointrix.utils.optimizer import parse_scheduler, parse_optimizer
-from pointrix.point_cloud import parse_point_cloud
+from pointrix.utils.optimizer import parse_scheduler
+from pointrix.optimizer import parse_optimizer
+from pointrix.model import parse_model
+from pointrix.logger import parse_writer, create_progress
+from pointrix.hook import parse_hooks
+from pointrix.exporter.novel_view import test_view_render, novel_view_render
 
 from torch.utils.tensorboard import SummaryWriter
 
+
 class DefaultTrainer:
+    """
+    The default trainer class for training and testing the model.
+
+    Parameters
+    ----------
+    cfg : dict
+        The configuration dictionary.
+    exp_dir : str
+        The experiment directory.
+    device : str, optional
+        The device to use, by default "cuda".
+    """
     @dataclass
     class Config:
         # Modules
-        point_cloud: dict = field(default_factory=dict)
+        model: dict = field(default_factory=dict)
         optimizer: dict = field(default_factory=dict)
         renderer: dict = field(default_factory=dict)
         scheduler: Optional[dict] = field(default_factory=dict)
-        
-        # Dataset 
+        writer: dict = field(default_factory=dict)
+        hooks: dict = field(default_factory=dict)
+        # Dataset
         dataset_name: str = "NeRFDataset"
         dataset: dict = field(default_factory=dict)
-        
+
         # Training config
         batch_size: int = 1
         num_workers: int = 0
         max_steps: int = 30000
         val_interval: int = 2000
         spatial_lr_scale: bool = True
-        
+
         # Progress bar
         bar_upd_interval: int = 10
         # Output path
         output_path: str = "output"
-        
+
     cfg: Config
-        
-    def __init__(self, cfg, exp_dir, device="cuda") -> None:
+
+    def __init__(self, cfg: Config, exp_dir: Path, device:str="cuda") -> None:
         super().__init__()
         self.exp_dir = exp_dir
         self.device = device
-        # build config
-        self.cfg = parse_structured(self.Config, cfg)
-        
+
         self.start_steps = 1
         self.global_step = 0
-        
-        self.loop_range = range(self.start_steps, self.cfg.max_steps+1)
-        
+
+        # build config
+        self.cfg = parse_structured(self.Config, cfg)
         # build datapipeline
-        self.datapipline = parse_data_pipline(self.cfg.dataset)
-        # build renderer
-        self.renderer = parse_renderer(self.cfg.renderer)  
-        # build model
-        self.point_cloud = parse_point_cloud(
-            self.cfg.point_cloud, 
-            self.datapipline
-        )
+        self.datapipline = parse_data_pipeline(self.cfg.dataset)
+
+        # build render and point cloud model
+        self.white_bg = self.datapipline.white_bg
+        self.renderer = parse_renderer(self.cfg.renderer, white_bg=self.white_bg, device=device)
         
-        # Set up scheduler for points cloud position
-        self.cameras_extent = self.datapipline.training_dataset.radius
+        self.model = parse_model(self.cfg.model, self.datapipline, device=device)
+
+        # build optimizer and scheduler
+        cameras_extent = self.datapipline.training_dataset.radius
         if self.cfg.scheduler is not None:
             self.schedulers = parse_scheduler(
-                self.cfg.scheduler, 
-                self.cameras_extent if self.cfg.spatial_lr_scale else 1.
+                self.cfg.scheduler,
+                cameras_extent if self.cfg.spatial_lr_scale else 1.
             )
+        self.optimizer = parse_optimizer(self.cfg.optimizer,
+                                         self.model,
+                                         cameras_extent=cameras_extent)
         
-        self.setup()    
-        # set up optimizer in the end, so that all parameters are registered      
-        self.optimizer = parse_optimizer(self.cfg.optimizer, self)
-        
-        # build logger
-        self.logger = SummaryWriter(exp_dir)
-        
-    def before_train_start(self):
-        pass
+        # build logger and hooks
+        self.logger = parse_writer(self.cfg.writer, exp_dir)
+        self.hooks = parse_hooks(self.cfg.hooks)
+
+        self.call_hook("before_train")
+
+    def train_step(self, batch:list[dict]) -> None:
+        """
+        The training step for the model.
+
+        Parameters
+        ----------
+        batch : dict
+            The batch data.
+        """
+        render_dict = self.model(batch)
+        render_results = self.renderer.render_batch(render_dict, batch)
+        self.loss_dict = self.model.get_loss_dict(render_results, batch)
+        self.optimizer_dict = self.model.get_optimizer_dict(self.loss_dict, 
+                                                            render_results, 
+                                                            self.white_bg)
     
-    def train_step(self, batch) -> None:
-        raise NotImplementedError
-    
-    def val_step(self) -> None:
-        raise NotImplementedError
-    
-    def test(self) -> None:
-        raise NotImplementedError
-    
-    def upd_bar_info(self, info: dict) -> None:
-        pass
-    
+    @torch.no_grad()
+    def validation(self):
+        self.val_dataset_size = len(self.datapipline.validation_dataset)
+        progress_bar = tqdm(
+                        range(0, self.val_dataset_size),
+                        desc="Validation progress",
+                        leave=False,
+                    )
+        for i in range(0, self.val_dataset_size):
+            self.call_hook("before_val_iter")
+            batch = self.datapipline.next_val()
+            render_dict = self.model(batch)
+            render_results = self.renderer.render_batch(render_dict, batch)
+            self.metric_dict = self.model.get_metric_dict(render_results, batch)
+            self.call_hook("after_val_iter")
+            progress_bar.update(1)
+        progress_bar.close()
+        self.call_hook("after_val")
+
+    def test(self, model_path) -> None:
+        """
+        The testing method for the model.
+        """
+        self.model.load_ply(model_path)
+        self.model.to(self.device)
+        self.renderer.active_sh_degree = 3
+        test_view_render(self.model, self.renderer, self.datapipline, output_path=self.cfg.output_path)
+        novel_view_render(self.model, self.renderer, self.datapipline, output_path=self.cfg.output_path)
+
     def train_loop(self) -> None:
+        """
+        The training loop for the model.
+        """
+        loop_range = range(self.start_steps, self.cfg.max_steps+1)
         self.progress_bar = tqdm(
             range(self.start_steps, self.cfg.max_steps),
             desc="Training progress",
             leave=False,
         )
-        bar_info = {}
         self.global_step = self.start_steps
-        ema_loss_for_log = 0.0
-        self.before_train_start()
-        for iteration in self.loop_range:
-            self.update_lr()
+        for iteration in loop_range:
+            self.call_hook("before_train_iter")
+
             batch = self.datapipline.next_train()
-            step_dict = self.train_step(batch)
-            self.update_state()
-            self.optimization()
+            self.renderer.update_sh_degree(iteration)
+            self.train_step(batch)
+            self.optimizer.update_model(**self.optimizer_dict)
             
-            # Log to progress bar every 10 iterations
-            for key, value in step_dict.items():
-                if 'loss' in key:
-                    ema_loss_for_log = 0.4 * value.item() + 0.6 * ema_loss_for_log
-                    bar_info.update({key: f"{ema_loss_for_log:.{7}f}"})
-                
-                if self.logger:
-                    self.logger.add_scalar(key, value, self.global_step)
-                    
-            if iteration % self.cfg.bar_upd_interval == 0:
-                self.upd_bar_info(bar_info)
-                self.progress_bar.set_postfix(bar_info)
-                self.progress_bar.update(self.cfg.bar_upd_interval)
-            
-            if iteration % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
-                self.val_step()
-            
+            self.call_hook("after_train_iter")
             self.global_step += 1
-        
+            if iteration % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
+                self.validation()
         self.progress_bar.close()
-    
-    def optimization(self) -> None:
-        self.optimizer.step()
-        self.optimizer.zero_grad(set_to_none=True)
-    
-    def update_state(self) -> None:
-        pass
+        self.call_hook("after_train")
 
-    def update_lr(self) -> None:
-        # Leraning rate scheduler
-        if len(self.cfg.scheduler) > 0:
-            for param_group in self.optimizer.param_groups:
-                name = param_group['name']
-                if name in self.schedulers.keys():
-                    lr = self.schedulers[name](self.global_step)
-                    param_group['lr'] = lr
-                    
-    def saving_base(self):
-        data_list = {
-            "global_step": self.global_step,
-            "optimizer": self.optimizer.state_dict(),
-        }
-        return data_list
+    def call_hook(self, fn_name: str, **kwargs) -> None:
+        """
+        Call the hook method.
 
-    def saving(self):
-        pass
-    
-    def get_saving(self):
-        data_list = self.saving_base()
-        data_list.update(self.saving())
-        return data_list
-                    
-    def save_model(self, path=None) -> None:
+        Parameters
+        ----------
+        fn_name : str
+            The hook method name.
+        kwargs : dict
+            The keyword arguments.
+        """
+        for hook in self.hooks:
+            # support adding additional custom hook methods
+            if hasattr(hook, fn_name):
+                try:
+                    getattr(hook, fn_name)(self, **kwargs)
+                except TypeError as e:
+                    raise TypeError(f'{e} in {hook}') from None
+
+    def load_model(self, path:Path=None) -> None:
         if path is None:
-            path = os.path.join(self.cfg.output_path, "chkpnt" + str(self.global_step-1) + ".pth")
-        data_list = self.get_saving()
-        torch.save(data_list, path)
-                
-    def load_model(self, path=None) -> None:
-        if path is None:
-            path = os.path.join(self.cfg.output_path, "chkpnt" + str(self.global_step) + ".pth")
+            path = os.path.join(self.cfg.output_path,
+                                "chkpnt" + str(self.global_step) + ".pth")
         data_list = torch.load(path)
         self.global_step = data_list["global_step"]
         self.optimizer.load_state_dict(data_list["optimizer"])
-        
+
         for k, v in data_list.items():
             print(f"Loaded {k} from checkpoint")
             # get arrtibute from model
@@ -184,5 +203,9 @@ class DefaultTrainer:
             else:
                 setattr(self, k, v)
     
-    
-    
+    def saving(self):
+        data_list = {
+            "active_sh_degree": self.active_sh_degree,
+            "model": self.model.state_dict(),
+        }
+        return data_list
