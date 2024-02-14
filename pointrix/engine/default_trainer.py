@@ -10,8 +10,7 @@ from pathlib import Path
 from pointrix.renderer import parse_renderer
 from pointrix.dataset import parse_data_pipeline
 from pointrix.utils.config import parse_structured
-from pointrix.utils.optimizer import parse_scheduler
-from pointrix.optimizer import parse_optimizer
+from pointrix.optimizer import parse_optimizer, parse_scheduler
 from pointrix.model import parse_model
 from pointrix.logger import parse_writer, create_progress
 from pointrix.hook import parse_hooks
@@ -81,11 +80,10 @@ class DefaultTrainer:
 
         # build optimizer and scheduler
         cameras_extent = self.datapipline.training_dataset.radius
-        if self.cfg.scheduler is not None:
-            self.schedulers = parse_scheduler(
-                self.cfg.scheduler,
-                cameras_extent if self.cfg.spatial_lr_scale else 1.
-            )
+        self.schedulers = parse_scheduler(
+            self.cfg.scheduler,
+            cameras_extent if self.cfg.spatial_lr_scale else 1.
+        )
         self.optimizer = parse_optimizer(self.cfg.optimizer,
                                          self.model,
                                          cameras_extent=cameras_extent)
@@ -122,7 +120,7 @@ class DefaultTrainer:
                     )
         for i in range(0, self.val_dataset_size):
             self.call_hook("before_val_iter")
-            batch = self.datapipline.next_val()
+            batch = self.datapipline.next_val(i)
             render_dict = self.model(batch)
             render_results = self.renderer.render_batch(render_dict, batch)
             self.metric_dict = self.model.get_metric_dict(render_results, batch)
@@ -155,8 +153,9 @@ class DefaultTrainer:
         for iteration in loop_range:
             self.call_hook("before_train_iter")
 
-            batch = self.datapipline.next_train()
+            batch = self.datapipline.next_train(self.global_step)
             self.renderer.update_sh_degree(iteration)
+            self.schedulers.step(self.global_step, self.optimizer)
             self.train_step(batch)
             self.optimizer.update_model(**self.optimizer_dict)
             

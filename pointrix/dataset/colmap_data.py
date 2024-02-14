@@ -8,6 +8,7 @@ from pointrix.dataset.base_data import BaseReFormatData, BasicPointCloud, BaseDa
 from pointrix.dataset.utils.colmap_utils import (read_extrinsics_binary,
                                                  read_intrinsics_binary,
                                                  qvec2rotmat, fetchPly)
+from pointrix.logger.writer import Logger
 @DATA_FORMAT_REGISTRY.register()
 class ColmapReFormat(BaseReFormatData):
     """
@@ -134,4 +135,19 @@ class ColmapReFormat(BaseReFormatData):
         ----------
         split: The split of the data.
         """
-        return {}
+        meta_data = {}
+        if os.path.exists(os.path.join(self.data_root, "depth")):
+            depth_folder = "depth" 
+        elif os.path.exists(os.path.join(self.data_root, "depths")):
+            depth_folder = "depths"
+        else:
+            depth_folder = None
+            Logger.print("No depth folder found, depth will not be loaded.")
+        if depth_folder:
+            depth_file_names = sorted(os.listdir(os.path.join(self.data_root, depth_folder)))
+            meta_data['depth_file_name'] = depth_file_names
+        
+        return meta_data
+
+            
+

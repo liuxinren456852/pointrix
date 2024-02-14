@@ -19,16 +19,16 @@ class BaseOptimizer:
         self.optimizer = optimizer
         self.step = 1
 
-    def update_model(self, loss: torch.Tensor) -> None:
+    def update_model(self, loss: torch.Tensor, **kwargs) -> None:
         """
         update the model with the loss.
+        you need backward first, then call this function to update the model.
 
         Parameters
         ----------
         loss : torch.Tensor
             The loss tensor.
         """
-        loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
 

@@ -121,6 +121,9 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         and update the structure with viewspace points, 
         visibility, radii and white background.
 
+        you need call backward first, 
+        then call this function to update the model.
+
         Parameters
         ----------
         loss : torch.Tensor
@@ -134,7 +137,6 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         white_bg : bool
             Whether the background is white.
         """
-        loss.backward()
         viewspace_grad = self.accumulate_viewspace_grad(viewspace_points)
         self.update_structure(visibility, viewspace_grad, radii, white_bg)
         self.update_hypers()
