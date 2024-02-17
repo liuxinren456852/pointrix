@@ -10,6 +10,8 @@ from .gaussian_utils import (
     inverse_sigmoid,
     gaussian_point_init
 )
+
+
 @POINTSCLOUD_REGISTRY.register()
 class GaussianPointCloud(PointCloud):
     """
@@ -24,9 +26,9 @@ class GaussianPointCloud(PointCloud):
     class Config(PointCloud.Config):
         max_sh_degree: int = 3
         lambda_dssim: float = 0.2
-        
+
     cfg: Config
-    
+
     def setup(self, point_cloud=None):
         super().setup(point_cloud)
         # Activation funcitons
@@ -48,12 +50,11 @@ class GaussianPointCloud(PointCloud):
                 fused_color.contiguous().requires_grad_(True)
             )
         )
-
         self.register_atribute("features_rest", features_rest)
         self.register_atribute("scaling", scales)
         self.register_atribute("rotation", rots)
         self.register_atribute("opacity", opacities)
-        
+
     @property
     def get_opacity(self):
         return self.opacity_activation(self.opacity)
@@ -77,10 +78,9 @@ class GaussianPointCloud(PointCloud):
     @property
     def get_shs(self):
         return torch.cat([
-            self.features,self.features_rest,
+            self.features, self.features_rest,
         ], dim=1)
 
     @property
     def get_position(self):
         return self.position
-        

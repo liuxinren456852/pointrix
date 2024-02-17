@@ -29,9 +29,9 @@ trainer:
         densify_stop_iter: 15000
         prune_interval: 100
         duplicate_interval: 100
-        opacity_reset_interval: [500, 1000, 3000, 15000]
-        densify_grad_threshold: [500, 0.0002, 0.001, 15000]
-        min_opacity: [500, 0.005, 0.001, 15000]
+        opacity_reset_interval: 3000
+        densify_grad_threshold: 0.0002
+        min_opacity: 0.005
       params:
         point_cloud.position:
           lr: 0.00016

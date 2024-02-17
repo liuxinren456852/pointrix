@@ -8,6 +8,7 @@ class LogHook(Hook):
     """
     A hook to log the training and validation losses.
     """
+
     def __init__(self):
         self.ema_loss_for_log = 0.
         self.bar_info = {}
@@ -80,12 +81,12 @@ class LogHook(Hook):
         image_name = os.path.basename(trainner.metric_dict['rgb_file_name'])
         iteration = trainner.global_step
         trainner.logger.write_image(
-            "test" + f"_view_{image_name}/render", 
-            trainner.metric_dict['images'].squeeze(), 
+            "test" + f"_view_{image_name}/render",
+            trainner.metric_dict['images'].squeeze(),
             step=iteration)
         trainner.logger.write_image(
-            "test" + f"_view_{image_name}/ground_truth", 
-            trainner.metric_dict['gt_images'].squeeze(), 
+            "test" + f"_view_{image_name}/ground_truth",
+            trainner.metric_dict['gt_images'].squeeze(),
             step=iteration)
 
     def after_val(self, trainner) -> None:

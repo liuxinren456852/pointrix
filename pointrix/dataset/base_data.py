@@ -337,18 +337,20 @@ class BaseDataPipeline:
             batch_size=self.cfg.batch_size,
             shuffle=self.cfg.shuffle,
             num_workers=self.cfg.num_workers,
-            collate_fn=list
+            collate_fn=list,
+            pin_memory=False
         )
         self.validation_loader = torch.utils.data.DataLoader(
             self.validation_dataset,
             batch_size=self.cfg.batch_size,
             num_workers=self.cfg.num_workers,
-            collate_fn=list
+            collate_fn=list,
+            pin_memory=False
         )
         self.iter_train_image_dataloader = iter(self.training_loader)
         self.iter_val_image_dataloader = iter(self.validation_loader)
 
-    def next_train(self, step: int = -1):
+    def next_train(self, step: int = -1) -> Any:
         """
         Generate batch data for trainer
 
@@ -363,7 +365,7 @@ class BaseDataPipeline:
             self.iter_train_image_dataloader = iter(self.training_loader)
             return next(self.iter_train_image_dataloader)
 
-    def next_val(self, step: int = -1):
+    def next_val(self, step: int = -1) -> Any:
         """
         Generate batch data for validation
 
