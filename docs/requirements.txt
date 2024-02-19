@@ -2,3 +2,13 @@ Sphinx
 myst_parser
 sphinx_design
 furo
+pytorch_msssim
+jaxtyping
+omegaconf
+tabulate
+lpips
+tensorboard
+packaging
+rich
+imageio
+pytorch
