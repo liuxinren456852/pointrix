@@ -12,3 +12,4 @@ packaging
 rich
 imageio
 torch
+plyfile
