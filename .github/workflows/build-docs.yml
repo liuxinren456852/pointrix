@@ -20,6 +20,8 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r docs/requirements.txt
+        pip install git+https://gitlab.inria.fr/bkerbl/simple-knn.git
+        pip install git+https://github.com/graphdeco-inria/diff-gaussian-rasterization.git
 
     - name: Build docs
       run: |
