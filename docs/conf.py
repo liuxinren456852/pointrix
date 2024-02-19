@@ -26,6 +26,7 @@ author = 'NJU-3DV'
 # The full version, including alpha/beta/rc tags
 release = '0.0.1'
 
+html_logo = "images/Logo.png"
 
 # -- General configuration ---------------------------------------------------
 
