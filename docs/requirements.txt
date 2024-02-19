@@ -11,4 +11,4 @@ tensorboard
 packaging
 rich
 imageio
-pytorch
+torch
