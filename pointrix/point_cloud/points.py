@@ -311,7 +311,6 @@ class PointCloud(BaseModule):
         """
         new_tensors = {}
         for group in optimizer.param_groups:
-            assert len(group["params"]) == 1
             if self.prefix_name in group["name"]:
                 unwarp_ground = self.unwarp(group["name"])
                 extension_tensor = new_atributes[unwarp_ground]

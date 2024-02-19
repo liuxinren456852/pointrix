@@ -1,8 +1,10 @@
 import torch
 import numpy as np
+from copy import deepcopy
 from PIL import Image
 from torch import Tensor
 from pathlib import Path
+from random import randint
 from jaxtyping import Float
 from abc import abstractmethod
 from torch.utils.data import Dataset
@@ -110,7 +112,8 @@ class BaseReFormatData:
         camera = self.load_camera(split=split)
         image_filenames = self.load_image_filenames(camera, split=split)
         metadata = self.load_metadata(split=split)
-        data = BaseDataFormat(image_filenames, camera, metadata=metadata)
+        pointcloud = self.load_pointcloud()
+        data = BaseDataFormat(image_filenames, camera, PointCloud=pointcloud, metadata=metadata)
         return data
 
     @abstractmethod
@@ -123,6 +126,12 @@ class BaseReFormatData:
         split: The split of the data.
         """
         raise NotImplementedError
+    
+    def load_pointcloud(self) -> BasicPointCloud:
+        """
+        The function for loading the Pointcloud for initialization of gaussian model.
+        """
+        return None
 
     @abstractmethod
     def load_image_filenames(self, split) -> list[Path]:
@@ -135,7 +144,6 @@ class BaseReFormatData:
         """
         raise NotImplementedError
 
-    @abstractmethod
     def load_metadata(self, split) -> Dict[str, Any]:
         """
         The function for loading other information that is required for the dataset typically requires user customization.
@@ -144,7 +152,7 @@ class BaseReFormatData:
         ----------
         split: The split of the data.
         """
-        raise NotImplementedError
+        return None
 
     def load_all_images(self) -> List[Image.Image]:
         """
@@ -288,6 +296,7 @@ class BaseDataPipeline:
         num_workers: int = 1
         white_bg: bool = False
         scale: float = 1.0
+        use_dataloader: bool = True
     cfg: Config
 
     def __init__(self, cfg: Config, dataformat) -> None:
@@ -305,6 +314,10 @@ class BaseDataPipeline:
 
         self.point_cloud = self.train_format_data.PointCloud
         self.white_bg = self.cfg.white_bg
+        self.use_dataloader = self.cfg.use_dataloader
+
+        # assert not self.use_dataloader and self.cfg.batch_size == 1 and \
+        #     self.cfg.cached_image, "Currently only support batch_size=1, cached_image=True when use_dataloader=False"
         self.loaddata()
 
         self.training_cameras = self.training_dataset.cameras
@@ -332,23 +345,27 @@ class BaseDataPipeline:
         self.get_training_dataset()
         self.get_validation_dataset()
 
-        self.training_loader = torch.utils.data.DataLoader(
-            self.training_dataset,
-            batch_size=self.cfg.batch_size,
-            shuffle=self.cfg.shuffle,
-            num_workers=self.cfg.num_workers,
-            collate_fn=list,
-            pin_memory=False
-        )
-        self.validation_loader = torch.utils.data.DataLoader(
-            self.validation_dataset,
-            batch_size=self.cfg.batch_size,
-            num_workers=self.cfg.num_workers,
-            collate_fn=list,
-            pin_memory=False
-        )
-        self.iter_train_image_dataloader = iter(self.training_loader)
-        self.iter_val_image_dataloader = iter(self.validation_loader)
+        if self.use_dataloader:
+            self.training_loader = torch.utils.data.DataLoader(
+                self.training_dataset,
+                batch_size=self.cfg.batch_size,
+                shuffle=self.cfg.shuffle,
+                num_workers=self.cfg.num_workers,
+                collate_fn=list,
+                pin_memory=False
+            )
+            self.validation_loader = torch.utils.data.DataLoader(
+                self.validation_dataset,
+                batch_size=self.cfg.batch_size,
+                num_workers=self.cfg.num_workers,
+                collate_fn=list,
+                pin_memory=False
+            )
+            self.iter_train_image_dataloader = iter(self.training_loader)
+            self.iter_val_image_dataloader = iter(self.validation_loader)
+        else:
+            self.iter_train_image_dataloader = deepcopy(self.training_dataset)
+            self.iter_val_image_dataloader = deepcopy(self.validation_dataset)
 
     def next_train(self, step: int = -1) -> Any:
         """
@@ -359,11 +376,29 @@ class BaseDataPipeline:
         cfg: step
             the training step in trainer.
         """
-        try:
-            return next(self.iter_train_image_dataloader)
-        except StopIteration:
-            self.iter_train_image_dataloader = iter(self.training_loader)
-            return next(self.iter_train_image_dataloader)
+        if self.use_dataloader:
+            try:
+                return next(self.iter_train_image_dataloader)
+            except StopIteration:
+                self.iter_train_image_dataloader = iter(self.training_loader)
+                return next(self.iter_train_image_dataloader)
+        else:
+            if not self.iter_train_image_dataloader.images:
+                self.iter_train_image_dataloader = deepcopy(self.training_dataset)
+            pop_idx = randint(0, len(self.iter_train_image_dataloader.images) - 1)
+            image = self.iter_train_image_dataloader.images.pop(pop_idx)
+            camera = self.iter_train_image_dataloader.camera_list.pop(pop_idx)
+            return [{
+                "image": image,
+                "camera": camera,
+                "FovX": camera.fovX,
+                "FovY": camera.fovY,
+                "height": camera.image_height,
+                "width": camera.image_width,
+                "world_view_transform": camera.world_view_transform,
+                "full_proj_transform": camera.full_proj_transform,
+                "camera_center": camera.camera_center,
+            }]
 
     def next_val(self, step: int = -1) -> Any:
         """
@@ -374,11 +409,29 @@ class BaseDataPipeline:
         cfg: step
             the validation step in validate progress.
         """
-        try:
-            return next(self.iter_val_image_dataloader)
-        except StopIteration:
-            self.iter_val_image_dataloader = iter(self.validation_loader)
-            return next(self.iter_val_image_dataloader)
+        if self.cfg.use_dataloader:
+            try:
+                return next(self.iter_val_image_dataloader)
+            except StopIteration:
+                self.iter_val_image_dataloader = iter(self.validation_loader)
+                return next(self.iter_val_image_dataloader)
+        else:
+            if not self.iter_val_image_dataloader.images:
+                self.iter_val_image_dataloader = deepcopy(self.validation_dataset)
+            pop_idx = randint(0, len(self.iter_val_image_dataloader.images) - 1)
+            image = self.iter_val_image_dataloader.images.pop(pop_idx)
+            camera = self.iter_val_image_dataloader.camera_list.pop(pop_idx)
+            return [{
+                "image": image,
+                "camera": camera,
+                "FovX": camera.fovX,
+                "FovY": camera.fovY,
+                "height": camera.image_height,
+                "width": camera.image_width,
+                "world_view_transform": camera.world_view_transform,
+                "full_proj_transform": camera.full_proj_transform,
+                "camera_center": camera.camera_center,
+            }]
 
     @property
     def training_dataset_size(self) -> int:

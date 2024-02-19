@@ -75,6 +75,7 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         self.min_opacity = C(self.cfg.min_opacity, 0, self.step)
         self.step += 1
 
+    @torch.no_grad()
     def update_structure(self, visibility: Tensor, viewspace_grad: Tensor,
                          radii: Tensor, white_bg: bool = False) -> None:
         """
@@ -138,11 +139,12 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         white_bg : bool
             Whether the background is white.
         """
-        viewspace_grad = self.accumulate_viewspace_grad(viewspace_points)
-        self.update_structure(visibility, viewspace_grad, radii, white_bg)
-        self.update_hypers()
-        self.optimizer.step()
-        self.optimizer.zero_grad()
+        with torch.no_grad():
+            viewspace_grad = self.accumulate_viewspace_grad(viewspace_points)
+            self.update_structure(visibility, viewspace_grad, radii, white_bg)
+            self.update_hypers()
+            self.optimizer.step()
+            self.optimizer.zero_grad(set_to_none=True)
 
     def densification(self, step: int) -> None:
         """
