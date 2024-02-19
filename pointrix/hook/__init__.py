@@ -1,7 +1,6 @@
 from .hook import HOOK_REGISTRY
 from .log_hook import LogHook
 from .checkpoint_hook import CheckPointHook
-from .lr_scheduler_hook import LRSchedulerHook
 
 def parse_hooks(cfg:dict):
     """

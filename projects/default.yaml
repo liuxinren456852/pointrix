@@ -1,7 +1,7 @@
 name: "garden"
 
 trainer:
-  output_path: ""
+  output_path: "garden_fix"
   max_steps: 30000
   val_interval: 5000
 

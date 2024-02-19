@@ -180,5 +180,16 @@ class BaseModel(torch.nn.Module):
                     'rotation'] = self.point_cloud.rotation
 
         return param_group
+    
+    def load_ply(self, path):
+        """
+        Load the ply model for point cloud.
+
+        Parameters
+        ----------
+        path : str
+            The path of the ply file.
+        """
+        self.point_cloud.load_ply(path)
 
         

@@ -15,6 +15,7 @@ from pointrix.model.gaussian_points.gaussian_utils import psnr
 
 def to8b(x): return (255 * np.clip(x, 0, 1)).astype(np.uint8)
 
+@torch.no_grad()
 def test_view_render(model, renderer, datapipeline, output_path, device='cuda'):
     """
     Render the test view and save the images to the output path.
@@ -51,7 +52,7 @@ def test_view_render(model, renderer, datapipeline, output_path, device='cuda'):
         
         mkdir_p(os.path.join(output_path, 'test_view'))
         imageio.imwrite(os.path.join(output_path, 'test_view', image_name),
-                        to8b(image.cpu().numpy()).transpose(1, 2, 0))
+                        to8b(image.detach().cpu().numpy()).transpose(1, 2, 0))
 
         l1_test += l1_loss(image, gt_image).mean().double()
         psnr_test += psnr(image, gt_image).mean().double()
@@ -101,7 +102,7 @@ def novel_view_render(model, renderer, datapipeline, output_path, novel_view_lis
             image = torch.clamp(render_results["render"], 0.0, 1.0)
             mkdir_p(os.path.join(output_path, 'novel_view_' + novel_view))
             imageio.imwrite(os.path.join(output_path, 'novel_view_' + novel_view, "{}.png".format(i)),
-                            to8b(image.cpu().numpy()).transpose(1, 2, 0))
+                            to8b(image.detach().cpu().numpy()).transpose(1, 2, 0))
         
     
 

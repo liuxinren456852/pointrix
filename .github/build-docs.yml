@@ -1,0 +1,33 @@
+name: Build Docs
+
+on:
+  push:
+    branches:
+      - main  # 触发分支
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+
+    - name: Install dependencies
+      run: |
+        pip install -r docs/requirements.txt
+
+    - name: Build docs
+      run: |
+        sphinx-build docs _build -W --keep-going
+
+    - name: Deploy docs
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./_build/html
+      if: github.event_name != 'pull_request'

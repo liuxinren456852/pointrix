@@ -33,7 +33,8 @@ class GaussianSplattingOptimizer(BaseOptimizer):
     cameras_extent : float
         The radius of the cameras.
     """
-    def __init__(self, optimizer:Optimizer, point_cloud:GSPointCloud, cfg:dict, cameras_extent:float) -> None:
+
+    def __init__(self, optimizer: Optimizer, point_cloud: GSPointCloud, cfg: dict, cameras_extent: float) -> None:
         self.optimizer = optimizer
         self.cfg = cfg
         self.point_cloud = point_cloud
@@ -74,8 +75,9 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         self.min_opacity = C(self.cfg.min_opacity, 0, self.step)
         self.step += 1
 
-    def update_structure(self, visibility:Tensor, viewspace_grad:Tensor, 
-                         radii:Tensor, white_bg:bool=False) -> None:
+    @torch.no_grad()
+    def update_structure(self, visibility: Tensor, viewspace_grad: Tensor,
+                         radii: Tensor, white_bg: bool = False) -> None:
         """
         Update the structure of the point cloud.
 
@@ -114,12 +116,15 @@ class GaussianSplattingOptimizer(BaseOptimizer):
             if self.step % self.opacity_reset_interval == 0 or (white_bg and self.step == self.cfg.densify_start_iter):
                 self.opacity_deferred = True
 
-    def update_model(self, loss:Tensor, viewspace_points:Tensor, 
-                     visibility:Tensor, radii:Tensor, white_bg:bool, **kwargs) -> None:
+    def update_model(self, loss: Tensor, viewspace_points: Tensor,
+                     visibility: Tensor, radii: Tensor, white_bg: bool, **kwargs) -> None:
         """
         Update the model parameter with the loss, 
         and update the structure with viewspace points, 
         visibility, radii and white background.
+
+        you need call backward first, 
+        then call this function to update the model.
 
         Parameters
         ----------
@@ -134,14 +139,14 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         white_bg : bool
             Whether the background is white.
         """
-        loss.backward()
-        viewspace_grad = self.accumulate_viewspace_grad(viewspace_points)
-        self.update_structure(visibility, viewspace_grad, radii, white_bg)
-        self.update_hypers()
-        self.optimizer.step()
-        self.optimizer.zero_grad()
+        with torch.no_grad():
+            viewspace_grad = self.accumulate_viewspace_grad(viewspace_points)
+            self.update_structure(visibility, viewspace_grad, radii, white_bg)
+            self.update_hypers()
+            self.optimizer.step()
+            self.optimizer.zero_grad(set_to_none=True)
 
-    def densification(self, step:int) -> None:
+    def densification(self, step: int) -> None:
         """
         Densify the point cloud.
 
@@ -165,14 +170,14 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         """
         opc = self.point_cloud.get_opacity
         opacities_new = inverse_sigmoid(
-            torch.min(opc, torch.ones_like(opc)*0.1)
+            torch.min(opc, torch.ones_like(opc)*0.01)
         )
         self.point_cloud.replace(
             {"opacity": opacities_new},
             self.optimizer
         )
 
-    def generate_clone_mask(self, grads:Tensor) -> Tensor:
+    def generate_clone_mask(self, grads: Tensor) -> Tensor:
         """
         Generate the mask for cloning.
 
@@ -180,7 +185,7 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         ----------
         grads : torch.Tensor
             The gradients.
-        
+
         Returns
         -------
         torch.Tensor
@@ -201,7 +206,7 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         )
         return mask
 
-    def generate_split_mask(self, grads:Tensor) -> Tensor:
+    def generate_split_mask(self, grads: Tensor) -> Tensor:
         """
         Generate the mask for splitting.
 
@@ -228,7 +233,7 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         )
         return mask
 
-    def new_pos_scale(self, mask:Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def new_pos_scale(self, mask: Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate new position and scaling for splitting.
 
@@ -263,7 +268,7 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         )
         return new_pos, new_scaling
 
-    def densify_clone(self, grads:Tensor) -> None:
+    def densify_clone(self, grads: Tensor) -> None:
         """
         Densify the point cloud by cloning.
 
@@ -277,7 +282,7 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         self.point_cloud.extand_points(atributes, self.optimizer)
         self.reset_densification_state()
 
-    def densify_split(self, grads:Tensor) -> None:
+    def densify_split(self, grads: Tensor) -> None:
         """
         Densify the point cloud by splitting.
 
@@ -310,7 +315,14 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         self.point_cloud.extand_points(atributes, self.optimizer)
         self.reset_densification_state()
 
-    def prune(self, step:int) -> None:
+        # TODO: need to remove unused operation
+        prune_filter = torch.cat((mask, torch.zeros(self.split_num * mask.sum(),
+                                                    device=self.device, dtype=bool)))
+        valid_points_mask = ~prune_filter
+        self.point_cloud.remove_points(valid_points_mask, self.optimizer)
+        self.prune_postprocess(valid_points_mask)
+
+    def prune(self, step: int) -> None:
         """
         Prune the point cloud.
 
@@ -361,7 +373,7 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         self.max_radii2D = torch.zeros((num_points), device=self.device)
 
     @torch.no_grad()
-    def accumulate_viewspace_grad(self, viewspace_points:Tensor) -> Tensor:
+    def accumulate_viewspace_grad(self, viewspace_points: Tensor) -> Tensor:
         """
         Accumulate viewspace gradients for batch.
 

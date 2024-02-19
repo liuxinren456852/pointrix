@@ -80,7 +80,9 @@ class Camera:
     fovY: Union[float, None] = None
     bg: float = 0.0
     rgb_file_name: str = None
+    rgb_file_path: str = None
     radius: float = 0.0
+    fid: float = 0.0
     scene_scale: float = 1.0
     _world_view_transform: Float[Tensor, "4 4"] = field(init=False)
     _projection_matrix: Float[Tensor, "4 4"] = field(init=False)
