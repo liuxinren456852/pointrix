@@ -63,7 +63,7 @@ trainer:
     white_bg: False
 
   renderer:
-    name: "DPTRRender"
+    name: "GaussianSplattingRender"
     max_sh_degree: ${trainer.model.point_cloud.max_sh_degree}
   writer:
     writer_type: "TensorboardWriter"

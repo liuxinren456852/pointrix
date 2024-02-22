@@ -67,6 +67,8 @@ http://storage.googleapis.com/gresearch/refraw360/360_v2.zip
 you need to modify the data path in the config file to the path of the data you downloaded.
 
 ```bash
+cd Pointrix
+pip install -e .
 cd projects/gaussian_splatting
 python launch.py --config ./configs/colmap.yaml
 ```

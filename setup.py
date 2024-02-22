@@ -5,11 +5,9 @@ setup(
     version='0.0.1',    
     description='Pointrix: a differentiable point-based rendering libraries',
     url='https://github.com/NJU-3DV/Pointrix',
-    author='Youtian Lin',
-    author_email='linyoutian.loyot@gmail.com',
+    author='NJU-3dv',
     packages=find_packages(),
     install_requires=[
-        'taichi>=1.6',
         'numpy',
         'torch',
     ]
