@@ -11,8 +11,9 @@
 
 import torch
 import math
-from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
+
 from pointrix.utils.registry import Registry
+from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
 
 RENDERER_REGISTRY = Registry("RENDERER", modules=["pointrix.renderer"])
 

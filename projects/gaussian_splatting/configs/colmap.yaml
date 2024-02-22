@@ -1,7 +1,7 @@
 name: "garden"
 
 trainer:
-  output_path: ""
+  output_path: "garden"
   max_steps: 30000
   val_interval: 5000
 
@@ -63,7 +63,7 @@ trainer:
     white_bg: False
 
   renderer:
-    name: "GaussianSplattingRender"
+    name: "DPTRRender"
     max_sh_degree: ${trainer.model.point_cloud.max_sh_degree}
   writer:
     writer_type: "TensorboardWriter"

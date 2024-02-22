@@ -2,6 +2,7 @@ import os
 import argparse
 
 import sys
+sys.path.append("../../")
 from pointrix.utils.config import load_config
 from pointrix.engine.default_trainer import DefaultTrainer
 
@@ -20,7 +21,7 @@ def main(args, extras) -> None:
     )
     # gaussian_trainer.save_model(path=model_path)
     
-    gaussian_trainer.test()
+    # gaussian_trainer.test()
     print("\nTraining complete.")
     
     

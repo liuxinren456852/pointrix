@@ -1,4 +1,5 @@
-from .splatting import GaussianSplattingRender, RENDERER_REGISTRY
+from .base_splatting import GaussianSplattingRender, RENDERER_REGISTRY
+from .dptr import DPTRRender
 
 def parse_renderer(cfg, **kwargs):
     """

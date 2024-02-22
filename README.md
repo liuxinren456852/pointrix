@@ -45,7 +45,7 @@ pip install -r requirements.txt
 Finally, install the following packages:
 ```bash
 # Install official diff-gaussian-rasterization
-git clone https://github.com/graphdeco-inria/diff-gaussian-rasterization.git
+git clone https://github.com/graphdeco-inria/diff-gaussian-rasterization.git  --recursive
 cd diff-gaussian-rasterization
 python setup.py install
 pip install .
