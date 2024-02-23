@@ -2,6 +2,7 @@ import torch
 from torch import Tensor
 from torch.optim import Optimizer
 from dataclasses import dataclass
+from typing import Tuple, List
 
 from pointrix.utils.config import C
 
@@ -233,7 +234,7 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         )
         return mask
 
-    def new_pos_scale(self, mask: Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def new_pos_scale(self, mask: Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Generate new position and scaling for splitting.
 

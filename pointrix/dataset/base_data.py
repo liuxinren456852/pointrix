@@ -10,7 +10,7 @@ from abc import abstractmethod
 from torch.utils.data import Dataset
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, Union, List, NamedTuple, Optional
-
+from typing import Tuple
 from pointrix.utils.registry import Registry
 from pointrix.utils.config import parse_structured
 from pointrix.camera.camera import Camera, Cameras, TrainableCamera
@@ -66,7 +66,7 @@ class BaseDataFormat:
     metadata: Dict[str, Any] = field(default_factory=lambda: dict({}))
     """other information that is required for the dataset"""
 
-    def __getitem__(self, item) -> tuple[Path, Camera]:
+    def __getitem__(self, item) -> Tuple[Path, Camera]:
         return self.image_filenames[item], self.Camera_list[item]
 
     def __len__(self) -> int:
@@ -134,7 +134,7 @@ class BaseReFormatData:
         return None
 
     @abstractmethod
-    def load_image_filenames(self, split) -> list[Path]:
+    def load_image_filenames(self, split) -> List[Path]:
         """
         The function for loading the image files names typically requires user customization.
 

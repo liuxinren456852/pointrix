@@ -3,6 +3,7 @@ import numpy as np
 import dptr.gs as gs
 from .base_splatting import RENDERER_REGISTRY, GaussianSplattingRender
 
+
 @RENDERER_REGISTRY.register()
 class DPTRRender(GaussianSplattingRender):
     """
@@ -90,28 +91,53 @@ class DPTRRender(GaussianSplattingRender):
         rgb = gs.compute_sh(shs, 3, direction)
 
         camparams = torch.Tensor([
-            width / (2 * np.tan(FovX / 180 * np.pi * 0.5)),
-            height / (2 * np.tan(FovY / 180 * np.pi * 0.5)),
-            width / 2, 
-            height / 2]).cuda().float()
+            width / (2 * np.tan(FovX * 0.5)),
+            height / (2 * np.tan(FovY * 0.5)),
+            float(width) / 2, 
+            float(height) / 2]).cuda().float()
         
-        rendered_image, radii, uv = gs.rasterization(
-            position,
-            scaling,
-            rotation,
-            opacity,
-            rgb,
-            world_view_transform.cuda(),
-            full_proj_transform.cuda(),
-            camparams,
-            width, height, 0.0)
+        (uv, depth) = gs.project_point(
+            position, 
+            world_view_transform.cuda(), 
+            full_proj_transform.cuda(), 
+            camparams, width, height)
+        
+        visible = depth != 0
 
-        return {"render": rendered_image,
-                "viewspace_points": uv,
-                "visibility_filter": radii > 0,
-                "radii": radii,
-                "xyz": position,
-                "color": shs,
-                "rot": rotation,
-                "scales": scaling,
-                "xy": uv}
+        # compute cov3d
+        cov3d = gs.compute_cov3d(scaling, rotation, visible)
+
+        # ewa project
+        (conic, radius, tiles_touched) = gs.ewa_project(
+            position, 
+            cov3d, 
+            world_view_transform.cuda(), 
+            camparams, 
+            uv, 
+            width, 
+            height, 
+            visible
+        )
+
+        # sort
+        (gaussian_ids_sorted, tile_range) = gs.sort_gaussian(
+            uv, depth, width, height, radius, tiles_touched
+        )
+
+        # alpha blending
+        ndc = torch.zeros_like(uv, requires_grad=True)
+        try:
+            ndc.retain_grad()
+        except:
+            pass
+
+        render_feature = gs.alpha_blending(
+            uv, conic, opacity, rgb, 
+            gaussian_ids_sorted, tile_range, 1.0, width, height, ndc
+        )
+
+        return {"render": render_feature,
+                "viewspace_points": ndc,
+                "visibility_filter": radius > 0,
+                "radii": radius
+                }

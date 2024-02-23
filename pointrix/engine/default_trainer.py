@@ -1,7 +1,7 @@
 import os
 import random
 from tqdm import tqdm
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, List
 from dataclasses import dataclass, field
 
 import torch
@@ -95,7 +95,7 @@ class DefaultTrainer:
 
         self.call_hook("before_train")
 
-    def train_step(self, batch: list[dict]) -> None:
+    def train_step(self, batch: List[dict]) -> None:
         """
         The training step for the model.
 

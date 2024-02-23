@@ -80,7 +80,7 @@ class NerfReFormat(BaseReFormatData):
 
         return cameras
 
-    def load_image_filenames(self, cameras: List[Camera], split) -> list[Path]:
+    def load_image_filenames(self, cameras: List[Camera], split) -> List[Path]:
         """
         The function for loading the image files names typically requires user customization.
 

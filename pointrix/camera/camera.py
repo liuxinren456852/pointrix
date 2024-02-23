@@ -585,7 +585,7 @@ class Cameras:
 
         return translate, radius
 
-    def generate_camera_path(self, num_frames: int, mode: str = "Dolly") -> list[Camera]:
+    def generate_camera_path(self, num_frames: int, mode: str = "Dolly") -> List[Camera]:
         """
         Generate the camera path.
 

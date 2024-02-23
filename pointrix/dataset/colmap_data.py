@@ -98,7 +98,7 @@ class ColmapReFormat(BaseReFormatData):
             cameras_results = [c for idx, c in enumerate(sorted_camera) if idx % llffhold == 0]
         return cameras_results
 
-    def load_image_filenames(self, cameras: List[Camera], split) -> list[Path]:
+    def load_image_filenames(self, cameras: List[Camera], split) -> List[Path]:
         """
         The function for loading the image files names typically requires user customization.
 
