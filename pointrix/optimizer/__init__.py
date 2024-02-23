@@ -2,9 +2,8 @@ import torch
 import torch.nn as nn
 from pointrix.utils.config import parse_structured
 
-from .base_optimizer import BaseOptimizer, OPTIMIZER_REGISTRY
 from .gs_optimizer import GaussianSplattingOptimizer
-from .optimizers import Optimizers
+from .optimizer import OptimizerList, BaseOptimizer, OPTIMIZER_REGISTRY
 from .scheduler import ExponLRScheduler, SCHEDULER_REGISTRY
 
 
@@ -55,9 +54,11 @@ def parse_optimizer(configs, model, **kwargs):
 
         optimizer_type = config.type
         optimizer = OPTIMIZER_REGISTRY.get(optimizer_type)
-        optimizer_dict[name] = optimizer(optim, model.point_cloud, config.structure, **kwargs)
+        # check if config has extra_args
+        extra_args = getattr(config, "extra_cfg", BaseOptimizer.Config)
+        optimizer_dict[name] = optimizer(extra_args, optim, model, **kwargs)
     
-    return Optimizers(optimizer_dict)
+    return OptimizerList(optimizer_dict)
 
 def parse_scheduler(config, lr_scale=1.0):
     scheduler = SCHEDULER_REGISTRY.get(config.name)

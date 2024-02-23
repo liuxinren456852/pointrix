@@ -18,11 +18,12 @@ trainer:
 
   optimizer:
     optimizer_1:
-      name: Adam
       type: GaussianSplattingOptimizer
+      name: Adam
       args:
         eps: 1e-15
-      structure:
+      extra_cfg:
+        control_module: "point_cloud" # the variable name that need to be densification
         percent_dense: 0.01
         split_num: 2
         densify_start_iter: 500

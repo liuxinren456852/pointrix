@@ -1,7 +1,7 @@
 import numpy as np
 
 from pointrix.utils.registry import Registry
-from .optimizers import Optimizers
+from .optimizer import OptimizerList
 SCHEDULER_REGISTRY = Registry("Scheduler", modules=["pointrix.optimizer"])
 SCHEDULER_REGISTRY.__doc__ = ""
 
@@ -81,7 +81,7 @@ class ExponLRScheduler:
 
         return helper
     
-    def step(self, global_step:int, optimizer:Optimizers) -> None:
+    def step(self, global_step: int, optimizer_list: OptimizerList) -> None:
         """
         Update the learning rate for the optimizer.
 
@@ -89,10 +89,10 @@ class ExponLRScheduler:
         ----------
         global_step : int
             The global step in training.
-        optimizer : Optimizers
-            The optimizer which needs to be updated.
+        optimizer_list : OptimizerList
+            The list of all the optimizers which need to be updated.
         """
-        for param_group in optimizer.param_groups:
+        for param_group in optimizer_list.param_groups:
                 name = param_group['name']
                 if name in self.scheduler_funcs.keys():
                     lr = self.scheduler_funcs[name](global_step)
