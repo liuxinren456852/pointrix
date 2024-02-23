@@ -19,7 +19,7 @@ def psnr(img1:Float[Tensor, "H W C"], img2:Float[Tensor, "H W C"]):
     mse = (((img1 - img2)) ** 2).view(img1.shape[0], -1).mean(1, keepdim=True)
     return 20 * torch.log10(1.0 / torch.sqrt(mse))
 
-def l1_loss(network_output:Float[Tensor, "H*"], gt:Float[Tensor, "H*"]):
+def l1_loss(network_output:Float[Tensor, "H ..."], gt:Float[Tensor, "H ..."]):
     """
     Compute the L1 loss between the network output and the ground truth.
 
@@ -37,7 +37,7 @@ def l1_loss(network_output:Float[Tensor, "H*"], gt:Float[Tensor, "H*"]):
     """
     return torch.abs((network_output - gt)).mean()
 
-def l2_loss(network_output:Float[Tensor, "H*"], gt:Float[Tensor, "H*"]):
+def l2_loss(network_output:Float[Tensor, "H ..."], gt:Float[Tensor, "H ..."]):
     """
     Compute the L2 loss between the network output and the ground truth.
 
