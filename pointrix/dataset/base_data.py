@@ -366,6 +366,32 @@ class BaseDataPipeline:
         else:
             self.iter_train_image_dataloader = deepcopy(self.training_dataset)
             self.iter_val_image_dataloader = deepcopy(self.validation_dataset)
+            
+    
+    def next_loader_iter(self, loader, iter_loader):
+        try:
+            return next(iter_loader)
+        except StopIteration:
+            iter_loader = iter(loader)
+            return next(iter_loader)
+        
+    def next_loaderless(self, dataset, iter_loader):
+        if not iter_loader.images:
+            iter_loader = deepcopy(dataset)
+        pop_idx = randint(0, len(iter_loader.images) - 1)
+        image = iter_loader.images.pop(pop_idx)
+        camera = iter_loader.camera_list.pop(pop_idx)
+        return [{
+            "image": image,
+            "camera": camera,
+            "FovX": camera.fovX,
+            "FovY": camera.fovY,
+            "height": camera.image_height,
+            "width": camera.image_width,
+            "world_view_transform": camera.world_view_transform,
+            "full_proj_transform": camera.full_proj_transform,
+            "camera_center": camera.camera_center,
+        }]
 
     def next_train(self, step: int = -1) -> Any:
         """
@@ -377,28 +403,15 @@ class BaseDataPipeline:
             the training step in trainer.
         """
         if self.use_dataloader:
-            try:
-                return next(self.iter_train_image_dataloader)
-            except StopIteration:
-                self.iter_train_image_dataloader = iter(self.training_loader)
-                return next(self.iter_train_image_dataloader)
+            return self.next_loader_iter(
+                self.training_loader, 
+                self.iter_train_image_dataloader
+            )
         else:
-            if not self.iter_train_image_dataloader.images:
-                self.iter_train_image_dataloader = deepcopy(self.training_dataset)
-            pop_idx = randint(0, len(self.iter_train_image_dataloader.images) - 1)
-            image = self.iter_train_image_dataloader.images.pop(pop_idx)
-            camera = self.iter_train_image_dataloader.camera_list.pop(pop_idx)
-            return [{
-                "image": image,
-                "camera": camera,
-                "FovX": camera.fovX,
-                "FovY": camera.fovY,
-                "height": camera.image_height,
-                "width": camera.image_width,
-                "world_view_transform": camera.world_view_transform,
-                "full_proj_transform": camera.full_proj_transform,
-                "camera_center": camera.camera_center,
-            }]
+            return self.next_loaderless(
+                self.training_dataset, 
+                self.iter_train_image_dataloader
+            )
 
     def next_val(self, step: int = -1) -> Any:
         """
@@ -410,28 +423,15 @@ class BaseDataPipeline:
             the validation step in validate progress.
         """
         if self.cfg.use_dataloader:
-            try:
-                return next(self.iter_val_image_dataloader)
-            except StopIteration:
-                self.iter_val_image_dataloader = iter(self.validation_loader)
-                return next(self.iter_val_image_dataloader)
+            return self.next_loader_iter(
+                self.validation_loader, 
+                self.iter_val_image_dataloader
+            )
         else:
-            if not self.iter_val_image_dataloader.images:
-                self.iter_val_image_dataloader = deepcopy(self.validation_dataset)
-            pop_idx = randint(0, len(self.iter_val_image_dataloader.images) - 1)
-            image = self.iter_val_image_dataloader.images.pop(pop_idx)
-            camera = self.iter_val_image_dataloader.camera_list.pop(pop_idx)
-            return [{
-                "image": image,
-                "camera": camera,
-                "FovX": camera.fovX,
-                "FovY": camera.fovY,
-                "height": camera.image_height,
-                "width": camera.image_width,
-                "world_view_transform": camera.world_view_transform,
-                "full_proj_transform": camera.full_proj_transform,
-                "camera_center": camera.camera_center,
-            }]
+            return self.next_loaderless(
+                self.validation_dataset, 
+                self.iter_val_image_dataloader
+            )
 
     @property
     def training_dataset_size(self) -> int:
