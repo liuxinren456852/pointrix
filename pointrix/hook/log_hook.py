@@ -12,11 +12,8 @@ class LogHook(Hook):
     def __init__(self):
         self.ema_loss_for_log = 0.
         self.bar_info = {}
-
-        self.l1_test = 0.
-        self.psnr_test = 0.
-        self.ssims_test = 0.
-        self.lpips_test = 0.
+        
+        self.losses_test = {"L1_loss": 0., "psnr": 0., "ssims": 0., "lpips": 0.}
 
     def before_train(self, trainner) -> None:
         """
@@ -50,11 +47,11 @@ class LogHook(Hook):
                 pos_lr = param_group['lr']
                 break
 
-        log_dict = {"loss": trainner.loss_dict['loss'],
-                    "l1_loss": trainner.loss_dict['L1_loss'],
-                    "ssim_loss": trainner.loss_dict['ssim_loss'],
-                    "num_pt": len(trainner.model.point_cloud),
-                    "pos_lr": pos_lr}
+        log_dict = {
+            "num_pt": len(trainner.model.point_cloud),
+            "pos_lr": pos_lr
+        }
+        log_dict.update(trainner.loss_dict)
 
         for key, value in log_dict.items():
             if 'loss' in key:
@@ -73,10 +70,9 @@ class LogHook(Hook):
             trainner.progress_bar.update(trainner.cfg.bar_upd_interval)
 
     def after_val_iter(self, trainner) -> None:
-        self.l1_test += trainner.metric_dict['L1_loss']
-        self.psnr_test += trainner.metric_dict['psnr']
-        self.ssims_test += trainner.metric_dict['ssims']
-        self.lpips_test += trainner.metric_dict['lpips']
+        for key, value in trainner.metric_dict.items():
+            if key in self.losses_test:
+                self.losses_test[key] += value
 
         image_name = os.path.basename(trainner.metric_dict['rgb_file_name'])
         iteration = trainner.global_step
@@ -90,34 +86,18 @@ class LogHook(Hook):
             step=iteration)
 
     def after_val(self, trainner) -> None:
-        self.l1_test /= trainner.val_dataset_size
-        self.psnr_test /= trainner.val_dataset_size
-        self.ssims_test /= trainner.val_dataset_size
-        self.lpips_test /= trainner.val_dataset_size
+        
+        log_info = f"\n[ITER {trainner.global_step}] Evaluating test:"
 
-        print(f"\n[ITER {trainner.global_step}] Evaluating test: L1 {self.l1_test:.5f} PSNR {self.psnr_test:.5f} SSIMS {self.ssims_test:.5f} LPIPS {self.lpips_test:.5f}")
-        iteration = trainner.global_step
-        trainner.logger.write_scalar(
-            "test" + '/loss_viewpoint - l1_loss',
-            self.l1_test,
-            iteration
-        )
-        trainner.logger.write_scalar(
-            "test" + '/loss_viewpoint - psnr',
-            self.psnr_test,
-            iteration
-        )
-        trainner.logger.write_scalar(
-            "test" + '/loss_viewpoint - ssims',
-            self.ssims_test,
-            iteration
-        )
-        trainner.logger.write_scalar(
-            "test" + '/loss_viewpoint - lpips',
-            self.lpips_test,
-            iteration
-        )
-        self.l1_test = 0.
-        self.psnr_test = 0.
-        self.ssims_test = 0.
-        self.lpips_test = 0.
+        for key in self.losses_test:
+            self.losses_test[key] /= trainner.val_dataset_size
+            trainner.logger.write_scalar(
+                "test" + '/loss_viewpoint - ' + key,
+                self.losses_test[key],
+                trainner.global_step
+            ) 
+            log_info += f" {key} {self.losses_test[key]:.5f}"
+        
+        print(log_info)
+        for key in self.losses_test:
+            self.losses_test[key] = 0.

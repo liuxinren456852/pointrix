@@ -107,6 +107,7 @@ class DefaultTrainer:
         render_dict = self.model(batch)
         render_results = self.renderer.render_batch(render_dict, batch)
         self.loss_dict = self.model.get_loss_dict(render_results, batch)
+        self.loss_dict['loss'].backward()
         self.optimizer_dict = self.model.get_optimizer_dict(self.loss_dict,
                                                             render_results,
                                                             self.white_bg)

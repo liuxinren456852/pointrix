@@ -18,4 +18,5 @@ def parse_model(cfg, datapipline:BaseDataPipeline, device="cuda"):
     device : str
         The device to use.
     """
-    return MODEL_REGISTRY.get(cfg.name)(cfg, datapipline, device)
+    name = cfg.pop("name")
+    return MODEL_REGISTRY.get(name)(cfg, datapipline, device)

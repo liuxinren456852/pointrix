@@ -543,6 +543,7 @@ class Cameras:
     """
 
     def __init__(self, camera_list: List[Camera]):
+        self.camera_type = camera_list[0].__class__
         self.cameras = camera_list
         self.num_cameras = len(camera_list)
         self.Rs = torch.stack([cam.R for cam in camera_list], dim=0)
@@ -661,7 +662,7 @@ class Cameras:
             fovX = 2 * math.atan(width / (2 * focal))
             fovY = 2 * math.atan(height / (2 * focal))
 
-            cam = Camera(idx=idx, R=R, T=T, width=width, height=height, rgb_file_name='',
+            cam = self.camera_type(idx=idx, R=R, T=T, width=width, height=height, rgb_file_name='',
                          fovX=fovX, fovY=fovY, bg=0.0, scene_scale=1.0)
             camera_list.append(cam)
         return camera_list

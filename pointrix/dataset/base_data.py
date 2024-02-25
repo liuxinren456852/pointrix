@@ -356,8 +356,8 @@ class BaseDataPipeline:
             )
             self.validation_loader = torch.utils.data.DataLoader(
                 self.validation_dataset,
-                batch_size=self.cfg.batch_size,
-                num_workers=self.cfg.num_workers,
+                batch_size=1,
+                num_workers=0,
                 collate_fn=list,
                 pin_memory=False
             )
