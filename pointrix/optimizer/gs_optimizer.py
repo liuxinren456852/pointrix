@@ -131,7 +131,7 @@ class GaussianSplattingOptimizer(BaseOptimizer):
             if self.step % self.opacity_reset_interval == 0 or (white_bg and self.step == self.cfg.densify_start_iter):
                 self.opacity_deferred = True
 
-    def update_model(self, loss: Tensor, viewspace_points: Tensor,
+    def update_model(self, viewspace_points: Tensor,
                      visibility: Tensor, radii: Tensor, white_bg: bool, **kwargs) -> None:
         """
         Update the model parameter with the loss, 

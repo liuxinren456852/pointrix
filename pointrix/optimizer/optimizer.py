@@ -21,7 +21,7 @@ class OptimizerList:
                 f'but got {key}: {type(value)}')
         self.optimizer_dict = optimizer_dict
     
-    def update_model(self, loss, **kwargs) -> None:
+    def update_model(self, **kwargs) -> None:
         """
         update the model with the loss.
 
@@ -32,9 +32,8 @@ class OptimizerList:
         kwargs : dict
             The keyword arguments.
         """
-        loss.backward()
         for name, optimizer in self.optimizer_dict.items():
-            optimizer.update_model(loss, **kwargs)
+            optimizer.update_model(**kwargs)
     
     def state_dict(self) -> dict:
         """
@@ -120,7 +119,7 @@ class BaseOptimizer(BaseObject):
         self.optimizer = optimizer
         self.step = 1
 
-    def update_model(self, loss: torch.Tensor, **kwargs) -> None:
+    def update_model(self, **kwargs) -> None:
         """
         update the model with the loss.
         you need backward first, then call this function to update the model.

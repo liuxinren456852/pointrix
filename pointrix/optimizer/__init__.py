@@ -34,12 +34,12 @@ def parse_optimizer(configs, model, **kwargs):
     model : BaseModel
         The model.
     """
-    param_groups = model.get_param_groups()
+    # param_groups = model.get_param_groups()
     optimizer_dict = {}
     for name, config in configs.items():
         if hasattr(config, "params"):
             params = [
-                {"params": param_groups[name], "name": name, **args}
+                {"params": get_parameters(model, name), "name": name, **args}
                 for name, args in config.params.items()
             ]
         else:
