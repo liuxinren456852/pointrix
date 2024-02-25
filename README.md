@@ -1,25 +1,20 @@
-<br />
 <div align="center">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>裁剪图片</title>
 <style>
-  /* 设置容器的大小，超出部分将被裁剪 */
   .image-container {
     width: 300px;
     height: 100px;
-    overflow: hidden; /* 超出部分隐藏 */
+    overflow: hidden; 
     background-image: url('docs/images/logo_transparent.png');
-    background-size: cover; /* 背景图像尺寸调整为完全覆盖容器 */
-    background-position: center; /* 背景图像位置居中 */
+    background-size: cover; 
+    background-position: center; 
   }
 </style>
 </head>
 <body>
 
-<!-- 图片容器 -->
 <div class="image-container">
-  <!-- 图片链接 -->
   <a href="https://github.com/othneildrew/Best-README-Template"></a>
 </div>
 
