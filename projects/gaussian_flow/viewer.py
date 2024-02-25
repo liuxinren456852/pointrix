@@ -1,36 +1,33 @@
+import numpy as np
+import math
+import torch
+
 import os
 import argparse
+from einops import rearrange
 
-import sys
 from pointrix.utils.config import load_config
-from trainer import GaussianFlowTrainer
+from trainer import GaussianFlow
 
 # initialize the register
-import gf
 from data import dnerf_data
+from gf_point import GaussianFlowPointCloud
 
-
-import taichi as ti
-ti.init(arch=ti.cuda)
 
 def main(args, extras) -> None:
     
     cfg = load_config(args.config, cli_args=extras)
-    gaussian_trainer = GaussianFlowTrainer(
+    gaussian_trainer = GaussianFlow(
         cfg.trainer,
         cfg.exp_dir,
     )
+    ckpt_name = ""
+    model_path = ""
+    gaussian_trainer.load_model(path=model_path)
     
-    gaussian_trainer.train_loop()    
-    model_path = os.path.join(
-        gaussian_trainer.cfg.output_path, 
-        "{}.ply".format(gaussian_trainer.global_step-1)
-    )
-    
-    gaussian_trainer.test(model_path)
-    print("\nTraining complete.")
-    
-    
+    gaussian_trainer.video_step(model_path, save_npz=True)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="path to config file")
@@ -38,4 +35,3 @@ if __name__ == "__main__":
     args, extras = parser.parse_known_args()
     
     main(args, extras)
-    
