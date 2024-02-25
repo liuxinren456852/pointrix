@@ -1,13 +1,31 @@
 <br />
 <div align="center">
-  <!-- <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
-  </a> -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>裁剪图片</title>
+<style>
+  /* 设置容器的大小，超出部分将被裁剪 */
+  .image-container {
+    width: 300px;
+    height: 100px;
+    overflow: hidden; /* 超出部分隐藏 */
+    background-image: url('docs/images/logo_transparent.png');
+    background-size: cover; /* 背景图像尺寸调整为完全覆盖容器 */
+    background-position: center; /* 背景图像位置居中 */
+  }
+</style>
+</head>
+<body>
 
-  <h3 align="center">Pointrix</h3>
+<!-- 图片容器 -->
+<div class="image-container">
+  <!-- 图片链接 -->
+  <a href="https://github.com/othneildrew/Best-README-Template"></a>
+</div>
+
 
   <p align="center">
-    A differentiable point-based rendering libraries
+    A differentiable point-based rendering library
     <br />
     <!-- <a href="https://github.com/othneildrew/Best-README-Template"> -->
     <strong>Explore the docs »</strong></a>

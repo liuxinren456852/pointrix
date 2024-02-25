@@ -14,8 +14,7 @@ import sys
 from pathlib import Path
 
 # find project
-sys.path.insert(0, str(Path(__file__).parents[1]))
-sys.path.append('/home/clz/code_remote/Pointrix')
+
 
 # -- Project information -----------------------------------------------------
 
@@ -24,9 +23,11 @@ copyright = '2024, NJU-3DV'
 author = 'NJU-3DV'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+# release = '0.0.1'
 
-html_logo = "images/Logo.png"
+html_logo = "images/twitter_header_photo_1.png"
+html_favicon = "images/pointrix.ico"
+html_title = "Pointrix"
 
 # -- General configuration ---------------------------------------------------
 
@@ -37,9 +38,11 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
-    'myst_parser'
+    'myst_parser',
+    'sphinx_design'
     ]
 
+myst_enable_extensions = ["colon_fence"]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
