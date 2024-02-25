@@ -46,6 +46,7 @@ trainer:
           lr: 0.001
         point_cloud.opacity:
           lr: 0.05
+
   scheduler:
     name: "ExponLRScheduler"
     max_steps: ${trainer.max_steps}
