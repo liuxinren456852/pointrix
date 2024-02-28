@@ -202,6 +202,7 @@ class BaseImageDataset(Dataset):
         self.radius = self.cameras.radius
 
         if self.images is not None:
+            # Transform cached images.
             self.images = [self._transform_image(
                 image) for image in self.images]
 
@@ -368,12 +369,19 @@ class BaseDataPipeline:
             self.iter_val_image_dataloader = deepcopy(self.validation_dataset)
             
     
-    def next_loader_iter(self, loader, iter_loader):
+    def next_loader_train_iter(self):
         try:
-            return next(iter_loader)
+            return next(self.iter_train_image_dataloader)
         except StopIteration:
-            iter_loader = iter(loader)
-            return next(iter_loader)
+            self.iter_train_image_dataloader = iter(self.training_loader)
+            return next(self.iter_train_image_dataloader)
+
+    def next_loader_eval_iter(self):
+        try:
+            return next(self.iter_val_image_dataloader)
+        except StopIteration:
+            self.iter_val_image_dataloader = iter(self.validation_loader)
+            return next(self.iter_val_image_dataloader)
         
     def next_loaderless(self, dataset, iter_loader):
         if not iter_loader.images:
@@ -403,10 +411,7 @@ class BaseDataPipeline:
             the training step in trainer.
         """
         if self.use_dataloader:
-            return self.next_loader_iter(
-                self.training_loader, 
-                self.iter_train_image_dataloader
-            )
+            return self.next_loader_train_iter()
         else:
             return self.next_loaderless(
                 self.training_dataset, 
@@ -423,10 +428,7 @@ class BaseDataPipeline:
             the validation step in validate progress.
         """
         if self.cfg.use_dataloader:
-            return self.next_loader_iter(
-                self.validation_loader, 
-                self.iter_val_image_dataloader
-            )
+            return self.next_loader_eval_iter()
         else:
             return self.next_loaderless(
                 self.validation_dataset, 

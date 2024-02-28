@@ -8,7 +8,7 @@ from pointrix.utils.base import BaseModule
 from pointrix.utils.config import parse_structured
 from pointrix.point_cloud import parse_point_cloud
 from .loss import l1_loss, ssim, psnr
-from gaussian_lpips import lpips
+# from gaussian_lpips import lpips
 from pointrix.utils.registry import Registry
 
 MODEL_REGISTRY = Registry("MODEL", modules=["pointrix.model"])
@@ -36,7 +36,7 @@ class BaseModel(BaseModule):
 
     cfg: Config
 
-    def stepup(self, datapipline, device="cuda"):
+    def setup(self, datapipline, device="cuda"):
         self.point_cloud = parse_point_cloud(self.cfg.point_cloud,
                                              datapipline).to(device)
         self.point_cloud.set_prefix_name("point_cloud")
@@ -145,15 +145,15 @@ class BaseModel(BaseModule):
             render_results['images'], gt_images, data_range=1, size_average=True
         ).mean().item()
 
-        lpips_test = lpips(
-            render_results['images'], 
-            gt_images,
-            net_type='vgg'
-        ).mean().item()
+        # lpips_test = lpips(
+        #     render_results['images'], 
+        #     gt_images,
+        #     net_type='vgg'
+        # ).mean().item()
         metric_dict = {"L1_loss": L1_loss,
                        "psnr": psnr_test,
                        "ssims": ssims_test,
-                       "lpips": lpips_test,
+                    #    "lpips": lpips_test,
                        "gt_images": gt_images,
                        "images": render_results['images'],
                        "rgb_file_name": batch[0]["camera"].rgb_file_name}
