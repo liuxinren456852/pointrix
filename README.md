@@ -1,13 +1,26 @@
-<br />
 <div align="center">
-  <!-- <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
-  </a> -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  .image-container {
+    width: 300px;
+    height: 100px;
+    overflow: hidden; 
+    background-image: url('docs/images/logo_transparent.png');
+    background-size: cover; 
+    background-position: center; 
+  }
+</style>
+</head>
+<body>
 
-  <h3 align="center">Pointrix</h3>
+<div class="image-container">
+  <a href="https://github.com/othneildrew/Best-README-Template"></a>
+</div>
+
 
   <p align="center">
-    A differentiable point-based rendering libraries
+    A differentiable point-based rendering library
     <br />
     <!-- <a href="https://github.com/othneildrew/Best-README-Template"> -->
     <strong>Explore the docs »</strong></a>

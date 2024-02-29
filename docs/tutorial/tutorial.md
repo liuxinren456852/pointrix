@@ -1,4 +1,4 @@
-# Tutorial
+# Example
 
 There is a simple example that how to extend our pointrix 
 framework to dynamic gaussaian, which the deformation is generated

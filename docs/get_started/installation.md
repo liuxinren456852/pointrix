@@ -1,4 +1,4 @@
-# Getting started
+# Installation
 
 Get started with our package with these steps:
 
@@ -35,19 +35,4 @@ git clone https://gitlab.inria.fr/bkerbl/simple-knn.git
 cd simple-knn
 python setup.py install
 pip install .
-```
-
-### 2. Download the data
-
-<http://storage.googleapis.com/gresearch/refraw360/360_v2.zip>
-
-Put the data into your folder.
-
-### 3. Run the code
-
-you need to modify the data path in the config file to the path of the data you downloaded.
-
-```bash
-cd projects/gaussian_splatting
-python launch.py --config ./configs/colmap.yaml
 ```
