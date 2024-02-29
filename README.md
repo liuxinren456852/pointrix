@@ -1,19 +1,4 @@
 <div align="center">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  .image-container {
-    width: 300px;
-    height: 100px;
-    overflow: hidden; 
-    background-image: url('docs/images/logo_transparent.png');
-    background-size: cover; 
-    background-position: center; 
-  }
-</style>
-</head>
-<body>
-
 <div class="image-container">
   <a href="https://github.com/othneildrew/Best-README-Template"></a>
 </div>
