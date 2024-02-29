@@ -56,7 +56,7 @@ trainer:
         init:  0.00016
         final: 0.0000016
   dataset:
-    data_path: "/NASdata/clz/data/garden"
+    data_path: ""
     data_type: "ColmapReFormat"
     cached_image: True
     shuffle: True

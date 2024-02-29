@@ -3,7 +3,7 @@ from .hook import HOOK_REGISTRY, Hook
 from rich.panel import Panel
 from rich.table import Table
 from rich.live import Live
-from pointrix.logger.writer import Writer, Logger
+from pointrix.logger.writer import Writer, Logger, ProgressLogger
 
 
 @HOOK_REGISTRY.register()
@@ -32,6 +32,21 @@ class LogHook(Hook):
         except AttributeError:
             Logger.print(
                 "ERROR!!..Please provide the exp_name in config file..")
+    
+    def before_train(self, trainner) -> None:
+        """
+        some operations before the training loop starts.
+
+        Parameters
+        ----------
+        trainner : Trainer
+            The trainer object.
+        """
+        self.progress_bar = ProgressLogger(description='training', suffix='iter/s')
+        self.progress_bar.add_task("train", "Training Progress", trainner.cfg.max_steps, log_dict={})
+        self.progress_bar.add_task("validation", "Validation Progress", len(trainner.datapipline.validation_dataset), log_dict={})
+        self.progress_bar.reset("validation", visible=False)
+        self.progress_bar.start()
 
     def after_train_iter(self, trainner) -> None:
         """
@@ -67,9 +82,21 @@ class LogHook(Hook):
             self.bar_info.update({
                 "num_pts": f"{len(trainner.model.point_cloud)}",
             })
-            trainner.progress_bar.update("train", step=trainner.cfg.bar_upd_interval, log=self.bar_info)
+            self.progress_bar.update("train", step=trainner.cfg.bar_upd_interval, log=self.bar_info)
+
+    def before_val(self, trainner) -> None:
+        """
+        some operations before the validation loop starts.
+
+        Parameters
+        ----------
+        trainner : Trainer
+            The trainer object.
+        """
+        self.progress_bar.reset("validation", visible=True)
 
     def after_val_iter(self, trainner) -> None:
+        self.progress_bar.update("validation", step=1)
         for key, value in trainner.metric_dict.items():
             if key in self.losses_test:
                 self.losses_test[key] += value
@@ -105,3 +132,7 @@ class LogHook(Hook):
         Logger.print('\n', table, '\n')
         for key in self.losses_test:
             self.losses_test[key] = 0.
+        self.progress_bar.reset("validation", visible=False)
+    
+    def after_train(self, trainner) -> None:
+        self.progress_bar.stop()

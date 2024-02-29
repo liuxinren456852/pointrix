@@ -134,8 +134,28 @@ class ProgressLogger:
         >>> progress_logger.stop()
         """
         self.progress.stop()
+
+    def start_task(self, name:str):
+        """
+        Start the task.
+
+        Examples
+        --------
+        >>> progress_logger.start_task()
+        """
+        self.progress.start_task(self.tasks[name])
     
-    def reset(self, name:str):
+    def stop_task(self, name:str):
+        """
+        Stop the task.
+
+        Examples
+        --------
+        >>> progress_logger.stop_task()
+        """
+        self.progress.stop_task(self.tasks[name])
+    
+    def reset(self, name:str, visible: Optional[bool] = True):
         """
         Reset the progress.
 
@@ -143,7 +163,7 @@ class ProgressLogger:
         --------
         >>> progress_logger.reset()
         """
-        self.progress.reset(self.tasks[name])
+        self.progress.reset(self.tasks[name], visible=visible)
 
 
 class Writer:

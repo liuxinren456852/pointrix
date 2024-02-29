@@ -95,8 +95,6 @@ class DefaultTrainer:
         # build logger and hooks
         self.logger = parse_writer(self.cfg.writer, exp_dir)
 
-        self.call_hook("before_train")
-
     def train_step(self, batch: List[dict]) -> None:
         """
         The training step for the model.
@@ -124,9 +122,6 @@ class DefaultTrainer:
             render_results = self.renderer.render_batch(render_dict, batch)
             self.metric_dict = self.model.get_metric_dict(render_results, batch)
             self.call_hook("after_val_iter")
-            self.progress_bar.update("validation", step=1)
-        
-        self.progress_bar.reset("validation")
         self.call_hook("after_val")
 
     def test(self, model_path=None) -> None:
@@ -147,15 +142,8 @@ class DefaultTrainer:
         The training loop for the model.
         """
         loop_range = range(self.start_steps, self.cfg.max_steps+1)
-        self.progress_bar = ProgressLogger(description='training', suffix='iter/s')
-        self.progress_bar.add_task("train", "Training Progress", self.cfg.max_steps, log_dict={})
-        self.progress_bar.add_task("validation", "Validation Progress", len(self.datapipline.validation_dataset), log_dict={})
         self.global_step = self.start_steps
-
-        self.iter_start = torch.cuda.Event(enable_timing = True)
-        self.iter_end = torch.cuda.Event(enable_timing = True)
-
-        self.progress_bar.start()
+        self.call_hook("before_train")
         for iteration in loop_range:
             self.call_hook("before_train_iter")
             batch = self.datapipline.next_train(self.global_step)
@@ -163,12 +151,11 @@ class DefaultTrainer:
             self.schedulers.step(self.global_step, self.optimizer)
             self.train_step(batch)
             self.optimizer.update_model(**self.optimizer_dict)
-
             self.call_hook("after_train_iter")
             self.global_step += 1
             if iteration % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
+                self.call_hook("before_val")
                 self.validation()
-        self.progress_bar.stop()
         self.call_hook("after_train")
 
     def call_hook(self, fn_name: str, **kwargs) -> None:
