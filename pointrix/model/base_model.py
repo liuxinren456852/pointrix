@@ -1,6 +1,6 @@
 import torch
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from typing import Mapping, Optional, Union, Any
 from omegaconf import DictConfig
 from pytorch_msssim import ms_ssim
 
@@ -8,7 +8,7 @@ from pointrix.utils.base import BaseModule
 from pointrix.utils.config import parse_structured
 from pointrix.point_cloud import parse_point_cloud
 from .loss import l1_loss, ssim, psnr
-# from gaussian_lpips import lpips
+# from .lpips_pytorch import lpips
 from pointrix.utils.registry import Registry
 
 MODEL_REGISTRY = Registry("MODEL", modules=["pointrix.model"])
@@ -158,31 +158,6 @@ class BaseModel(BaseModule):
                        "images": render_results['images'],
                        "rgb_file_name": batch[0]["camera"].rgb_file_name}
         return metric_dict
-
-    def get_param_groups(self):
-        """
-        Get the parameter groups for optimizer
-
-        Returns
-        -------
-        dict
-            The parameter groups for optimizer
-        """
-        param_group = {}
-        param_group[self.point_cloud.prefix_name +
-                    'position'] = self.point_cloud.position
-        param_group[self.point_cloud.prefix_name +
-                    'opacity'] = self.point_cloud.opacity
-        param_group[self.point_cloud.prefix_name +
-                    'features'] = self.point_cloud.features
-        param_group[self.point_cloud.prefix_name +
-                    'features_rest'] = self.point_cloud.features_rest
-        param_group[self.point_cloud.prefix_name +
-                    'scaling'] = self.point_cloud.scaling
-        param_group[self.point_cloud.prefix_name +
-                    'rotation'] = self.point_cloud.rotation
-
-        return param_group
     
     def load_ply(self, path):
         """
@@ -194,5 +169,19 @@ class BaseModel(BaseModule):
             The path of the ply file.
         """
         self.point_cloud.load_ply(path)
+    
+    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False):
+        num_pts = state_dict.pop('num_pts')
+
+        if num_pts != len(self.point_cloud):
+            self.point_cloud.re_init(num_pts)
+
+        return super().load_state_dict(state_dict, strict, assign)
+
+    def get_state_dict(self):
+        additional_info = {'num_pts': len(self.point_cloud)}
+        return {**super().state_dict(), **additional_info}
+
+
 
         

@@ -54,6 +54,23 @@ class GaussianPointCloud(PointCloud):
         self.register_atribute("scaling", scales)
         self.register_atribute("rotation", rots)
         self.register_atribute("opacity", opacities)
+    
+    def re_init(self, num_points):
+        super().re_init(num_points)
+        fused_color = self.features.unsqueeze(1)
+        self.features = (
+            nn.Parameter(
+                fused_color.contiguous().requires_grad_(True)
+            )
+        )
+        scales, rots, opacities, features_rest = gaussian_point_init(
+            position=self.position,
+            max_sh_degree=self.cfg.max_sh_degree,
+        )
+        self.register_atribute("features_rest", features_rest)
+        self.register_atribute("scaling", scales)
+        self.register_atribute("rotation", rots)
+        self.register_atribute("opacity", opacities)
 
     @property
     def get_opacity(self):

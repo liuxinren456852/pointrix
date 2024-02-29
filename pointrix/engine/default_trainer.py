@@ -12,7 +12,7 @@ from pointrix.dataset import parse_data_pipeline
 from pointrix.utils.config import parse_structured
 from pointrix.optimizer import parse_optimizer, parse_scheduler
 from pointrix.model import parse_model
-from pointrix.logger import parse_writer, create_progress
+from pointrix.logger import parse_writer, ProgressLogger
 from pointrix.hook import parse_hooks
 from pointrix.exporter.novel_view import test_view_render, novel_view_render
 
@@ -69,6 +69,9 @@ class DefaultTrainer:
 
         # build config
         self.cfg = parse_structured(self.Config, cfg)
+        # build hooks
+        self.hooks = parse_hooks(self.cfg.hooks)
+        self.call_hook("before_run")
         # build datapipeline
         self.datapipline = parse_data_pipeline(self.cfg.dataset)
 
@@ -91,7 +94,6 @@ class DefaultTrainer:
 
         # build logger and hooks
         self.logger = parse_writer(self.cfg.writer, exp_dir)
-        self.hooks = parse_hooks(self.cfg.hooks)
 
         self.call_hook("before_train")
 
@@ -115,28 +117,24 @@ class DefaultTrainer:
     @torch.no_grad()
     def validation(self):
         self.val_dataset_size = len(self.datapipline.validation_dataset)
-        progress_bar = tqdm(
-            range(0, self.val_dataset_size),
-            desc="Validation progress",
-            leave=False,
-        )
         for i in range(0, self.val_dataset_size):
             self.call_hook("before_val_iter")
             batch = self.datapipline.next_val(i)
             render_dict = self.model(batch)
             render_results = self.renderer.render_batch(render_dict, batch)
-            self.metric_dict = self.model.get_metric_dict(
-                render_results, batch)
+            self.metric_dict = self.model.get_metric_dict(render_results, batch)
             self.call_hook("after_val_iter")
-            progress_bar.update(1)
-        progress_bar.close()
+            self.progress_bar.update("validation", step=1)
+        
+        self.progress_bar.reset("validation")
         self.call_hook("after_val")
 
-    def test(self, model_path) -> None:
+    def test(self, model_path=None) -> None:
         """
         The testing method for the model.
         """
-        self.model.load_ply(model_path)
+        # self.model.load_ply(model_path)
+        self.load_model(model_path)
         self.model.to(self.device)
         self.renderer.active_sh_degree = 3
         test_view_render(self.model, self.renderer,
@@ -149,20 +147,17 @@ class DefaultTrainer:
         The training loop for the model.
         """
         loop_range = range(self.start_steps, self.cfg.max_steps+1)
-        self.progress_bar = tqdm(
-            range(self.start_steps, self.cfg.max_steps),
-            desc="Training progress",
-            leave=False,
-        )
+        self.progress_bar = ProgressLogger(description='training', suffix='iter/s')
+        self.progress_bar.add_task("train", "Training Progress", self.cfg.max_steps, log_dict={})
+        self.progress_bar.add_task("validation", "Validation Progress", len(self.datapipline.validation_dataset), log_dict={})
         self.global_step = self.start_steps
 
         self.iter_start = torch.cuda.Event(enable_timing = True)
         self.iter_end = torch.cuda.Event(enable_timing = True)
 
+        self.progress_bar.start()
         for iteration in loop_range:
-            
             self.call_hook("before_train_iter")
-            
             batch = self.datapipline.next_train(self.global_step)
             self.renderer.update_sh_degree(iteration)
             self.schedulers.step(self.global_step, self.optimizer)
@@ -173,7 +168,7 @@ class DefaultTrainer:
             self.global_step += 1
             if iteration % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
                 self.validation()
-        self.progress_bar.close()
+        self.progress_bar.stop()
         self.call_hook("after_train")
 
     def call_hook(self, fn_name: str, **kwargs) -> None:
@@ -197,24 +192,26 @@ class DefaultTrainer:
 
     def load_model(self, path: Path = None) -> None:
         if path is None:
-            path = os.path.join(self.cfg.output_path,
+            path = os.path.join(self.exp_dir,
                                 "chkpnt" + str(self.global_step) + ".pth")
         data_list = torch.load(path)
-        self.global_step = data_list["global_step"]
-        self.optimizer.load_state_dict(data_list["optimizer"])
-
         for k, v in data_list.items():
             print(f"Loaded {k} from checkpoint")
             # get arrtibute from model
             arrt = getattr(self, k)
-            if isinstance(arrt, nn.Module):
+            if hasattr(arrt, 'load_state_dict'):
                 arrt.load_state_dict(v)
             else:
                 setattr(self, k, v)
 
-    def saving(self):
+    def save_model(self, path: Path = None) -> None:
+        if path is None:
+            path = os.path.join(self.exp_dir,
+                                "chkpnt" + str(self.global_step) + ".pth")
         data_list = {
-            "active_sh_degree": self.active_sh_degree,
-            "model": self.model.state_dict(),
+            "global_step": self.global_step,
+            "optimizer": self.optimizer.state_dict(),
+            "model": self.model.get_state_dict(),
+            "renderer": self.renderer.state_dict()
         }
-        return data_list
+        torch.save(data_list, path)

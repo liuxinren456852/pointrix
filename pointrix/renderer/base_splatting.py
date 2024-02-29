@@ -229,3 +229,9 @@ class GaussianSplattingRender(BaseObject):
         if step % self.cfg.update_sh_iter == 0:
             if self.active_sh_degree < self.cfg.max_sh_degree:
                 self.active_sh_degree += 1
+
+    def load_state_dict(self, state_dict):
+        self.active_sh_degree = state_dict["active_sh_degree"]
+
+    def state_dict(self):
+        return {"active_sh_degree": self.active_sh_degree}

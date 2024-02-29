@@ -1,6 +1,7 @@
 
 import torch
 import numpy as np
+from pointrix.logger.writer import Logger
 
 def RGB2SH(rgb):
     C0 = 0.28209479177387814
@@ -24,12 +25,12 @@ def points_init(init_cfg, point_cloud):
     
     if init_type == 'random' and point_cloud is None:
         num_points = init_cfg.num_points
-        print("Number of points at initialisation : ", num_points)
+        Logger.log("Number of points at initialisation : ", num_points)
         pos = get_random_points(num_points, init_cfg.radius)
         features = get_random_feauture(num_points, init_cfg.feat_dim)
         
     else:
-        print("Number of points at initialisation : ", point_cloud.points.shape[0])
+        Logger.log("Number of points at initialisation : ", point_cloud.points.shape[0])
         pos = np.asarray(point_cloud.points)
         pos = torch.from_numpy(pos).float()
         features = RGB2SH(torch.tensor(np.asarray(point_cloud.colors)).float())

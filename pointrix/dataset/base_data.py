@@ -12,6 +12,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, Union, List, NamedTuple, Optional
 from typing import Tuple
 from pointrix.utils.registry import Registry
+from pointrix.logger.writer import ProgressLogger, Logger
 from pointrix.utils.config import parse_structured
 from pointrix.camera.camera import Camera, Cameras, TrainableCamera
 from pointrix.dataset.utils.dataset_utils import force_full_init, getNerfppNorm
@@ -163,6 +164,10 @@ class BaseReFormatData:
         split: The split of the data.
         """
         image_lists = []
+        cached_progress = ProgressLogger(
+            description='Loading cached images', suffix='images/s')
+        cached_progress.add_task('cache_image_read', 'Loading cached images', len(self.data_list.image_filenames))
+        cached_progress.start()
         for image_filename in self.data_list.image_filenames:
             temp_image = Image.open(image_filename)
             w, h = temp_image.size
@@ -173,6 +178,8 @@ class BaseReFormatData:
             image_lists.append(
                 np.array(resize_image, dtype="uint8")
             )
+            cached_progress.update('cache_image_read', step=1)
+        cached_progress.stop()
         return image_lists
 
 # TODO: support different dataset (Meta information (depth) support)

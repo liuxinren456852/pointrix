@@ -1,4 +1,4 @@
-from .writer import TensorboardWriter, WandbWriter, LOGGER_REGISTRY, create_progress
+from .writer import TensorboardWriter, WandbWriter, LOGGER_REGISTRY, ProgressLogger
 
 
 def parse_writer(cfg, log_dir, **kwargs):

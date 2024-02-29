@@ -19,9 +19,9 @@ def main(args, extras) -> None:
         cfg.exp_dir, 
         "chkpnt" + str(gaussian_trainer.global_step) + ".pth"
     )
-    # gaussian_trainer.save_model(path=model_path)
+    gaussian_trainer.save_model(path=model_path)
     
-    # gaussian_trainer.test()
+    gaussian_trainer.test()
     print("\nTraining complete.")
     
     
