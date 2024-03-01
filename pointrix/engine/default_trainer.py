@@ -156,6 +156,7 @@ class DefaultTrainer:
             if iteration % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
                 self.call_hook("before_val")
                 self.validation()
+                self.call_hook("after_val")
         self.call_hook("after_train")
 
     def call_hook(self, fn_name: str, **kwargs) -> None:

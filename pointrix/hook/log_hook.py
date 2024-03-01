@@ -34,10 +34,13 @@ class LogHook(Hook):
                                     |  ___// _ \ | || '_ \ | __|| '__|| |\ \/ /
                                     | |   | (_) || || | | || |_ | |   | | >  < 
                                     |_|    \___/ |_||_| |_| \__||_|   |_|/_/\_\
+
+                                   A differentiable point-based rendering library.
         """                        
                                                                                                                                                                                                   
         try:
-            Logger.print(Panel( Pointrix_logo + "\n The experiment name is {}".format(trainner.exp_dir), title="Welcome to Pointrix", subtitle="Thank you"))
+            Logger.print(Panel(Pointrix_logo, title="Welcome to Pointrix", subtitle="Thank you"))
+            Logger.log("The experiment name is {}".format(trainner.exp_dir))
         except AttributeError:
             Logger.print(
                 "ERROR!!..Please provide the exp_name in config file..")
