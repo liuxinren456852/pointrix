@@ -1,12 +1,14 @@
 import torch
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from typing import Mapping, Optional, Union, Any
 from omegaconf import DictConfig
 from pytorch_msssim import ms_ssim
 
+from pointrix.utils.base import BaseModule
 from pointrix.utils.config import parse_structured
 from pointrix.point_cloud import parse_point_cloud
-from .loss import l1_loss, ssim, psnr, lpips_fn
+from .loss import l1_loss, ssim, psnr
+# from .lpips_pytorch import lpips
 from pointrix.utils.registry import Registry
 
 MODEL_REGISTRY = Registry("MODEL", modules=["pointrix.model"])
@@ -14,7 +16,7 @@ MODEL_REGISTRY.__doc__ = ""
 
 
 @MODEL_REGISTRY.register()
-class BaseModel(torch.nn.Module):
+class BaseModel(BaseModule):
     """
     Base class for all models.
 
@@ -29,15 +31,12 @@ class BaseModel(torch.nn.Module):
     """
     @dataclass
     class Config:
-        name: str = "BaseModel"
         point_cloud: dict = field(default_factory=dict)
         lambda_dssim: float = 0.2
 
     cfg: Config
 
-    def __init__(self, cfg: Optional[Union[dict, DictConfig]], datapipline, device="cuda"):
-        super().__init__()
-        self.cfg = parse_structured(self.Config, cfg)
+    def setup(self, datapipline, device="cuda"):
         self.point_cloud = parse_point_cloud(self.cfg.point_cloud,
                                              datapipline).to(device)
         self.point_cloud.set_prefix_name("point_cloud")
@@ -119,6 +118,7 @@ class BaseModel(torch.nn.Module):
                           "white_bg": white_bg}
         return optimizer_dict
 
+    @torch.no_grad()
     def get_metric_dict(self, render_results, batch) -> dict:
         """
         Get the metric dictionary.
@@ -139,47 +139,25 @@ class BaseModel(torch.nn.Module):
             [batch[i]["image"].to(self.device) for i in range(len(batch))],
             dim=0
         )
-        L1_loss = l1_loss(render_results['images'], gt_images)
-        psnr_test = psnr(render_results['images'], gt_images).mean().double()
+        L1_loss = l1_loss(render_results['images'], gt_images).mean().item()
+        psnr_test = psnr(render_results['images'], gt_images).mean().item()
         ssims_test = ms_ssim(
             render_results['images'], gt_images, data_range=1, size_average=True
-        )
+        ).mean().item()
 
-        lpips_test = lpips_fn(
-            render_results['images'].squeeze(), gt_images.squeeze()).item()
+        # lpips_test = lpips(
+        #     render_results['images'], 
+        #     gt_images,
+        #     net_type='vgg'
+        # ).mean().item()
         metric_dict = {"L1_loss": L1_loss,
                        "psnr": psnr_test,
                        "ssims": ssims_test,
-                       "lpips": lpips_test,
+                    #    "lpips": lpips_test,
                        "gt_images": gt_images,
                        "images": render_results['images'],
                        "rgb_file_name": batch[0]["camera"].rgb_file_name}
         return metric_dict
-
-    def get_param_groups(self):
-        """
-        Get the parameter groups for optimizer
-
-        Returns
-        -------
-        dict
-            The parameter groups for optimizer
-        """
-        param_group = {}
-        param_group[self.point_cloud.prefix_name +
-                    'position'] = self.point_cloud.position
-        param_group[self.point_cloud.prefix_name +
-                    'opacity'] = self.point_cloud.opacity
-        param_group[self.point_cloud.prefix_name +
-                    'features'] = self.point_cloud.features
-        param_group[self.point_cloud.prefix_name +
-                    'features_rest'] = self.point_cloud.features_rest
-        param_group[self.point_cloud.prefix_name +
-                    'scaling'] = self.point_cloud.scaling
-        param_group[self.point_cloud.prefix_name +
-                    'rotation'] = self.point_cloud.rotation
-
-        return param_group
     
     def load_ply(self, path):
         """
@@ -191,5 +169,19 @@ class BaseModel(torch.nn.Module):
             The path of the ply file.
         """
         self.point_cloud.load_ply(path)
+    
+    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False):
+        num_pts = state_dict.pop('num_pts')
+
+        if num_pts != len(self.point_cloud):
+            self.point_cloud.re_init(num_pts)
+
+        return super().load_state_dict(state_dict, strict, assign)
+
+    def get_state_dict(self):
+        additional_info = {'num_pts': len(self.point_cloud)}
+        return {**super().state_dict(), **additional_info}
+
+
 
         

@@ -1,25 +1,37 @@
-name: "garden"
+name: "jumpingjacks"
 
 trainer:
-  output_path: "garden"
-  max_steps: 30000
-  val_interval: 5000
+  output_path: ""
+  max_steps: 10000
+  val_interval: 2000
+
+  grad_clip_value: 0.0
 
   model:
-    name: BaseModel
-    lambda_dssim: 0.2
+    name: GaussianFlow
+    lambda_param_l1: 0.0
+    lambda_knn: 0.0
     point_cloud:
-      point_cloud_type: "GaussianPointCloud"  
-      max_sh_degree: 3
-      trainable: true
+      point_cloud_type: "GaussianFlowPointCloud"  
       unwarp_prefix: "point_cloud"
+      max_sh_degree: 3
+      pos_traj_dim: 8
+      rot_traj_dim: 8
+      feat_traj_dim: 4
+      rescale_value: 0.9
+      offset_value: 0.
+      trainable: true
+      random_noise: true
+      max_steps: ${trainer.max_steps}
       initializer:
-        init_type: 'colmap'
+        init_type: 'random'
+        num_points: 10000
+        radius: 1.3
         feat_dim: 3
 
   optimizer:
     optimizer_1:
-      type: GaussianSplattingOptimizer
+      type: FlowOptimizer
       name: Adam
       args:
         eps: 1e-15
@@ -28,25 +40,33 @@ trainer:
         percent_dense: 0.01
         split_num: 2
         densify_start_iter: 500
-        densify_stop_iter: 15000
+        densify_stop_iter: 5_000
         prune_interval: 100
         duplicate_interval: 100
         opacity_reset_interval: 3000
         densify_grad_threshold: 0.0002
-        min_opacity: 0.005
+        min_opacity: 0.001
       params:
         point_cloud.position:
           lr: 0.00016
+        point_cloud.pos_params:
+          lr: 0.002
+        point_cloud.rotation:
+          lr: 0.001
+        point_cloud.rot_params:
+          lr: 0.005
         point_cloud.features:
+          lr: 0.0025
+        point_cloud.feat_params:
           lr: 0.0025
         point_cloud.features_rest:
           lr: 0.000125 # features/20
         point_cloud.scaling:
           lr: 0.005
-        point_cloud.rotation:
-          lr: 0.001
         point_cloud.opacity:
           lr: 0.05
+        point_cloud.time_center:
+          lr: 0.001
 
   scheduler:
     name: "ExponLRScheduler"
@@ -55,19 +75,27 @@ trainer:
       point_cloud.position:
         init:  0.00016
         final: 0.0000016
+      point_cloud.pos_params:
+        init:  0.002
+        final: 0.0002
+      # point_cloud.rotation:
+      #   init:  0.001
+      #   final: 0.0001
+
   dataset:
     data_path: ""
-    data_type: "ColmapReFormat"
+    data_type: "DNerfReFormat"
     cached_image: True
     shuffle: True
-    batch_size: 1
+    batch_size: 8
     num_workers: 0
-    scale: 0.25
-    white_bg: False
+    scale: 1.0
+    white_bg: True
 
   renderer:
-    name: "GaussianSplattingRender"
+    name: "GaussianFlowRenderer"
     max_sh_degree: ${trainer.model.point_cloud.max_sh_degree}
+    update_sh_iter: 100
   writer:
     writer_type: "TensorboardWriter"
   

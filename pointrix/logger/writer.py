@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from rich.console import Console
 from rich.progress import (BarColumn, Progress, ProgressColumn,
-                           Task, TaskProgressColumn, TextColumn,
-                           TimeRemainingColumn)
+                           Task, TaskProgressColumn, TextColumn, 
+                           TimeElapsedColumn, TimeRemainingColumn, SpinnerColumn)
 from rich.text import Text
 
 Logger = Console(width=120)
@@ -36,17 +36,134 @@ class ItersPerSecColumn(ProgressColumn):
         if speed is None:
             return Text("?", style="progress.data.speed")
         return Text(f"{speed:.2f} {self.suffix}", style="progress.data.speed")
+    
+class LogColumn(ProgressColumn):
+    """Renders the log for a progress bar."""
 
+    def __init__(self) -> None:
+        super().__init__()
 
-def create_progress(description: str, suffix: Optional[str] = None):
-    """Helper function to return a rich Progress object."""
-    progress_list = [TextColumn(description), BarColumn(
-    ), TaskProgressColumn(show_speed=True)]
-    progress_list += [ItersPerSecColumn(suffix=suffix)] if suffix else []
-    progress_list += [TimeRemainingColumn(
-        elapsed_when_finished=True, compact=True)]
-    progress = Progress(*progress_list)
-    return progress
+    def render(self, task: Task) -> Text:
+        """Show data transfer speed."""
+        text = ""
+        if task.fields:
+            for k, v in task.fields.items():
+                text += f"{k}: {v} "
+        else:
+            text = ''
+        return Text(text)
+
+class ProgressLogger:
+    """
+    A class to log the progress of the training.
+
+    Parameters
+    ----------
+    description : str
+        The description of the progress.
+    total_iter : int
+        The total number of iterations.
+    suffix : Optional[str], optional
+        The suffix of the progress, by default None
+    
+    Examples
+    --------
+    >>> progress_logger = ProgressLogger("Training", 1000)
+    >>> progress_logger.create_task("Training", 1000)
+    >>> with progress_logger.progress:
+    >>>     for i in range(1000):
+    >>>         progress_logger.update()
+    """
+    def __init__(self, description: str, suffix: Optional[str] = None):
+        progress_list = [TextColumn("[progress.description]{task.description}"), BarColumn(
+            ), TaskProgressColumn(show_speed=True)]
+        progress_list += [ItersPerSecColumn(suffix=suffix)] if suffix else []
+        progress_list += [TextColumn(
+                        "[progress.completed]{task.completed:>6d}/{task.total:>6d}")]
+        progress_list += [TimeElapsedColumn()]
+        progress_list += [TimeRemainingColumn(elapsed_when_finished=True, compact=True)]
+        progress_list += [LogColumn()]
+        self.progress = Progress(*progress_list)
+
+        self.tasks = {}
+
+    def add_task(self, name:str, description: str, total_iter: int, log_dict: Optional[Dict[str, Any]] = {}):
+        """
+        Add a task to the progress.
+
+        Parameters
+        ----------
+        description : str
+            The description of the task.
+        total_iter : int
+            The total number of iterations.
+        """
+        return self.tasks.update({name: self.progress.add_task(description=description, total=total_iter, **log_dict)})
+
+    def update(self, name:str, step: int=1, log: Optional[Dict[str, Any]] = {}):
+        """
+        Update the progress.
+
+        Parameters
+        ----------
+        step : int, optional
+            The step to advance, by default 1
+        log : Optional[Dict[str, Any]], optional
+            The log dictionary, by default None
+        """
+
+        self.progress.update(self.tasks[name], **log)
+        self.progress.advance(self.tasks[name], advance=step)
+
+    def start(self):
+        """
+        Start the progress.
+
+        Examples
+        --------
+        >>> progress_logger.start()
+        """
+        self.progress.start()
+    
+    def stop(self):
+        """
+        Stop the progress.
+
+        Examples
+        --------
+        >>> progress_logger.stop()
+        """
+        self.progress.stop()
+
+    def start_task(self, name:str):
+        """
+        Start the task.
+
+        Examples
+        --------
+        >>> progress_logger.start_task()
+        """
+        self.progress.start_task(self.tasks[name])
+    
+    def stop_task(self, name:str):
+        """
+        Stop the task.
+
+        Examples
+        --------
+        >>> progress_logger.stop_task()
+        """
+        self.progress.stop_task(self.tasks[name])
+    
+    def reset(self, name:str, visible: Optional[bool] = True):
+        """
+        Reset the progress.
+
+        Examples
+        --------
+        >>> progress_logger.reset()
+        """
+        self.progress.reset(self.tasks[name], visible=visible)
 
 
 class Writer:

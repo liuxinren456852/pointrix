@@ -11,7 +11,9 @@
 
 import torch
 import math
+from dataclasses import dataclass
 
+from pointrix.utils.base import BaseObject
 from pointrix.utils.registry import Registry
 from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
 
@@ -19,7 +21,14 @@ RENDERER_REGISTRY = Registry("RENDERER", modules=["pointrix.renderer"])
 
 
 @RENDERER_REGISTRY.register()
-class GaussianSplattingRender:
+class GaussianSplattingRender(BaseObject):
+    @dataclass
+    class Config:
+        update_sh_iter: int = 1000
+        max_sh_degree: int = 3
+    
+    cfg: Config
+    
     """
     A class for rendering point clouds using Gaussian splatting.
 
@@ -34,16 +43,12 @@ class GaussianSplattingRender:
     update_sh_iter : int, optional
         The iteration to update the spherical harmonics degree, by default 1000.
     """
-    def __init__(self, cfg, white_bg, device, update_sh_iter=1000, **kwargs):
-        self.cfg = cfg
+    def setup(self, white_bg, device, **kwargs):
         self.active_sh_degree = 0
-        self.update_sh_iter = update_sh_iter
         self.device = device
         bg_color = [1, 1, 1] if white_bg else [0, 0, 0]
         self.bg_color = torch.tensor(
             bg_color, dtype=torch.float32, device=self.device)
-        
-        self.max_sh_degree = self.cfg.max_sh_degree
 
     def render_iter(self,
                     FovX,
@@ -221,6 +226,12 @@ class GaussianSplattingRender:
         return render_results
 
     def update_sh_degree(self, step):
-        if step % self.update_sh_iter == 0:
-            if self.active_sh_degree < self.max_sh_degree:
+        if step % self.cfg.update_sh_iter == 0:
+            if self.active_sh_degree < self.cfg.max_sh_degree:
                 self.active_sh_degree += 1
+
+    def load_state_dict(self, state_dict):
+        self.active_sh_degree = state_dict["active_sh_degree"]
+
+    def state_dict(self):
+        return {"active_sh_degree": self.active_sh_degree}

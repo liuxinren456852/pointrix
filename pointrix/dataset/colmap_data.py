@@ -127,7 +127,7 @@ class ColmapReFormat(BaseReFormatData):
             depth_folder = "depths"
         else:
             depth_folder = None
-            Logger.print("No depth folder found, depth will not be loaded.")
+            Logger.log("No depth folder found, depth will not be loaded.")
         if depth_folder:
             depth_file_names = sorted(os.listdir(os.path.join(self.data_root, depth_folder)))
             meta_data['depth_file_name'] = depth_file_names

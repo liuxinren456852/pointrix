@@ -10,4 +10,5 @@ def parse_renderer(cfg, **kwargs):
     cfg : dict
         The configuration dictionary.
     """
-    return RENDERER_REGISTRY.get(cfg.name)(cfg, **kwargs)
+    name = cfg.pop("name")
+    return RENDERER_REGISTRY.get(name)(cfg, **kwargs)

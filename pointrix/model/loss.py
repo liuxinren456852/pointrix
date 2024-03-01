@@ -111,12 +111,3 @@ def _ssim(img1, img2, window, window_size, channel, size_average=True):
     else:
         return ssim_map.mean(1).mean(1).mean(1)
     
-from lpips import LPIPS
-lpips_net = LPIPS(net="vgg").to("cuda")
-def lpips_norm_fn(x): return x[None, ...] * 2 - 1
-def lpips_norm_b_fn(x): return x * 2 - 1
-def lpips_fn(x, y): return lpips_net(lpips_norm_fn(x), lpips_norm_fn(y)).mean()
-
-
-def lpips_b_fn(x, y): return lpips_net(
-    lpips_norm_b_fn(x), lpips_norm_b_fn(y)).mean()

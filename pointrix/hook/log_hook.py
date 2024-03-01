@@ -1,6 +1,9 @@
 import os
 from .hook import HOOK_REGISTRY, Hook
-from pointrix.logger.writer import Writer, create_progress, Logger
+from rich.panel import Panel
+from rich.table import Table
+from rich.live import Live
+from pointrix.logger.writer import Writer, Logger, ProgressLogger
 
 
 @HOOK_REGISTRY.register()
@@ -12,13 +15,10 @@ class LogHook(Hook):
     def __init__(self):
         self.ema_loss_for_log = 0.
         self.bar_info = {}
+        
+        self.losses_test = {"L1_loss": 0., "psnr": 0., "ssims": 0., "lpips": 0.}
 
-        self.l1_test = 0.
-        self.psnr_test = 0.
-        self.ssims_test = 0.
-        self.lpips_test = 0.
-
-    def before_train(self, trainner) -> None:
+    def before_run(self, trainner) -> None:
         """
         some print operations before the training loop starts.
 
@@ -27,13 +27,38 @@ class LogHook(Hook):
         trainner : Trainer
             The trainer object.
         """
+        Pointrix_logo = r"""
+                                     _____        _         _          _       
+                                    |  __ \      (_)       | |        (_)      
+                                    | |__) |___   _  _ __  | |_  _ __  _ __  __
+                                    |  ___// _ \ | || '_ \ | __|| '__|| |\ \/ /
+                                    | |   | (_) || || | | || |_ | |   | | >  < 
+                                    |_|    \___/ |_||_| |_| \__||_|   |_|/_/\_\
+
+                                   A differentiable point-based rendering library.
+        """                        
+                                                                                                                                                                                                  
         try:
-            Logger.print(" *************************************** ")
-            Logger.print("The experiment name is {}".format(trainner.exp_dir))
-            Logger.print(" *************************************** ")
+            Logger.print(Panel(Pointrix_logo, title="Welcome to Pointrix", subtitle="Thank you"))
+            Logger.log("The experiment name is {}".format(trainner.exp_dir))
         except AttributeError:
             Logger.print(
                 "ERROR!!..Please provide the exp_name in config file..")
+    
+    def before_train(self, trainner) -> None:
+        """
+        some operations before the training loop starts.
+
+        Parameters
+        ----------
+        trainner : Trainer
+            The trainer object.
+        """
+        self.progress_bar = ProgressLogger(description='training', suffix='iter/s')
+        self.progress_bar.add_task("train", "Training Progress", trainner.cfg.max_steps, log_dict={})
+        self.progress_bar.add_task("validation", "Validation Progress", len(trainner.datapipline.validation_dataset), log_dict={})
+        self.progress_bar.reset("validation", visible=False)
+        self.progress_bar.start()
 
     def after_train_iter(self, trainner) -> None:
         """
@@ -50,14 +75,14 @@ class LogHook(Hook):
                 pos_lr = param_group['lr']
                 break
 
-        log_dict = {"loss": trainner.loss_dict['loss'],
-                    "l1_loss": trainner.loss_dict['L1_loss'],
-                    "ssim_loss": trainner.loss_dict['ssim_loss'],
-                    "num_pt": len(trainner.model.point_cloud),
-                    "pos_lr": pos_lr}
+        log_dict = {
+            "num_pt": len(trainner.model.point_cloud),
+            "pos_lr": pos_lr
+        }
+        log_dict.update(trainner.loss_dict)
 
         for key, value in log_dict.items():
-            if 'loss' in key:
+            if key == 'loss':
                 self.ema_loss_for_log = 0.4 * value.item() + 0.6 * self.ema_loss_for_log
                 self.bar_info.update(
                     {key: f"{self.ema_loss_for_log:.{7}f}"})
@@ -67,16 +92,26 @@ class LogHook(Hook):
 
         if trainner.global_step % trainner.cfg.bar_upd_interval == 0:
             self.bar_info.update({
-                "num_pt": f"{len(trainner.model.point_cloud)}",
+                "num_pts": f"{len(trainner.model.point_cloud)}",
             })
-            trainner.progress_bar.set_postfix(self.bar_info)
-            trainner.progress_bar.update(trainner.cfg.bar_upd_interval)
+            self.progress_bar.update("train", step=trainner.cfg.bar_upd_interval, log=self.bar_info)
+
+    def before_val(self, trainner) -> None:
+        """
+        some operations before the validation loop starts.
+
+        Parameters
+        ----------
+        trainner : Trainer
+            The trainer object.
+        """
+        self.progress_bar.reset("validation", visible=True)
 
     def after_val_iter(self, trainner) -> None:
-        self.l1_test += trainner.metric_dict['L1_loss']
-        self.psnr_test += trainner.metric_dict['psnr']
-        self.ssims_test += trainner.metric_dict['ssims']
-        self.lpips_test += trainner.metric_dict['lpips']
+        self.progress_bar.update("validation", step=1)
+        for key, value in trainner.metric_dict.items():
+            if key in self.losses_test:
+                self.losses_test[key] += value
 
         image_name = os.path.basename(trainner.metric_dict['rgb_file_name'])
         iteration = trainner.global_step
@@ -90,34 +125,26 @@ class LogHook(Hook):
             step=iteration)
 
     def after_val(self, trainner) -> None:
-        self.l1_test /= trainner.val_dataset_size
-        self.psnr_test /= trainner.val_dataset_size
-        self.ssims_test /= trainner.val_dataset_size
-        self.lpips_test /= trainner.val_dataset_size
+        log_info = f"[ITER {trainner.global_step}] Evaluating test:"
+        table = Table(title=log_info)
 
-        print(f"\n[ITER {trainner.global_step}] Evaluating test: L1 {self.l1_test:.5f} PSNR {self.psnr_test:.5f} SSIMS {self.ssims_test:.5f} LPIPS {self.lpips_test:.5f}")
-        iteration = trainner.global_step
-        trainner.logger.write_scalar(
-            "test" + '/loss_viewpoint - l1_loss',
-            self.l1_test,
-            iteration
-        )
-        trainner.logger.write_scalar(
-            "test" + '/loss_viewpoint - psnr',
-            self.psnr_test,
-            iteration
-        )
-        trainner.logger.write_scalar(
-            "test" + '/loss_viewpoint - ssims',
-            self.ssims_test,
-            iteration
-        )
-        trainner.logger.write_scalar(
-            "test" + '/loss_viewpoint - lpips',
-            self.lpips_test,
-            iteration
-        )
-        self.l1_test = 0.
-        self.psnr_test = 0.
-        self.ssims_test = 0.
-        self.lpips_test = 0.
+        row_test = []
+        for key in self.losses_test:
+            self.losses_test[key] /= trainner.val_dataset_size
+            trainner.logger.write_scalar(
+                "test" + '/loss_viewpoint - ' + key,
+                self.losses_test[key],
+                trainner.global_step
+            )
+            log_info += f" {key} {self.losses_test[key]:.5f}"
+            table.add_column(key, justify="right", style="cyan")
+            row_test += [f"{self.losses_test[key]:.5f}"]
+        
+        table.add_row(*row_test)
+        Logger.print('\n', table, '\n')
+        for key in self.losses_test:
+            self.losses_test[key] = 0.
+        self.progress_bar.reset("validation", visible=False)
+    
+    def after_train(self, trainner) -> None:
+        self.progress_bar.stop()

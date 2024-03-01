@@ -19,6 +19,8 @@ from pointrix.dataset.base_data import BasicPointCloud
 from .utils import (
     unwarp_name,
     points_init,
+    get_random_points,
+    get_random_feauture
 )
 
 POINTSCLOUD_REGISTRY = Registry("POINTSCLOUD", modules=["pointrix.model"])
@@ -66,6 +68,22 @@ class PointCloud(BaseModule):
             )
 
         self.prefix_name = self.cfg.unwarp_prefix + "."
+    
+    def re_init(self, num_points) -> None:
+        """
+        re-initialize the point cloud.
+        """
+        for atribute in self.atributes:
+            name = atribute['name']
+            delattr(self, name)
+        position = get_random_points(num_points, 1.)
+        features = get_random_feauture(num_points, self.cfg.initializer.feat_dim)
+        self.position = nn.Parameter(
+            position.contiguous().requires_grad_(True)
+        )
+        self.features = nn.Parameter(
+            features.contiguous().requires_grad_(True)
+        )
     
     def set_prefix_name(self, name:str) -> None:
         """

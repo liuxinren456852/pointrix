@@ -12,6 +12,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, Union, List, NamedTuple, Optional
 from typing import Tuple
 from pointrix.utils.registry import Registry
+from pointrix.logger.writer import ProgressLogger, Logger
 from pointrix.utils.config import parse_structured
 from pointrix.camera.camera import Camera, Cameras, TrainableCamera
 from pointrix.dataset.utils.dataset_utils import force_full_init, getNerfppNorm
@@ -163,6 +164,10 @@ class BaseReFormatData:
         split: The split of the data.
         """
         image_lists = []
+        cached_progress = ProgressLogger(
+            description='Loading cached images', suffix='images/s')
+        cached_progress.add_task('cache_image_read', 'Loading cached images', len(self.data_list.image_filenames))
+        cached_progress.start()
         for image_filename in self.data_list.image_filenames:
             temp_image = Image.open(image_filename)
             w, h = temp_image.size
@@ -173,6 +178,8 @@ class BaseReFormatData:
             image_lists.append(
                 np.array(resize_image, dtype="uint8")
             )
+            cached_progress.update('cache_image_read', step=1)
+        cached_progress.stop()
         return image_lists
 
 # TODO: support different dataset (Meta information (depth) support)
@@ -202,6 +209,7 @@ class BaseImageDataset(Dataset):
         self.radius = self.cameras.radius
 
         if self.images is not None:
+            # Transform cached images.
             self.images = [self._transform_image(
                 image) for image in self.images]
 
@@ -356,8 +364,8 @@ class BaseDataPipeline:
             )
             self.validation_loader = torch.utils.data.DataLoader(
                 self.validation_dataset,
-                batch_size=self.cfg.batch_size,
-                num_workers=self.cfg.num_workers,
+                batch_size=1,
+                num_workers=0,
                 collate_fn=list,
                 pin_memory=False
             )
@@ -366,6 +374,39 @@ class BaseDataPipeline:
         else:
             self.iter_train_image_dataloader = deepcopy(self.training_dataset)
             self.iter_val_image_dataloader = deepcopy(self.validation_dataset)
+            
+    
+    def next_loader_train_iter(self):
+        try:
+            return next(self.iter_train_image_dataloader)
+        except StopIteration:
+            self.iter_train_image_dataloader = iter(self.training_loader)
+            return next(self.iter_train_image_dataloader)
+
+    def next_loader_eval_iter(self):
+        try:
+            return next(self.iter_val_image_dataloader)
+        except StopIteration:
+            self.iter_val_image_dataloader = iter(self.validation_loader)
+            return next(self.iter_val_image_dataloader)
+        
+    def next_loaderless(self, dataset, iter_loader):
+        if not iter_loader.images:
+            iter_loader = deepcopy(dataset)
+        pop_idx = randint(0, len(iter_loader.images) - 1)
+        image = iter_loader.images.pop(pop_idx)
+        camera = iter_loader.camera_list.pop(pop_idx)
+        return [{
+            "image": image,
+            "camera": camera,
+            "FovX": camera.fovX,
+            "FovY": camera.fovY,
+            "height": camera.image_height,
+            "width": camera.image_width,
+            "world_view_transform": camera.world_view_transform,
+            "full_proj_transform": camera.full_proj_transform,
+            "camera_center": camera.camera_center,
+        }]
 
     def next_train(self, step: int = -1) -> Any:
         """
@@ -377,28 +418,12 @@ class BaseDataPipeline:
             the training step in trainer.
         """
         if self.use_dataloader:
-            try:
-                return next(self.iter_train_image_dataloader)
-            except StopIteration:
-                self.iter_train_image_dataloader = iter(self.training_loader)
-                return next(self.iter_train_image_dataloader)
+            return self.next_loader_train_iter()
         else:
-            if not self.iter_train_image_dataloader.images:
-                self.iter_train_image_dataloader = deepcopy(self.training_dataset)
-            pop_idx = randint(0, len(self.iter_train_image_dataloader.images) - 1)
-            image = self.iter_train_image_dataloader.images.pop(pop_idx)
-            camera = self.iter_train_image_dataloader.camera_list.pop(pop_idx)
-            return [{
-                "image": image,
-                "camera": camera,
-                "FovX": camera.fovX,
-                "FovY": camera.fovY,
-                "height": camera.image_height,
-                "width": camera.image_width,
-                "world_view_transform": camera.world_view_transform,
-                "full_proj_transform": camera.full_proj_transform,
-                "camera_center": camera.camera_center,
-            }]
+            return self.next_loaderless(
+                self.training_dataset, 
+                self.iter_train_image_dataloader
+            )
 
     def next_val(self, step: int = -1) -> Any:
         """
@@ -410,28 +435,12 @@ class BaseDataPipeline:
             the validation step in validate progress.
         """
         if self.cfg.use_dataloader:
-            try:
-                return next(self.iter_val_image_dataloader)
-            except StopIteration:
-                self.iter_val_image_dataloader = iter(self.validation_loader)
-                return next(self.iter_val_image_dataloader)
+            return self.next_loader_eval_iter()
         else:
-            if not self.iter_val_image_dataloader.images:
-                self.iter_val_image_dataloader = deepcopy(self.validation_dataset)
-            pop_idx = randint(0, len(self.iter_val_image_dataloader.images) - 1)
-            image = self.iter_val_image_dataloader.images.pop(pop_idx)
-            camera = self.iter_val_image_dataloader.camera_list.pop(pop_idx)
-            return [{
-                "image": image,
-                "camera": camera,
-                "FovX": camera.fovX,
-                "FovY": camera.fovY,
-                "height": camera.image_height,
-                "width": camera.image_width,
-                "world_view_transform": camera.world_view_transform,
-                "full_proj_transform": camera.full_proj_transform,
-                "camera_center": camera.camera_center,
-            }]
+            return self.next_loaderless(
+                self.validation_dataset, 
+                self.iter_val_image_dataloader
+            )
 
     @property
     def training_dataset_size(self) -> int:

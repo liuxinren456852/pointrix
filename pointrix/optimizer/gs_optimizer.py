@@ -6,19 +6,34 @@ from typing import Tuple, List
 
 from pointrix.utils.config import C
 
-from .base_optimizer import BaseOptimizer
-from pointrix.model.gaussian_points.gaussian_points \
-    import GaussianPointCloud as GSPointCloud
+from .optimizer import BaseOptimizer
+from pointrix.model.base_model import BaseModel
 
 from pointrix.model.gaussian_points.gaussian_utils import (
     inverse_sigmoid,
     build_rotation,
 )
-from .base_optimizer import OPTIMIZER_REGISTRY
+from .optimizer import OPTIMIZER_REGISTRY
 
 
 @OPTIMIZER_REGISTRY.register()
 class GaussianSplattingOptimizer(BaseOptimizer):
+    @dataclass
+    class Config:
+        # Densification
+        control_module: str = "point_cloud"
+        percent_dense: float = 0.01
+        split_num: int = 2
+        densify_stop_iter: int = 15000
+        densify_start_iter: int = 500
+        prune_interval: int = 100
+        duplicate_interval: int = 100
+        opacity_reset_interval: int = 3000
+        densify_grad_threshold: float = 0.0002
+        min_opacity: float = 0.005
+
+    cfg: Config
+    
     """
     Optimizer for Gaussian splatting, which can be not only used to optimize the parameter
     of the point cloud, but also to densify, prune and split the point cloud.
@@ -35,10 +50,9 @@ class GaussianSplattingOptimizer(BaseOptimizer):
         The radius of the cameras.
     """
 
-    def __init__(self, optimizer: Optimizer, point_cloud: GSPointCloud, cfg: dict, cameras_extent: float) -> None:
+    def setup(self, optimizer: Optimizer, model: BaseModel, cameras_extent: float) -> None:
         self.optimizer = optimizer
-        self.cfg = cfg
-        self.point_cloud = point_cloud
+        self.point_cloud = getattr(model, self.cfg.control_module)
         self.device = self.point_cloud.device
         if len(optimizer.param_groups) > 1:
             self.base_param_settings = {
@@ -117,7 +131,7 @@ class GaussianSplattingOptimizer(BaseOptimizer):
             if self.step % self.opacity_reset_interval == 0 or (white_bg and self.step == self.cfg.densify_start_iter):
                 self.opacity_deferred = True
 
-    def update_model(self, loss: Tensor, viewspace_points: Tensor,
+    def update_model(self, viewspace_points: Tensor,
                      visibility: Tensor, radii: Tensor, white_bg: bool, **kwargs) -> None:
         """
         Update the model parameter with the loss, 
