@@ -122,7 +122,6 @@ class DefaultTrainer:
             render_results = self.renderer.render_batch(render_dict, batch)
             self.metric_dict = self.model.get_metric_dict(render_results, batch)
             self.call_hook("after_val_iter")
-        self.call_hook("after_val")
 
     def test(self, model_path=None) -> None:
         """
