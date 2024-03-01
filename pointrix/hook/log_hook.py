@@ -27,8 +27,17 @@ class LogHook(Hook):
         trainner : Trainer
             The trainer object.
         """
+        Pointrix_logo = r"""
+                                     _____        _         _          _       
+                                    |  __ \      (_)       | |        (_)      
+                                    | |__) |___   _  _ __  | |_  _ __  _ __  __
+                                    |  ___// _ \ | || '_ \ | __|| '__|| |\ \/ /
+                                    | |   | (_) || || | | || |_ | |   | | >  < 
+                                    |_|    \___/ |_||_| |_| \__||_|   |_|/_/\_\
+        """                        
+                                                                                                                                                                                                  
         try:
-            Logger.print(Panel("The experiment name is {}".format(trainner.exp_dir), title="Welcome to Pointrix", subtitle="Thank you"))
+            Logger.print(Panel( Pointrix_logo + "\n The experiment name is {}".format(trainner.exp_dir), title="Welcome to Pointrix", subtitle="Thank you"))
         except AttributeError:
             Logger.print(
                 "ERROR!!..Please provide the exp_name in config file..")
