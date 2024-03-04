@@ -51,8 +51,8 @@ Pointrix is a **differentiable point-based rendering library** which has followi
 :gutter: 1 1 1 2
 
 :::{grid-item-card} {octicon}`plug;1.5em;sd-mr-1` Highly Extensible
-<!-- :link: framework/overall -->
-:link-type: ref
+:link: framework/overall
+:link-type: doc
 
 Pointrix adopts a modular design, with clear structure and easy extensibility. 
 
@@ -61,8 +61,8 @@ Pointrix adopts a modular design, with clear structure and easy extensibility.
 :::
 
 :::{grid-item-card} {octicon}`device-camera` Rich Feature
-<!-- :link: framework/overall -->
-:link-type: ref
+:link: framework/overall
+:link-type: doc
 
 Pointrix supports the implementation of various types of tasks.
 

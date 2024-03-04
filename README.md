@@ -1,13 +1,9 @@
 <div align="center">
-<div class="image-container">
-  <a href="https://github.com/othneildrew/Best-README-Template"></a>
-</div>
-
-
+<h3 align="center">Pointrix</h3>
   <p align="center">
     A differentiable point-based rendering library
     <br />
-    <!-- <a href="https://github.com/othneildrew/Best-README-Template"> -->
+    <a href="https://countermaker.github.io/pointrix.io/">
     <strong>Explore the docs »</strong></a>
     <br />
     <br />
