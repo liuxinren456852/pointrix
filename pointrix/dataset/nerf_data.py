@@ -7,7 +7,7 @@ from pathlib import Path
 
 from pointrix.camera.camera import Camera
 from pointrix.dataset.base_data import BaseReFormatData, DATA_FORMAT_REGISTRY
-from pointrix.dataset.utils.dataset_utils import fov2focal, focal2fov
+from pointrix.utils.dataset.dataset_utils import fov2focal, focal2fov
 
 
 @DATA_FORMAT_REGISTRY.register()

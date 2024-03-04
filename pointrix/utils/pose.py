@@ -2,6 +2,7 @@
 
 from typing import Tuple
 import torch
+import numpy as np
 
 
 def se3_exp_map(log_transform: torch.Tensor, eps: float = 1e-4) -> torch.Tensor:
@@ -280,3 +281,16 @@ def hat(v: torch.Tensor) -> torch.Tensor:
     h[:, 2, 1] = x
 
     return h
+
+
+def qvec2rotmat(qvec):
+    return np.array([
+        [1 - 2 * qvec[2] ** 2 - 2 * qvec[3] ** 2,
+         2 * qvec[1] * qvec[2] - 2 * qvec[0] * qvec[3],
+         2 * qvec[3] * qvec[1] + 2 * qvec[0] * qvec[2]],
+        [2 * qvec[1] * qvec[2] + 2 * qvec[0] * qvec[3],
+         1 - 2 * qvec[1] ** 2 - 2 * qvec[3] ** 2,
+         2 * qvec[2] * qvec[3] - 2 * qvec[0] * qvec[1]],
+        [2 * qvec[3] * qvec[1] - 2 * qvec[0] * qvec[2],
+         2 * qvec[2] * qvec[3] + 2 * qvec[0] * qvec[1],
+         1 - 2 * qvec[1] ** 2 - 2 * qvec[2] ** 2]])

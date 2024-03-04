@@ -27,13 +27,13 @@ class GaussianFlow(GaussianSplatting):
         super().setup()
         
         # Set up flow paramters
-        self.max_timestamp = self.datapipline.training_dataset.max_timestamp
+        self.max_timestamp = self.datapipeline.training_dataset.max_timestamp
         self.point_cloud.max_timestamp = self.max_timestamp
         self.point_cloud.max_steps = self.cfg.max_steps
         
         self.point_cloud_flow = parse_point_cloud(
             self.cfg.point_cloud_flow, 
-            self.datapipline
+            self.datapipeline
         )
         
     def before_train_start(self):
@@ -160,7 +160,7 @@ class GaussianFlow(GaussianSplatting):
 
         validation_process(
             render_func,
-            self.datapipline,
+            self.datapipeline,
             self.global_step,
             self.logger
         )

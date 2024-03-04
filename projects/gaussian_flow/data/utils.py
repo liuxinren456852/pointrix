@@ -8,7 +8,7 @@ from PIL import Image
 from pathlib import Path
 
 from pointrix.camera.camera import Camera
-from pointrix.dataset.utils.dataset_utils import fov2focal, focal2fov
+from pointrix.utils.dataset.dataset_utils import fov2focal, focal2fov
 
 def generateCamerasFromTransforms(path, template_transformsfile, extension, maxtime):
     trans_t = lambda t : torch.Tensor([

@@ -5,7 +5,7 @@ from .base_model import BaseModel, MODEL_REGISTRY
 __all__ = ["GaussianPointCloud", "BaseModel"]
 
 
-def parse_model(cfg, datapipline:BaseDataPipeline, device="cuda"):
+def parse_model(cfg, datapipeline:BaseDataPipeline, device="cuda"):
     """
     Parse the model.
 
@@ -13,10 +13,10 @@ def parse_model(cfg, datapipline:BaseDataPipeline, device="cuda"):
     ----------
     cfg : dict
         The configuration dictionary.
-    datapipline : BaseDataPipeline
+    datapipeline : BaseDataPipeline
         The data pipeline.
     device : str
         The device to use.
     """
     name = cfg.pop("name")
-    return MODEL_REGISTRY.get(name)(cfg, datapipline, device)
+    return MODEL_REGISTRY.get(name)(cfg, datapipeline, device)

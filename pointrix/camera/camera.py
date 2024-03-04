@@ -632,9 +632,9 @@ class Cameras:
         if mode == "Dolly":
             return self.dolly(c2w, [focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
         elif mode == "Zoom":
-            return self.Zoom(c2w, [focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
+            return self.zoom(c2w, [focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
         elif mode == "Spiral":
-            return self.Spiral(c2w, [focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
+            return self.spiral(c2w, [focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
 
     def pose_to_cam(self, poses, focals, width, height):
         """
@@ -725,7 +725,7 @@ class Cameras:
 
         return self.pose_to_cam(dolly_poses, dolly_focals, width, height)
 
-    def Zoom(self, c2w, focal, width, height, sc, length, num_frames):
+    def zoom(self, c2w, focal, width, height, sc, length, num_frames):
         """
         Generate the camera path with zoom.
 
@@ -792,7 +792,7 @@ class Cameras:
         zoom_focals = np.stack(zoom_focals, 0)
         return self.pose_to_cam(zoom_poses, zoom_focals, width, height)
 
-    def Spiral(self, c2w, focal, width, height, sc, length, num_frames):
+    def spiral(self, c2w, focal, width, height, sc, length, num_frames):
         """
         Generate the camera path with spiral.
 

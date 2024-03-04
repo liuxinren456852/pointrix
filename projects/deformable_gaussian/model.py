@@ -116,8 +116,8 @@ class DeformNetwork(nn.Module):
 
 @MODEL_REGISTRY.register()
 class DeformGaussian(BaseModel):
-    def __init__(self, cfg, datapipline, device="cuda"):
-        super().__init__(cfg, datapipline, device)
+    def __init__(self, cfg, datapipeline, device="cuda"):
+        super().__init__(cfg, datapipeline, device)
         self.deform = DeformNetwork(is_blender=False).to(self.device)
     
     def forward(self, batch):

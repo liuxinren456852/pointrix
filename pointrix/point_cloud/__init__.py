@@ -2,7 +2,7 @@ from .points import PointCloud
 
 from .points import POINTSCLOUD_REGISTRY
 
-def parse_point_cloud(cfg, datapipline):
+def parse_point_cloud(cfg, datapipeline):
     
     if len(cfg) == 0:
         return None
@@ -11,4 +11,4 @@ def parse_point_cloud(cfg, datapipline):
     assert point_cloud is not None, "Point Cloud is not registered: {}".format(
         point_cloud_type
     )
-    return point_cloud(cfg, datapipline.point_cloud)
+    return point_cloud(cfg, datapipeline.point_cloud)

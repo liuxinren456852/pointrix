@@ -15,14 +15,27 @@ from pointrix.utils.registry import Registry
 from pointrix.logger.writer import ProgressLogger, Logger
 from pointrix.utils.config import parse_structured
 from pointrix.camera.camera import Camera, Cameras, TrainableCamera
-from pointrix.dataset.utils.dataset_utils import force_full_init, getNerfppNorm
+from pointrix.utils.dataset.dataset_utils import force_full_init, getNerfppNorm
 
 DATA_FORMAT_REGISTRY = Registry("DATA_FORMAT", modules=["pointrix.dataset"])
 DATA_FORMAT_REGISTRY.__doc__ = ""
 
 
-class BasicPointCloud(NamedTuple):
-    points: np.array
+@dataclass
+class SimplePointCloud:
+    """
+    Simple pointcloud class for the model initialization.
+
+    Parameters
+    ----------
+    positions: np.array
+        The positions of the pointcloud.
+    colors: np.array
+        The colors of the pointcloud.
+    normals: np.array
+        The normals of the pointcloud.
+    """
+    positions: np.array
     colors: np.array
     normals: np.array
 
@@ -40,7 +53,7 @@ class BaseDataFormat:
         The camera parameters of the images in data.
     images: Optional[List[Image.Image]] = None
         The images in data, which are only needed when cached image is enabled in dataset.
-    PointCloud: Union[BasicPointCloud, None] = None
+    PointCloud: Union[SimplePointCloud, None] = None
         The pointclouds of the scene, which are used to initialize the gaussian model, enabling better results.
     metadata: Dict[str, Any] = field(default_factory=lambda: dict({}))
         Other information that is required for the dataset.
@@ -62,7 +75,7 @@ class BaseDataFormat:
     """camera image list"""
     images: Optional[List[Image.Image]] = None
     """camera parameters"""
-    PointCloud: Union[BasicPointCloud, None] = None
+    PointCloud: Union[SimplePointCloud, None] = None
     """precompute pointcloud"""
     metadata: Dict[str, Any] = field(default_factory=lambda: dict({}))
     """other information that is required for the dataset"""
@@ -114,7 +127,8 @@ class BaseReFormatData:
         image_filenames = self.load_image_filenames(camera, split=split)
         metadata = self.load_metadata(split=split)
         pointcloud = self.load_pointcloud()
-        data = BaseDataFormat(image_filenames, camera, PointCloud=pointcloud, metadata=metadata)
+        data = BaseDataFormat(image_filenames, camera,
+                              PointCloud=pointcloud, metadata=metadata)
         return data
 
     @abstractmethod
@@ -127,8 +141,8 @@ class BaseReFormatData:
         split: The split of the data.
         """
         raise NotImplementedError
-    
-    def load_pointcloud(self) -> BasicPointCloud:
+
+    def load_pointcloud(self) -> SimplePointCloud:
         """
         The function for loading the Pointcloud for initialization of gaussian model.
         """
@@ -166,7 +180,8 @@ class BaseReFormatData:
         image_lists = []
         cached_progress = ProgressLogger(
             description='Loading cached images', suffix='images/s')
-        cached_progress.add_task('cache_image_read', 'Loading cached images', len(self.data_list.image_filenames))
+        cached_progress.add_task('cache_image_read', 'Loading cached images', len(
+            self.data_list.image_filenames))
         cached_progress.start()
         for image_filename in self.data_list.image_filenames:
             temp_image = Image.open(image_filename)
@@ -374,8 +389,7 @@ class BaseDataPipeline:
         else:
             self.iter_train_image_dataloader = deepcopy(self.training_dataset)
             self.iter_val_image_dataloader = deepcopy(self.validation_dataset)
-            
-    
+
     def next_loader_train_iter(self):
         try:
             return next(self.iter_train_image_dataloader)
@@ -389,7 +403,7 @@ class BaseDataPipeline:
         except StopIteration:
             self.iter_val_image_dataloader = iter(self.validation_loader)
             return next(self.iter_val_image_dataloader)
-        
+
     def next_loaderless(self, dataset, iter_loader):
         if not iter_loader.images:
             iter_loader = deepcopy(dataset)
@@ -421,7 +435,7 @@ class BaseDataPipeline:
             return self.next_loader_train_iter()
         else:
             return self.next_loaderless(
-                self.training_dataset, 
+                self.training_dataset,
                 self.iter_train_image_dataloader
             )
 
@@ -438,7 +452,7 @@ class BaseDataPipeline:
             return self.next_loader_eval_iter()
         else:
             return self.next_loaderless(
-                self.validation_dataset, 
+                self.validation_dataset,
                 self.iter_val_image_dataloader
             )
 

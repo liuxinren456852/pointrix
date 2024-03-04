@@ -28,8 +28,8 @@ contains full gaussian point implemetation.
 :    We *highlight* the modified part.
 @MODEL_REGISTRY.register()
 class DeformGaussian(BaseModel):
-    def __init__(self, cfg, datapipline, device="cuda"):
-        super().__init__(cfg, datapipline, device)
+    def __init__(self, cfg, datapipeline, device="cuda"):
+        super().__init__(cfg, datapipeline, device)
 
         # you can refer to projects/deformable_gaussian/model.py
         # if you want to know the detail of DeformNetwork.
@@ -83,7 +83,7 @@ First, we need to import base data format from pointrix so that
 we can inherit, registry and modify them.
 
 ```python
-from pointrix.dataset.base_data import DATA_FORMAT_REGISTRY, BaseReFormatData, BasicPointCloud
+from pointrix.dataset.base_data import DATA_FORMAT_REGISTRY, BaseReFormatData, SimplePointCloud
 from pointrix.camera.camera import Camera
 ```
 
@@ -119,7 +119,7 @@ class NerfiesReFormat(BaseReFormatData):
         xyz = (xyz - self.scene_center) * self.coord_scale
         num_pts = xyz.shape[0]
         shs = np.random.random((num_pts, 3)) / 255.0
-        pcd = BasicPointCloud(points=xyz, colors=SH2RGB(
+        pcd = SimplePointCloud(positions=xyz, colors=SH2RGB(
             shs), normals=np.zeros((num_pts, 3)))
         return pcd
 ```

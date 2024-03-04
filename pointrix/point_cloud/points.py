@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pointrix.utils.system import mkdir_p
 from pointrix.utils.base import BaseModule
 from pointrix.utils.registry import Registry
-from pointrix.dataset.base_data import BasicPointCloud
+from pointrix.dataset.base_data import SimplePointCloud
 
 from .utils import (
     unwarp_name,
@@ -37,7 +37,7 @@ class PointCloud(BaseModule):
     
     cfg: Config
     
-    def setup(self, point_cloud:Union[BasicPointCloud, None]=None) -> None:
+    def setup(self, point_cloud:Union[SimplePointCloud, None]=None) -> None:
         """
         The function for setting up the point cloud.
         
