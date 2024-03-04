@@ -14,7 +14,3 @@ hook
 .. automodule:: pointrix.hook.log_hook
    :members:
    :show-inheritance:
-
-.. automodule:: pointrix.hook.lr_scheduler_hook
-   :members:
-   :show-inheritance:

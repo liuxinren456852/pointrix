@@ -4,19 +4,6 @@ import collections
 from plyfile import PlyData, PlyElement
 
 
-def qvec2rotmat(qvec):
-    return np.array([
-        [1 - 2 * qvec[2] ** 2 - 2 * qvec[3] ** 2,
-         2 * qvec[1] * qvec[2] - 2 * qvec[0] * qvec[3],
-         2 * qvec[3] * qvec[1] + 2 * qvec[0] * qvec[2]],
-        [2 * qvec[1] * qvec[2] + 2 * qvec[0] * qvec[3],
-         1 - 2 * qvec[1] ** 2 - 2 * qvec[3] ** 2,
-         2 * qvec[2] * qvec[3] - 2 * qvec[0] * qvec[1]],
-        [2 * qvec[3] * qvec[1] - 2 * qvec[0] * qvec[2],
-         2 * qvec[2] * qvec[3] + 2 * qvec[0] * qvec[1],
-         1 - 2 * qvec[1] ** 2 - 2 * qvec[2] ** 2]])
-
-
 CameraModel = collections.namedtuple(
     "CameraModel", ["model_id", "model_name", "num_params"])
 BaseColMapExtrinsics = collections.namedtuple(

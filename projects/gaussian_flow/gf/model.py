@@ -13,18 +13,18 @@ class GaussianFlow(BaseModel):
     
     cfg: Config
     
-    def setup(self, datapipline, device="cuda"):
+    def setup(self, datapipeline, device="cuda"):
         self.point_cloud = parse_point_cloud(
             self.cfg.point_cloud,
-            datapipline
+            datapipeline
         ).to(device)
         self.point_cloud.set_prefix_name("point_cloud")
         self.device = device
         
-        self.datapipline = datapipline
+        self.datapipeline = datapipeline
         self.global_step = 0
         # Set up flow paramters
-        train_dataset = self.datapipline.training_dataset
+        train_dataset = self.datapipeline.training_dataset
         max_timestamp = train_dataset.camera_list[0].max_timestamp
         self.max_timestamp = max_timestamp
         self.point_cloud.max_timestamp = self.max_timestamp

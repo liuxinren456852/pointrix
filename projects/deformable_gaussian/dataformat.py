@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 from pathlib import Path
 
-from pointrix.dataset.base_data import DATA_FORMAT_REGISTRY, BaseReFormatData, BasicPointCloud
+from pointrix.dataset.base_data import DATA_FORMAT_REGISTRY, BaseReFormatData, SimplePointCloud
 from pointrix.camera.camera import Camera
 
 C0 = 0.28209479177387814
@@ -134,6 +134,6 @@ class NerfiesReFormat(BaseReFormatData):
         xyz = (xyz - self.scene_center) * self.coord_scale
         num_pts = xyz.shape[0]
         shs = np.random.random((num_pts, 3)) / 255.0
-        pcd = BasicPointCloud(points=xyz, colors=SH2RGB(
+        pcd = SimplePointCloud(points=xyz, colors=SH2RGB(
             shs), normals=np.zeros((num_pts, 3)))
         return pcd

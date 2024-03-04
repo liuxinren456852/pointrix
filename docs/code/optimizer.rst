@@ -3,15 +3,11 @@
 optimizer
 ============
 
-.. automodule:: pointrix.optimizer.base_optimizer
+.. automodule:: pointrix.optimizer.optimizer
    :members:
    :show-inheritance:
 
 .. automodule:: pointrix.optimizer.gs_optimizer
-   :members:
-   :show-inheritance:
-
-.. automodule:: pointrix.optimizer.optimizers
    :members:
    :show-inheritance:
 

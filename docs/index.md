@@ -82,14 +82,6 @@ DPTR which offer foundational functionalities for point rendering serves as the 
 
 ::::
 
-
-```{toctree}
-:maxdepth: 2
-:hidden: True
-:caption: API
-API
-```
-
 If you **are the beginner** of Pointrix, You can start from these:
 
 ---
@@ -153,8 +145,7 @@ If you want to learning more about Pointrix, you can read following:
 :maxdepth: 1
 :hidden: False
 framework/overall
-framework/optimizer
-framework/pointcloud
+framework/data
 framework/model
 framework/trainer
 framework/hook

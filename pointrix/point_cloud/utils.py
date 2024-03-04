@@ -30,8 +30,8 @@ def points_init(init_cfg, point_cloud):
         features = get_random_feauture(num_points, init_cfg.feat_dim)
         
     else:
-        Logger.log("Number of points at initialisation : ", point_cloud.points.shape[0])
-        pos = np.asarray(point_cloud.points)
+        Logger.log("Number of points at initialisation : ", point_cloud.positions.shape[0])
+        pos = np.asarray(point_cloud.positions)
         pos = torch.from_numpy(pos).float()
         features = RGB2SH(torch.tensor(np.asarray(point_cloud.colors)).float())
         

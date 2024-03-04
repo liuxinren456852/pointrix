@@ -12,7 +12,7 @@ from pointrix.dataset import parse_data_pipeline
 from pointrix.utils.config import parse_structured
 from pointrix.optimizer import parse_optimizer, parse_scheduler
 from pointrix.model import parse_model
-from pointrix.logger import parse_writer, ProgressLogger
+from pointrix.logger import parse_writer
 from pointrix.hook import parse_hooks
 from pointrix.exporter.novel_view import test_view_render, novel_view_render
 
@@ -73,18 +73,18 @@ class DefaultTrainer:
         self.hooks = parse_hooks(self.cfg.hooks)
         self.call_hook("before_run")
         # build datapipeline
-        self.datapipline = parse_data_pipeline(self.cfg.dataset)
+        self.datapipeline = parse_data_pipeline(self.cfg.dataset)
 
         # build render and point cloud model
-        self.white_bg = self.datapipline.white_bg
+        self.white_bg = self.datapipeline.white_bg
         self.renderer = parse_renderer(
             self.cfg.renderer, white_bg=self.white_bg, device=device)
 
         self.model = parse_model(
-            self.cfg.model, self.datapipline, device=device)
+            self.cfg.model, self.datapipeline, device=device)
 
         # build optimizer and scheduler
-        cameras_extent = self.datapipline.training_dataset.radius
+        cameras_extent = self.datapipeline.training_dataset.radius
         self.schedulers = parse_scheduler(self.cfg.scheduler,
                                           cameras_extent if self.cfg.spatial_lr_scale else 1.
                                           )
@@ -114,10 +114,10 @@ class DefaultTrainer:
 
     @torch.no_grad()
     def validation(self):
-        self.val_dataset_size = len(self.datapipline.validation_dataset)
+        self.val_dataset_size = len(self.datapipeline.validation_dataset)
         for i in range(0, self.val_dataset_size):
             self.call_hook("before_val_iter")
-            batch = self.datapipline.next_val(i)
+            batch = self.datapipeline.next_val(i)
             render_dict = self.model(batch)
             render_results = self.renderer.render_batch(render_dict, batch)
             self.metric_dict = self.model.get_metric_dict(render_results, batch)
@@ -132,9 +132,9 @@ class DefaultTrainer:
         self.model.to(self.device)
         self.renderer.active_sh_degree = 3
         test_view_render(self.model, self.renderer,
-                         self.datapipline, output_path=self.cfg.output_path)
+                         self.datapipeline, output_path=self.cfg.output_path)
         novel_view_render(self.model, self.renderer,
-                          self.datapipline, output_path=self.cfg.output_path)
+                          self.datapipeline, output_path=self.cfg.output_path)
 
     def train_loop(self) -> None:
         """
@@ -145,7 +145,7 @@ class DefaultTrainer:
         self.call_hook("before_train")
         for iteration in loop_range:
             self.call_hook("before_train_iter")
-            batch = self.datapipline.next_train(self.global_step)
+            batch = self.datapipeline.next_train(self.global_step)
             self.renderer.update_sh_degree(iteration)
             self.schedulers.step(self.global_step, self.optimizer)
             self.train_step(batch)

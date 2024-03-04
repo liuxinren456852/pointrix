@@ -24,7 +24,7 @@ class BaseModel(BaseModule):
     ----------
     cfg : Optional[Union[dict, DictConfig]]
         The configuration dictionary.
-    datapipline : BaseDataPipeline
+    datapipeline : BaseDataPipeline
         The data pipeline which is used to initialize the point cloud.
     device : str, optional
         The device to use, by default "cuda".
@@ -36,9 +36,9 @@ class BaseModel(BaseModule):
 
     cfg: Config
 
-    def setup(self, datapipline, device="cuda"):
+    def setup(self, datapipeline, device="cuda"):
         self.point_cloud = parse_point_cloud(self.cfg.point_cloud,
-                                             datapipline).to(device)
+                                             datapipeline).to(device)
         self.point_cloud.set_prefix_name("point_cloud")
         self.device = device
 

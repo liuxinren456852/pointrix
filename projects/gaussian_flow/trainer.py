@@ -38,7 +38,7 @@ class GaussianFlowTrainer(DefaultTrainer):
         
     @torch.no_grad()
     def validation(self):
-        self.val_dataset_size = len(self.datapipline.validation_dataset)
+        self.val_dataset_size = len(self.datapipeline.validation_dataset)
         progress_bar = tqdm(
             range(0, self.val_dataset_size),
             desc="Validation progress",
@@ -46,7 +46,7 @@ class GaussianFlowTrainer(DefaultTrainer):
         )
         for i in range(0, self.val_dataset_size):
             self.call_hook("before_val_iter")
-            batch = self.datapipline.next_val(i)
+            batch = self.datapipeline.next_val(i)
             render_results = self.renderer.render_batch(self.model, batch)
             self.metric_dict = self.model.get_metric_dict(
                 render_results, batch)
@@ -76,12 +76,12 @@ class GaussianFlowTrainer(DefaultTrainer):
         
         test_view_render(
             render_func,
-            self.datapipline,
+            self.datapipeline,
             output_path=self.cfg.output_path
         )
         novel_view_render(
             render_func,
-            self.datapipline, 
+            self.datapipeline, 
             output_path=self.cfg.output_path
         )
         

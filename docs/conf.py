@@ -19,8 +19,8 @@ from pathlib import Path
 # -- Project information -----------------------------------------------------
 
 project = 'Pointrix'
-copyright = '2024, NJU-3DV'
-author = 'NJU-3DV'
+copyright = '2024, Pointrix-Group'
+author = 'Pointrix-Group'
 
 # The full version, including alpha/beta/rc tags
 # release = '0.0.1'
