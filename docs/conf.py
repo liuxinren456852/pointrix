@@ -29,6 +29,8 @@ html_logo = "images/twitter_header_photo_1.png"
 html_favicon = "images/pointrix.ico"
 html_title = "Pointrix"
 
+autodoc_mock_imports = ["simple_knn", "dptr", "diff_gaussian_rasterization"]
+
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
