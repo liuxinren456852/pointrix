@@ -11,8 +11,6 @@ A powerful and easily extensible framework built around point cloud rendering as
 ```{image} ../images/framework.png
 :class: sd-animate-grow50-rot20
 :align: center
-
-    The framework of Pointrix.
 ```
 
 ## Data Components

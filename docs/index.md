@@ -51,33 +51,33 @@ Pointrix is a **differentiable point-based rendering library** which has followi
 :gutter: 1 1 1 2
 
 :::{grid-item-card} {octicon}`plug;1.5em;sd-mr-1` Highly Extensible
-:link: syntax/core
+<!-- :link: framework/overall -->
 :link-type: ref
 
 Pointrix adopts a modular design, with clear structure and easy extensibility. 
 
 +++
-[Learn more »](syntax/core)
+[Learn more »](framework/overall)
 :::
 
 :::{grid-item-card} {octicon}`device-camera` Rich Feature
-:link: roles-directives
+<!-- :link: framework/overall -->
 :link-type: ref
 
 Pointrix supports the implementation of various types of tasks.
 
 +++
-[Learn more »](roles-directives)
+[Learn more »](framework/overall)
 :::
 
 :::{grid-item-card} {octicon}`rocket` Powerful backend
-:link: configuration
+:link: framework/overall
 :link-type: doc
 
 DPTR which offer foundational functionalities for point rendering serves as the backend of Pointrix.
 
 +++
-[Learn more »](configuration)
+[Learn more »](framework/overall)
 :::
 
 ::::
@@ -99,7 +99,6 @@ If you **are the beginner** of Pointrix, You can start from these:
 ```{toctree}
 :caption: Get started
 :maxdepth: 1
-:hidden: False
 get_started/installation
 get_started/run_first_model
 get_started/render_novel_view_gui
@@ -114,7 +113,6 @@ get_started/render_novel_view_gui
 
 ```{toctree}
 :maxdepth: 1
-:hidden: False
 :caption: tutorial
 tutorial/define_your_model
 tutorial/define_your_own_dataset
@@ -143,7 +141,6 @@ If you want to learning more about Pointrix, you can read following:
 ```{toctree}
 :caption: Framework
 :maxdepth: 1
-:hidden: False
 framework/overall
 framework/data
 framework/model
@@ -160,7 +157,6 @@ framework/hook
 
 ```{toctree}
 :maxdepth: 1
-:hidden: False
 :caption: Reference
 API
 ```

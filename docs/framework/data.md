@@ -11,8 +11,6 @@ As shown in the diagram below, the data pipeline consists of three parts: **Refo
 ```{image} ../images/data.svg
 :class: sd-animate-grow50-rot20
 :align: center
-
-    The framework of data pipeline, which user should modify the blue part if employ their own datasets.
 ```
 
 The data in Pointrix is defined below:

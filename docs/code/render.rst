@@ -1,9 +1,7 @@
-.. _graphs:
-
 renderer
 ============
 
-.. automodule:: pointrix.renderer.splatting
+.. automodule:: pointrix.renderer.base_splatting
    :members:
    :show-inheritance:
 

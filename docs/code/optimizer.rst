@@ -1,5 +1,3 @@
-.. _graphs:
-
 optimizer
 ============
 

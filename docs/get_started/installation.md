@@ -2,7 +2,7 @@
 
 Get started with our package with these steps:
 
-### 1. Install package
+## 1. Install package
 
 First,create a new conda environment and activate it:
 
