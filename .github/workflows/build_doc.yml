@@ -15,8 +15,8 @@ jobs:
         python-version: 3.x
     - name: Install dependencies
       run: |
-        pip install -e .
         pip install -r docs/requirements.txt
+        pip install -e .
     - name: Build docs
       run: |
         sphinx-build docs _build -W --keep-going
