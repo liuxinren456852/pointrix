@@ -21,9 +21,6 @@ class DPTRRender(GaussianSplattingRender):
         The iteration to update the spherical harmonics degree, by default 1000.
     """
 
-    def __init__(self, cfg, white_bg, device, update_sh_iter=1000, **kwargs):
-        super(DPTRRender, self).__init__(cfg, white_bg, device, update_sh_iter, **kwargs)
-
     def render_iter(self,
                     FovX,
                     FovY,
