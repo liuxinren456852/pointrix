@@ -9,7 +9,7 @@ from pointrix.utils.config import C
 from .optimizer import BaseOptimizer
 from pointrix.model.base_model import BaseModel
 
-from pointrix.model.gaussian_points.gaussian_utils import (
+from pointrix.utils.gaussian_points.gaussian_utils import (
     inverse_sigmoid,
     build_rotation,
 )

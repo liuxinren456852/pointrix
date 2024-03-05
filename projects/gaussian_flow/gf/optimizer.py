@@ -5,7 +5,7 @@ from pointrix.utils.base import BaseObject
 from pointrix.utils.config import C
 from pointrix.optimizer.optimizer import OPTIMIZER_REGISTRY
 from pointrix.optimizer.gs_optimizer import GaussianSplattingOptimizer
-from pointrix.model.gaussian_points.gaussian_utils import (
+from pointrix.utils.gaussian_points.gaussian_utils import (
     inverse_sigmoid,
     build_rotation,
 )
