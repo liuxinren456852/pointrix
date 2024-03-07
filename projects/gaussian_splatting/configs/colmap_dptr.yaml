@@ -1,0 +1,78 @@
+name: "garden"
+
+trainer:
+  output_path: "garden_dptr"
+  max_steps: 30000
+  val_interval: 5000
+
+  model:
+    name: BaseModel
+    lambda_dssim: 0.2
+    point_cloud:
+      point_cloud_type: "GaussianPointCloud"  
+      max_sh_degree: 3
+      trainable: true
+      unwarp_prefix: "point_cloud"
+      initializer:
+        init_type: 'colmap'
+        feat_dim: 3
+
+  optimizer:
+    optimizer_1:
+      type: GaussianSplattingOptimizer
+      name: Adam
+      args:
+        eps: 1e-15
+      extra_cfg:
+        control_module: "point_cloud" # the variable name that need to be densification
+        percent_dense: 0.01
+        split_num: 2
+        densify_start_iter: 500
+        densify_stop_iter: 15000
+        prune_interval: 100
+        duplicate_interval: 100
+        opacity_reset_interval: 3000
+        densify_grad_threshold: 0.0002
+        min_opacity: 0.005
+      params:
+        point_cloud.position:
+          lr: 0.00016
+        point_cloud.features:
+          lr: 0.0025
+        point_cloud.features_rest:
+          lr: 0.000125 # features/20
+        point_cloud.scaling:
+          lr: 0.005
+        point_cloud.rotation:
+          lr: 0.001
+        point_cloud.opacity:
+          lr: 0.05
+
+  scheduler:
+    name: "ExponLRScheduler"
+    max_steps: ${trainer.max_steps}
+    params:
+      point_cloud.position:
+        init:  0.00016
+        final: 0.0000016
+  dataset:
+    data_path: ""
+    data_type: "ColmapReFormat"
+    cached_image: True
+    shuffle: True
+    batch_size: 1
+    num_workers: 0
+    scale: 0.25
+    white_bg: False
+
+  renderer:
+    name: "DPTRRender"
+    max_sh_degree: ${trainer.model.point_cloud.max_sh_degree}
+  writer:
+    writer_type: "TensorboardWriter"
+  
+  hooks:
+    LogHook:
+      name: LogHook
+    CheckPointHook:
+      name: CheckPointHook

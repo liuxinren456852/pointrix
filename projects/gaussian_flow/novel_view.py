@@ -11,7 +11,7 @@ from torch import nn
 
 from pointrix.utils.losses import l1_loss
 from pointrix.utils.system import mkdir_p
-from pointrix.model.gaussian_points.gaussian_utils import psnr
+from pointrix.utils.gaussian_points.gaussian_utils import psnr
 
 def to8b(x): return (255 * np.clip(x, 0, 1)).astype(np.uint8)
 

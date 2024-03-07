@@ -152,7 +152,7 @@ class DefaultTrainer:
             self.optimizer.update_model(**self.optimizer_dict)
             self.call_hook("after_train_iter")
             self.global_step += 1
-            if iteration % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
+            if (iteration+1) % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
                 self.call_hook("before_val")
                 self.validation()
                 self.call_hook("after_val")

@@ -5,9 +5,9 @@ from pathlib import Path
 
 from pointrix.camera.camera import Camera
 from pointrix.dataset.base_data import BaseReFormatData, SimplePointCloud, DATA_FORMAT_REGISTRY
-from pointrix.utils.dataset.colmap_utils import (read_extrinsics_binary,
-                                                 read_intrinsics_binary,
-                                                 fetchPly)
+from pointrix.utils.dataset.colmap_utils import (read_colmap_extrinsics,
+                                                 read_colmap_intrinsics,
+                                                 retrieve_ply_file)
 from pointrix.utils.pose import qvec2rotmat
 from pointrix.logger.writer import Logger
 @DATA_FORMAT_REGISTRY.register()
@@ -40,16 +40,12 @@ class ColmapReFormat(BaseReFormatData):
         """
         ply_path = os.path.join(self.data_root, "sparse/0/points3D.ply")
         bin_path = os.path.join(self.data_root, "sparse/0/points3D.bin")
-        txt_path = os.path.join(self.data_root, "sparse/0/points3D.txt")
         if not os.path.exists(ply_path):
-            print("Converting point3d.bin to .ply, will happen only the first time you open the scene.")
-            from ..utils.dataset.colmap_utils import read_points3D_binary, read_points3D_text, storePly
-            try:
-                xyz, rgb, _ = read_points3D_binary(bin_path)
-            except:
-                xyz, rgb, _ = read_points3D_text(txt_path)
-            storePly(ply_path, xyz, rgb)
-        positions, colors, normals = fetchPly(ply_path)
+            Logger.log("Converting point3d.bin to .ply, will happen only the first time you open the scene.")
+            from pointrix.utils.dataset.colmap_utils import read_3D_points_binary, save_ply_file
+            xyz, rgb, = read_3D_points_binary(bin_path)
+            save_ply_file(ply_path, xyz, rgb)
+        positions, colors, normals = retrieve_ply_file(ply_path)
         return SimplePointCloud(positions=positions, colors=colors, normals=normals)
 
     def load_camera(self, split: str) -> List[Camera]:
@@ -64,8 +60,8 @@ class ColmapReFormat(BaseReFormatData):
             self.data_root, "sparse/0", "images.bin")
         cameras_intrinsic_file = os.path.join(
             self.data_root, "sparse/0", "cameras.bin")
-        cam_extrinsics = read_extrinsics_binary(cameras_extrinsic_file)
-        cam_intrinsics = read_intrinsics_binary(cameras_intrinsic_file)
+        cam_extrinsics = read_colmap_extrinsics(cameras_extrinsic_file)
+        cam_intrinsics = read_colmap_intrinsics(cameras_intrinsic_file)
         # TODO: more methods for splitting the data
         llffhold = 8
         cameras = []
