@@ -404,7 +404,7 @@ class BaseDataPipeline:
             self.iter_val_image_dataloader = iter(self.validation_loader)
             return next(self.iter_val_image_dataloader)
 
-    def next_loaderless(self, dataset, iter_loader):
+    def next_loaderless(self, dataset: Dataset, iter_loader: Dataset):
         if not iter_loader.images:
             iter_loader = deepcopy(dataset)
         pop_idx = randint(0, len(iter_loader.images) - 1)

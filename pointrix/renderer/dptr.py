@@ -1,6 +1,9 @@
 import torch
 import numpy as np
 import dptr.gs as gs
+
+from typing import List
+from pointrix.utils.renderer.renderer_utils import RenderFeatures
 from .base_splatting import RENDERER_REGISTRY, GaussianSplattingRender
 
 
@@ -20,6 +23,10 @@ class DPTRRender(GaussianSplattingRender):
     update_sh_iter : int, optional
         The iteration to update the spherical harmonics degree, by default 1000.
     """
+
+    def setup(self, white_bg, device, **kwargs):
+        super().setup(white_bg, device, **kwargs)
+        self.bg_color = 1. if white_bg else 0.
 
     def render_iter(self,
                     FovX,
@@ -70,7 +77,7 @@ class DPTRRender(GaussianSplattingRender):
             The scaling modifier, by default 1.0
         render_xyz : bool, optional
             Whether to render the xyz or not, by default False
-        
+
         Returns
         -------
         dict
@@ -82,23 +89,24 @@ class DPTRRender(GaussianSplattingRender):
         # import pdb; pdb.set_trace()
         # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
         # They will be excluded from value updates used in the splitting criteria.
-
-        direction = (position.cuda() - camera_center.repeat(position.shape[0], 1).cuda())
+    
+        direction = (position.cuda() -
+                     camera_center.repeat(position.shape[0], 1).cuda())
         direction = direction / direction.norm(dim=1, keepdim=True)
         rgb = gs.compute_sh(shs, 3, direction)
 
         camparams = torch.Tensor([
             width / (2 * np.tan(FovX * 0.5)),
             height / (2 * np.tan(FovY * 0.5)),
-            float(width) / 2, 
+            float(width) / 2,
             float(height) / 2]).cuda().float()
-        
+
         (uv, depth) = gs.project_point(
-            position, 
-            world_view_transform.cuda(), 
-            full_proj_transform.cuda(), 
+            position,
+            world_view_transform.cuda(),
+            full_proj_transform.cuda(),
             camparams, width, height)
-        
+
         visible = depth != 0
 
         # compute cov3d
@@ -106,13 +114,13 @@ class DPTRRender(GaussianSplattingRender):
 
         # ewa project
         (conic, radius, tiles_touched) = gs.ewa_project(
-            position, 
-            cov3d, 
-            world_view_transform.cuda(), 
-            camparams, 
-            uv, 
-            width, 
-            height, 
+            position,
+            cov3d,
+            world_view_transform.cuda(),
+            camparams,
+            uv,
+            width,
+            height,
             visible
         )
 
@@ -121,20 +129,71 @@ class DPTRRender(GaussianSplattingRender):
             uv, depth, width, height, radius, tiles_touched
         )
 
+        Render_Features = RenderFeatures(rgb=rgb, depth=depth)
+        render_features = Render_Features.combine()
+
         # alpha blending
         ndc = torch.zeros_like(uv, requires_grad=True)
         try:
             ndc.retain_grad()
         except:
-            pass
+            raise ValueError("ndc does not have grad")
 
-        render_feature = gs.alpha_blending(
-            uv, conic, opacity, rgb, 
-            gaussian_ids_sorted, tile_range, 1.0, width, height, ndc
+        rendered_features = gs.alpha_blending(
+            uv, conic, opacity, render_features,
+            gaussian_ids_sorted, tile_range, self.bg_color, width, height, ndc
         )
+        rendered_features_split = Render_Features.split(rendered_features)
 
-        return {"render": render_feature,
+        return {"rendered_features_split": rendered_features_split,
                 "viewspace_points": ndc,
                 "visibility_filter": radius > 0,
                 "radii": radius
+                }
+
+    def render_batch(self, render_dict: dict, batch: List[dict]) -> dict:
+        """
+        Render the batch of point clouds.
+
+        Parameters
+        ----------
+        render_dict : dict
+            The render dictionary.
+        batch : List[dict]
+            The batch data.
+
+        Returns
+        -------
+        dict
+            The rendered image, the viewspace points, 
+            the visibility filter, the radii, the xyz, 
+            the color, the rotation, the scales, and the xy.
+        """
+        rendered_features = {}
+        viewspace_points = []
+        visibilitys = []
+        radii = []
+
+        for b_i in batch:
+            b_i.update(render_dict)
+            render_results = self.render_iter(**b_i)
+            for feature_name in render_results["rendered_features_split"].keys():
+                if feature_name not in rendered_features:
+                    rendered_features[feature_name] = []
+                rendered_features[feature_name].append(
+                    render_results["rendered_features_split"][feature_name])
+
+            viewspace_points.append(render_results["viewspace_points"])
+            visibilitys.append(
+                render_results["visibility_filter"].unsqueeze(0))
+            radii.append(render_results["radii"].unsqueeze(0))
+
+        for feature_name in rendered_features.keys():
+            rendered_features[feature_name] = torch.stack(
+                rendered_features[feature_name], dim=0)
+
+        return {**rendered_features,
+                "viewspace_points": viewspace_points,
+                "visibility": torch.cat(visibilitys).any(dim=0),
+                "radii": torch.cat(radii, 0).max(dim=0).values
                 }

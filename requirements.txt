@@ -8,3 +8,4 @@ packaging
 rich
 imageio
 plyfile
+opencv-python

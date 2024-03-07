@@ -13,3 +13,4 @@ rich
 imageio
 torch
 plyfile
+opencv-python

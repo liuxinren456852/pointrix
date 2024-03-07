@@ -85,8 +85,8 @@ class BaseModel(BaseModule):
             [batch[i]["image"].to(self.device) for i in range(len(batch))],
             dim=0
         )
-        L1_loss = l1_loss(render_results['images'], gt_images)
-        ssim_loss = 1.0 - ssim(render_results['images'], gt_images)
+        L1_loss = l1_loss(render_results['rgb'], gt_images)
+        ssim_loss = 1.0 - ssim(render_results['rgb'], gt_images)
         loss = (
             (1.0 - self.cfg.lambda_dssim) * L1_loss
         ) + (
@@ -139,12 +139,13 @@ class BaseModel(BaseModule):
             [batch[i]["image"].to(self.device) for i in range(len(batch))],
             dim=0
         )
-        L1_loss = l1_loss(render_results['images'], gt_images).mean().item()
-        psnr_test = psnr(render_results['images'], gt_images).mean().item()
+        L1_loss = l1_loss(render_results['rgb'], gt_images).mean().item()
+        psnr_test = psnr(render_results['rgb'], gt_images).mean().item()
         ssims_test = ms_ssim(
-            render_results['images'], gt_images, data_range=1, size_average=True
+            render_results['rgb'], gt_images, data_range=1, size_average=True
         ).mean().item()
 
+        depth = render_results['depth']
         # lpips_test = lpips(
         #     render_results['images'], 
         #     gt_images,
@@ -153,9 +154,10 @@ class BaseModel(BaseModule):
         metric_dict = {"L1_loss": L1_loss,
                        "psnr": psnr_test,
                        "ssims": ssims_test,
+                       "depth": depth,
                     #    "lpips": lpips_test,
                        "gt_images": gt_images,
-                       "images": render_results['images'],
+                       "images": render_results['rgb'],
                        "rgb_file_name": batch[0]["camera"].rgb_file_name}
         return metric_dict
     

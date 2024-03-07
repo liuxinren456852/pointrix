@@ -176,7 +176,7 @@ class GaussianSplattingRender(BaseObject):
         # import pdb; pdb.set_trace()
         # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
         # They will be excluded from value updates used in the splitting criteria.
-        return {"render": rendered_image,
+        return {"rgb": rendered_image,
                 # "opacity": opacity,
                 # "render_xyz": render_xyz,
                 "viewspace_points": screenspace_points,
@@ -206,7 +206,7 @@ class GaussianSplattingRender(BaseObject):
         for b_i in batch:
             b_i.update(render_dict)
             render_results = self.render_iter(**b_i)
-            renders.append(render_results["render"])
+            renders.append(render_results["rgb"])
             viewspace_points.append(render_results["viewspace_points"])
             visibilitys.append(
                 render_results["visibility_filter"].unsqueeze(0))
@@ -217,7 +217,7 @@ class GaussianSplattingRender(BaseObject):
         images = torch.stack(renders)
 
         render_results = {
-            "images": images,
+            "rgb": images,
             "radii": radii,
             "visibility": visibility,
             "viewspace_points": viewspace_points,
