@@ -107,14 +107,15 @@ class Camera:
             self.R = torch.tensor(self.R)
         if not isinstance(self.T, Tensor):
             self.T = torch.tensor(self.T)
-        self._world_view_transform = self.getWorld2View(
+        self._extrinsic_matrix = self.getWorld2View(
             self.R, self.T, scale=self.scene_scale
-        ).transpose(0, 1)
+        )
+        self._world_view_transform = self._extrinsic_matrix.transpose(0, 1)
         self._projection_matrix = self.getProjectionMatrix(
             self.fovX, self.fovY).transpose(0, 1)
         self._full_proj_transform = (self.world_view_transform.unsqueeze(
             0).bmm(self.projection_matrix.unsqueeze(0))).squeeze(0)
-        self._intrinsics_matrix = self._get_intrinsics(
+        self._intrinsic_matrix = self._get_intrinsics(
             self.fx, self.fy, self.cx, self.cy)
         self._camera_center = self.world_view_transform.inverse()[3, :3]
 
@@ -134,7 +135,7 @@ class Camera:
         self._world_view_transform = self._world_view_transform.to(device)
         self._projection_matrix = self._projection_matrix.to(device)
         self._full_proj_transform = self._full_proj_transform.to(device)
-        self._intrinsics_matrix = self._intrinsics_matrix.to(device)
+        self._intrinsic_matrix = self._intrinsic_matrix.to(device)
         self._camera_center = self._camera_center.to(device)
 
     @staticmethod
@@ -204,9 +205,7 @@ class Camera:
         -----
         only used in the camera class
         """
-        return torch.tensor([[fx, 0, cx],
-                             [0, fy, cy],
-                             [0, 0, 1]], dtype=torch.float32)
+        return torch.tensor([fx, fy, cx, cy], dtype=torch.float32)
 
     @staticmethod
     def getProjectionMatrix(fovX: float, fovY: float, znear: float = 0.01, zfar: float = 100) -> Float[Tensor, "4 4"]:
@@ -305,20 +304,36 @@ class Camera:
         return self._full_proj_transform
 
     @property
-    def intrinsics_matrix(self) -> Float[Tensor, "3 3"]:
+    def intrinsic_matrix(self) -> Float[Tensor, "3 3"]:
         """
         Get the intrinsics matrix from the camera.
 
         Returns
         -------
-        _intrinsics_matrix: Float[Tensor, "3 3"]
+        _intrinsic_matrix: Float[Tensor, "3 3"]
 
         Notes
         -----
         property of the camera class
 
         """
-        return self._intrinsics_matrix
+        return self._intrinsic_matrix
+    
+    @property
+    def extrinsic_matrix(self) -> Float[Tensor, "4 4"]:
+        """
+        Get the extrinsic matrix from the camera.
+
+        Returns
+        -------
+        _extrinsic_matrix: Float[Tensor, "4 4"]
+
+        Notes
+        -----
+        property of the camera class
+
+        """
+        return self._extrinsic_matrix
 
     @property
     def camera_center(self) -> Float[Tensor, "1 3"]:
@@ -513,7 +528,7 @@ class TrainableCamera(Camera):
         self._world_view_transform = self._world_view_transform.to(device)
         self._projection_matrix = self._projection_matrix.to(device)
         self._full_proj_transform = self._full_proj_transform.to(device)
-        self._intrinsics_matrix = self._intrinsics_matrix.to(device)
+        self._intrinsic_matrix = self._intrinsic_matrix.to(device)
         self._camera_center = self._camera_center.to(device)
         self._omega = self._omega.to(device)
 

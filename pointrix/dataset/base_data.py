@@ -272,6 +272,8 @@ class BaseImageDataset(Dataset):
             "width": camera.image_width,
             "world_view_transform": camera.world_view_transform,
             "full_proj_transform": camera.full_proj_transform,
+            "extrinsic_matrix": camera.extrinsic_matrix,
+            "intrinsic_matrix": camera.intrinsic_matrix,
             "camera_center": camera.camera_center,
         }
 
@@ -419,6 +421,8 @@ class BaseDataPipeline:
             "width": camera.image_width,
             "world_view_transform": camera.world_view_transform,
             "full_proj_transform": camera.full_proj_transform,
+            "extrinsic_matrix": camera.extrinsic_matrix,
+            "intrinsic_matrix": camera.intrinsic_matrix,
             "camera_center": camera.camera_center,
         }]
 
