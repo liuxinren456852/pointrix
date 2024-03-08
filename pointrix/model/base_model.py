@@ -31,8 +31,10 @@ class BaseModel(BaseModule):
     """
     @dataclass
     class Config:
+        synthesis_cfg :dict = field(default_factory=dict)
         point_cloud: dict = field(default_factory=dict)
         lambda_dssim: float = 0.2
+        name: str = "BaseModel"
 
     cfg: Config
 

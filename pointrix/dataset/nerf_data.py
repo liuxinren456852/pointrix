@@ -30,7 +30,8 @@ class NerfReFormat(BaseReFormatData):
                  data_root: Path,
                  split: str = 'train',
                  scale: float = 1.0,
-                 cached_image: bool = True):
+                 cached_image: bool = True,
+                 gencfg:dict={}):
         super().__init__(data_root, split, cached_image)
 
     def load_camera(self, split: str) -> List[Camera]:

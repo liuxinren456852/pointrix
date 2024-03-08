@@ -1,8 +1,9 @@
 from .gaussian_points.gaussian_points import GaussianPointCloud
 from pointrix.dataset.base_data import BaseDataPipeline
 from .base_model import BaseModel, MODEL_REGISTRY
+from .synthesis_model import SynthesisModel
 
-__all__ = ["GaussianPointCloud", "BaseModel"]
+__all__ = ["GaussianPointCloud", "BaseModel","SynthesisModel"]
 
 
 def parse_model(cfg, datapipeline:BaseDataPipeline, device="cuda"):

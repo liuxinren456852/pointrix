@@ -106,7 +106,8 @@ class BaseReFormatData:
     def __init__(self, data_root: Path,
                  split: str = "train",
                  cached_image: bool = True,
-                 scale: float = 1.0):
+                 scale: float = 1.0,
+                 gencfg={}):
         self.data_root = data_root
         self.split = split
         self.scale = scale
@@ -320,6 +321,7 @@ class BaseDataPipeline:
         white_bg: bool = False
         scale: float = 1.0
         use_dataloader: bool = True
+        generate_cfg: dict = field(default_factory=dict)
     cfg: Config
 
     def __init__(self, cfg: Config, dataformat) -> None:

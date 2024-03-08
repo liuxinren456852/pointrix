@@ -10,6 +10,8 @@ from pointrix.utils.dataset.colmap_utils import (read_colmap_extrinsics,
                                                  retrieve_ply_file)
 from pointrix.utils.pose import qvec2rotmat
 from pointrix.logger.writer import Logger
+
+
 @DATA_FORMAT_REGISTRY.register()
 class ColmapReFormat(BaseReFormatData):
     """
@@ -26,12 +28,13 @@ class ColmapReFormat(BaseReFormatData):
     scale: float
         The scene scale of data.
     """
-    
+
     def __init__(self,
                  data_root: Path,
                  split: str = 'train',
                  cached_image: bool = True,
-                 scale: float = 1.0):
+                 scale: float = 1.0,
+                 gencfg: dict = {}):
         super().__init__(data_root, split, cached_image, scale)
 
     def load_pointcloud(self) -> SimplePointCloud:
@@ -87,12 +90,14 @@ class ColmapReFormat(BaseReFormatData):
             camera = Camera(idx=idx, R=R, T=T, width=width, height=height, rgb_file_name=os.path.basename(extr.name),
                             fx=focal_length_x, fy=focal_length_y, cx=width/2, cy=height/2, bg=0.0)
             cameras.append(camera)
-        
+
         sorted_camera = sorted(cameras.copy(), key=lambda x: x.rgb_file_name)
         if split == 'train':
-            cameras_results = [c for idx, c in enumerate(sorted_camera) if idx % llffhold != 0]
+            cameras_results = [c for idx, c in enumerate(
+                sorted_camera) if idx % llffhold != 0]
         elif split == 'val':
-            cameras_results = [c for idx, c in enumerate(sorted_camera) if idx % llffhold == 0]
+            cameras_results = [c for idx, c in enumerate(
+                sorted_camera) if idx % llffhold == 0]
         return cameras_results
 
     def load_image_filenames(self, cameras: List[Camera], split) -> List[Path]:
@@ -119,17 +124,15 @@ class ColmapReFormat(BaseReFormatData):
         """
         meta_data = {}
         if os.path.exists(os.path.join(self.data_root, "depth")):
-            depth_folder = "depth" 
+            depth_folder = "depth"
         elif os.path.exists(os.path.join(self.data_root, "depths")):
             depth_folder = "depths"
         else:
             depth_folder = None
             Logger.log("No depth folder found, depth will not be loaded.")
         if depth_folder:
-            depth_file_names = sorted(os.listdir(os.path.join(self.data_root, depth_folder)))
+            depth_file_names = sorted(os.listdir(
+                os.path.join(self.data_root, depth_folder)))
             meta_data['depth_file_name'] = depth_file_names
-        
+
         return meta_data
-
-            
-

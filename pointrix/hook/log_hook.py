@@ -57,7 +57,7 @@ class LogHook(Hook):
         """
         self.progress_bar = ProgressLogger(description='training', suffix='iter/s')
         self.progress_bar.add_task("train", "Training Progress", trainner.cfg.max_steps, log_dict={})
-        self.progress_bar.add_task("validation", "Validation Progress", len(trainner.datapipeline.validation_dataset), log_dict={})
+        self.progress_bar.add_task("validation", "Validation Progress", len(trainner.datapipline.validation_dataset), log_dict={})
         self.progress_bar.reset("validation", visible=False)
         self.progress_bar.start()
 
