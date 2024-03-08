@@ -119,15 +119,20 @@ class DeformGaussian(BaseModel):
     def __init__(self, cfg, datapipeline, device="cuda"):
         super().__init__(cfg, datapipeline, device)
         self.deform = DeformNetwork(is_blender=False).to(self.device)
-    
-    def forward(self, batch):
+        self.N = len(self.point_cloud.position)
+        self.time_interval = 1. / datapipeline.training_dataset_size
+
+    def forward(self, batch, step):
         camera_fid = torch.Tensor([batch[0]['camera'].fid]).float().to(self.device)
         position = self.point_cloud.get_position
         time_input = camera_fid.unsqueeze(0).expand(position.shape[0], -1)
-        d_xyz, d_rotation, d_scaling = self.deform(position, time_input)
-
+        # ast_noise = torch.randn(1, 1, device='cuda').expand(self.N, -1) * self.time_interval * self.smooth_term(step)
+        if step < 3000:
+            d_xyz, d_rotation, d_scaling = 0.0, 0.0, 0.0
+        else:
+            d_xyz, d_rotation, d_scaling = self.deform(position.detach(), time_input)
         render_dict = {
-            "position": self.point_cloud.position + d_xyz,
+            "position": self.point_cloud.get_position + d_xyz,
             "opacity": self.point_cloud.get_opacity,
             "scaling": self.point_cloud.get_scaling + d_scaling,
             "rotation": self.point_cloud.get_rotation + d_rotation,
@@ -135,29 +140,3 @@ class DeformGaussian(BaseModel):
         }
         
         return render_dict
-    
-    def get_param_groups(self):
-        """
-        Get the parameter groups for optimizer
-
-        Returns
-        -------
-        dict
-            The parameter groups for optimizer
-        """
-        param_group = {}
-        param_group[self.point_cloud.prefix_name +
-                    'position'] = self.point_cloud.position
-        param_group[self.point_cloud.prefix_name +
-                    'opacity'] = self.point_cloud.opacity
-        param_group[self.point_cloud.prefix_name +
-                    'features'] = self.point_cloud.features
-        param_group[self.point_cloud.prefix_name +
-                    'features_rest'] = self.point_cloud.features_rest
-        param_group[self.point_cloud.prefix_name +
-                    'scaling'] = self.point_cloud.scaling
-        param_group[self.point_cloud.prefix_name +
-                    'rotation'] = self.point_cloud.rotation
-
-        param_group['deform'] = self.deform.parameters()
-        return param_group

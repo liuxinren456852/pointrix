@@ -1,8 +1,8 @@
 name: "garden"
 
 trainer:
-  output_path: "garden_fix"
-  max_steps: 30000
+  output_path: "garden_dptr"
+  max_steps: 40000
   val_interval: 5000
 
   model:
@@ -15,14 +15,16 @@ trainer:
       unwarp_prefix: "point_cloud"
       initializer:
         init_type: 'colmap'
+        feat_dim: 3
 
   optimizer:
     optimizer_1:
-      name: Adam
       type: GaussianSplattingOptimizer
+      name: Adam
       args:
         eps: 1e-15
-      structure:
+      extra_cfg:
+        control_module: "point_cloud" # the variable name that need to be densification
         percent_dense: 0.01
         split_num: 2
         densify_start_iter: 500
@@ -45,11 +47,15 @@ trainer:
           lr: 0.001
         point_cloud.opacity:
           lr: 0.05
+
   scheduler:
     name: "ExponLRScheduler"
-    max_steps: ${trainer.max_steps}
+    max_steps: 40000
     params:
       point_cloud.position:
+        init:  0.00016
+        final: 0.0000016
+      deform:
         init:  0.00016
         final: 0.0000016
   dataset:
@@ -59,11 +65,11 @@ trainer:
     shuffle: True
     batch_size: 1
     num_workers: 0
-    scale: 0.25
+    scale: 1.0
     white_bg: False
 
   renderer:
-    name: "GaussianSplattingRender"
+    name: "DPTRRender"
     max_sh_degree: ${trainer.model.point_cloud.max_sh_degree}
   writer:
     writer_type: "TensorboardWriter"
