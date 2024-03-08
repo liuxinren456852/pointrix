@@ -6,10 +6,11 @@ sys.path.append("../../")
 from pointrix.utils.config import load_config
 from pointrix.engine.default_trainer import DefaultTrainer
 
+from pointrix.engine.synthesis_trainer import Synthesis_Trainer
 def main(args, extras) -> None:
     
     cfg = load_config(args.config, cli_args=extras)
-    gaussian_trainer = DefaultTrainer(
+    gaussian_trainer = Synthesis_Trainer(
         cfg.trainer,
         cfg.exp_dir,
     )

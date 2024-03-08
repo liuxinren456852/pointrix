@@ -56,7 +56,7 @@ class SynthesisReFormat(BaseReFormatData):
         image_count: int = 200
         path: str = "./point_cloud/"
         init_shape: str = "pointe"
-        generate_size: int = 1
+        generate_size: int = 4
         fov: float = 0.48
         validation_size: int = 120
         loss:dict =field(default_factory=dict)

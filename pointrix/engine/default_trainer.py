@@ -16,7 +16,6 @@ from pointrix.logger import parse_writer
 from pointrix.hook import parse_hooks
 from pointrix.exporter.novel_view import test_view_render, novel_view_render
 
-import imageio
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -71,19 +70,22 @@ class DefaultTrainer:
 
         # build config
         self.cfg = parse_structured(self.Config, cfg)
+        # build hooks
+        self.hooks = parse_hooks(self.cfg.hooks)
+        self.call_hook("before_run")
         # build datapipeline
-        self.datapipline = parse_data_pipeline(self.cfg.dataset)
+        self.datapipeline = parse_data_pipeline(self.cfg.dataset)
 
         # build render and point cloud model
-        self.white_bg = self.datapipline.white_bg
+        self.white_bg = self.datapipeline.white_bg
         self.renderer = parse_renderer(
             self.cfg.renderer, white_bg=self.white_bg, device=device)
 
         self.model = parse_model(
-            self.cfg.model, self.datapipline, device=device)
+            self.cfg.model, self.datapipeline, device=device)
 
         # build optimizer and scheduler
-        cameras_extent = self.datapipline.training_dataset.radius
+        cameras_extent = self.datapipeline.training_dataset.radius
         self.schedulers = parse_scheduler(self.cfg.scheduler,
                                           cameras_extent if self.cfg.spatial_lr_scale else 1.
                                           )
@@ -93,9 +95,6 @@ class DefaultTrainer:
 
         # build logger and hooks
         self.logger = parse_writer(self.cfg.writer, exp_dir)
-        self.hooks = parse_hooks(self.cfg.hooks)
-
-        self.call_hook("before_train")
 
     def train_step(self, batch: List[dict]) -> None:
         """
@@ -109,76 +108,55 @@ class DefaultTrainer:
         render_dict = self.model(batch)
         render_results = self.renderer.render_batch(render_dict, batch)
         self.loss_dict = self.model.get_loss_dict(render_results, batch)
+        self.loss_dict['loss'].backward()
         self.optimizer_dict = self.model.get_optimizer_dict(self.loss_dict,
                                                             render_results,
                                                             self.white_bg)
 
     @torch.no_grad()
     def validation(self):
-        self.val_dataset_size = len(self.datapipline.validation_dataset)
-        progress_bar = tqdm(
-            range(0, self.val_dataset_size),
-            desc="Validation progress",
-            leave=False,
-        )
+        self.val_dataset_size = len(self.datapipeline.validation_dataset)
         for i in range(0, self.val_dataset_size):
             self.call_hook("before_val_iter")
-            batch = self.datapipline.next_val(i)
+            batch = self.datapipeline.next_val(i)
             render_dict = self.model(batch)
             render_results = self.renderer.render_batch(render_dict, batch)
-            self.metric_dict = self.model.get_metric_dict(
-                render_results, batch)
+            self.metric_dict = self.model.get_metric_dict(render_results, batch)
             self.call_hook("after_val_iter")
-            progress_bar.update(1)
-        progress_bar.close()
-        self.call_hook("after_val")
 
-    def test(self, model_path) -> None:
+    def test(self, model_path=None) -> None:
         """
         The testing method for the model.
         """
-        self.model.load_ply(model_path)
+        # self.model.load_ply(model_path)
+        self.load_model(model_path)
         self.model.to(self.device)
         self.renderer.active_sh_degree = 3
         test_view_render(self.model, self.renderer,
-                         self.datapipline, output_path=self.cfg.output_path)
+                         self.datapipeline, output_path=self.cfg.output_path)
         novel_view_render(self.model, self.renderer,
-                          self.datapipline, output_path=self.cfg.output_path)
+                          self.datapipeline, output_path=self.cfg.output_path)
 
-    def  train_loop(self) -> None:
+    def train_loop(self) -> None:
         """
         The training loop for the model.
         """
         loop_range = range(self.start_steps, self.cfg.max_steps+1)
-        self.progress_bar = tqdm(
-            range(self.start_steps, self.cfg.max_steps),
-            desc="Training progress",
-            leave=False,
-        )
         self.global_step = self.start_steps
-
-        self.iter_start = torch.cuda.Event(enable_timing=True)
-        self.iter_end = torch.cuda.Event(enable_timing=True)
-
+        self.call_hook("before_train")
         for iteration in loop_range:
-
             self.call_hook("before_train_iter")
-
-            batch = self.datapipline.next_train(self.global_step)
+            batch = self.datapipeline.next_train(self.global_step)
             self.renderer.update_sh_degree(iteration)
             self.schedulers.step(self.global_step, self.optimizer)
             self.train_step(batch)
             self.optimizer.update_model(**self.optimizer_dict)
-
             self.call_hook("after_train_iter")
             self.global_step += 1
-            if iteration % self.cfg.video_interval == 0:
-                self.video_inference(iteration)
-
-            if iteration % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
+            if (iteration+1) % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
+                self.call_hook("before_val")
                 self.validation()
-
-        self.progress_bar.close()
+                self.call_hook("after_val")
         self.call_hook("after_train")
 
     def call_hook(self, fn_name: str, **kwargs) -> None:
@@ -202,51 +180,26 @@ class DefaultTrainer:
 
     def load_model(self, path: Path = None) -> None:
         if path is None:
-            path = os.path.join(self.cfg.output_path,
+            path = os.path.join(self.exp_dir,
                                 "chkpnt" + str(self.global_step) + ".pth")
         data_list = torch.load(path)
-        self.global_step = data_list["global_step"]
-        self.optimizer.load_state_dict(data_list["optimizer"])
-
         for k, v in data_list.items():
             print(f"Loaded {k} from checkpoint")
             # get arrtibute from model
             arrt = getattr(self, k)
-            if isinstance(arrt, nn.Module):
+            if hasattr(arrt, 'load_state_dict'):
                 arrt.load_state_dict(v)
             else:
                 setattr(self, k, v)
 
-    def saving(self):
+    def save_model(self, path: Path = None) -> None:
+        if path is None:
+            path = os.path.join(self.exp_dir,
+                                "chkpnt" + str(self.global_step) + ".pth")
         data_list = {
-            "active_sh_degree": self.active_sh_degree,
-            "model": self.model.state_dict(),
+            "global_step": self.global_step,
+            "optimizer": self.optimizer.state_dict(),
+            "model": self.model.get_state_dict(),
+            "renderer": self.renderer.state_dict()
         }
-        return data_list
-
-    def video_inference(self, iteration):
-        self.val_dataset_size = len(self.datapipline.validation_dataset)
-        save_folder = os.path.join(
-            self.exp_dir, "videos/{}_iteration".format(iteration))
-        if not os.path.exists(save_folder):
-            os.makedirs(save_folder)  # makedirs
-            print('videos is in :', save_folder)
-        torch.cuda.empty_cache()
-        img_frames = []
-        for i in range(0, self.val_dataset_size):
-            # self.call_hook("before_val_iter")
-            batch = self.datapipline.next_val(i)
-            render_dict = self.model(batch)
-            render_results = self.renderer.render_batch(render_dict, batch)
-            rgbs = render_results["images"]
-            for index in range(rgbs.shape[0]):
-                rgb = rgbs[index, :, :, :]
-                image = torch.clamp(rgb, 0.0, 1.0)
-                image = image.detach().cpu().permute(1, 2, 0).numpy()
-                image = (image * 255).round().astype('uint8')
-                img_frames.append(image)
-                # self.call_hook("after_val_iter")
-        imageio.mimwrite(os.path.join(save_folder, "video_rgb_{}.mp4".format(
-            iteration)), img_frames, fps=30, quality=8)
-        print("\n[ITER {}] Video Save Done!".format(iteration))
-        torch.cuda.empty_cache()
+        torch.save(data_list, path)
