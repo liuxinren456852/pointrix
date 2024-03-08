@@ -3,7 +3,7 @@ from threestudio.models.prompt_processors.stable_diffusion_prompt_processor impo
 from threestudio.models.guidance.stable_diffusion_guidance import StableDiffusionGuidance
 from threestudio.models.guidance.stable_diffusion_vsd_guidance import StableDiffusionVSDGuidance
 from threestudio.models.guidance.stable_diffusion_unified_guidance import StableDiffusionUnifiedGuidance
-from threestudio.utils.misc import C
+# from threestudio.utils.misc import C
 import torch
 import numpy as np
 
@@ -16,6 +16,7 @@ from pointrix.utils.config import parse_structured
 from pointrix.point_cloud import parse_point_cloud
 from .loss import l1_loss, ssim, psnr,tv_loss
 from pointrix.utils.registry import Registry
+from pointrix.utils.config import C
 from PIL import Image
 
 
@@ -39,17 +40,20 @@ class SynthesisModel(BaseModel):
         synthesis_cfg = cfg['synthesis_cfg']
         super().__init__(cfg, datapipline, device)
         cfg = parse_structured(self.Syn_Config, synthesis_cfg)
-
+        self.global_step=0
         self.sd_cfg = synthesis_cfg['sd_cfg']
         self.prompt_cfg = synthesis_cfg['prompt_cfg']
         self.loss_cfg=synthesis_cfg['loss']
         self.guidance = StableDiffusionGuidance(self.sd_cfg)
         if cfg['prompt_name'] == 'StableDiffusionPromptProcessor':
             self.prompt_utils = StableDiffusionPromptProcessor(self.prompt_cfg)
-    def C(self,value,epoch=0,global_step=0):
-        return C(value,epoch,global_step)
+        
+    def C(self,value,epoch=0):
+        
+        return C(value,epoch,self.global_step)
 
     def get_loss_dict(self, render_results, batch, **kwargs) -> dict:
+        self.global_step=kwargs['global_step']
         render_dict=kwargs['render_dict']
         rgb = render_results["rgb"].permute(0, 2, 3, 1)
         depth=render_results["depth"].permute(0, 2, 3, 1)
@@ -91,13 +95,6 @@ class SynthesisModel(BaseModel):
                 depth.permute(0, 3, 1, 2)
             )
             loss += (loss_tv_rgb+loss_tv_depth)
-        
-        
-        
-        
-        
-        
-        
         loss_dict = {"loss": loss}
         if "loss_sds_img" in guidance_out.keys():
             loss_dict.update({"loss_sds_img": guidance_out["loss_sds_img"]})
