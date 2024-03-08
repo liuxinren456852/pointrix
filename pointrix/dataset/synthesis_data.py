@@ -43,7 +43,7 @@ class SynthesisReFormat(BaseReFormatData):
         image_w: int = 512
         image_h: int = 512
         SSAA: float = 1.0
-        init_num_pts: int = 100_000
+        init_num_pts: int = 4096
         default_polar: int = 90
         default_azimuth: int = 0
         default_fovy: float = 0.55  # 20
@@ -52,11 +52,11 @@ class SynthesisReFormat(BaseReFormatData):
         jitter_center: float = 0.05
         jitter_target: float = 0.05
         jitter_up: float = 0.01
-        use_pointe_rgb: bool = False,
-        image_count: int = 200,
+        use_pointe_rgb: bool = False
+        image_count: int = 200
         path: str = "./point_cloud/"
-        init_shape: str = "pointe",
-        batch_size: int = 4,
+        init_shape: str = "pointe"
+        generate_size: int = 1
         fov: float = 0.48
         validation_size: int = 120
         loss:dict =field(default_factory=dict)
@@ -101,7 +101,7 @@ class SynthesisReFormat(BaseReFormatData):
             elif self.cfg.init_shape == 'pointe':
                 num_pts = int(num_pts/5000)
 
-                xyz, rgb = init_by_point_e(self.cfg.base_name, self.cfg.prompt)
+                xyz, rgb = init_by_point_e(self.cfg.base_name, self.cfg.prompt,num_pts)
                 xyz[:, 1] = - xyz[:, 1]
                 xyz[:, 2] = xyz[:, 2] + 0.15
                 thetas = np.random.rand(num_pts)*np.pi
@@ -165,7 +165,7 @@ class SynthesisReFormat(BaseReFormatData):
     def load_camera(self, split) -> List[Camera]:
         if split == 'train':
             cameras, spherical_coordinate = generate_random_cameras(
-                self.cfg['batch_size'], self.cfg, SSAA=self.cfg.SSAA)
+                self.cfg['generate_size'], self.cfg, SSAA=self.cfg.SSAA)
         elif split == "val":
             cameras, spherical_coordinate = generate_circle_cameras(
                 self.cfg, self.cfg['validation_size'], self.cfg['render_45'])

@@ -20,28 +20,13 @@ trainer:
       prompt_name: "StableDiffusionPromptProcessor"
       sd_cfg:
         pretrained_model_name_or_path: "runwayml/stable-diffusion-v1-5"
-        enable_memory_efficient_attention: False
-        enable_sequential_cpu_offload: False
-        enable_attention_slicing: False
-        enable_channels_last_format: False
         guidance_scale: 100.0
-        grad_clip: null
-        half_precision_weights: True
-
         min_step_percent: 0.02
         max_step_percent: 0.98
         sqrt_anneal: False  # sqrt anneal proposed in HiFA: https://hifa-team.github.io/HiFA-site/
         trainer_max_steps: 25000
         use_img_loss: False  # image-space SDS proposed in HiFA: https://hifa-team.github.io/HiFA-site/
-
-        use_sjc: False
-        var_red: True
         weighting_strategy: "sds"
-
-        token_merging: False
-        token_merging_params: {}
-
-        view_dependent_prompting: True
         max_items_eval: 4
 
       loss:
@@ -52,32 +37,14 @@ trainer:
         lambda_tv_loss: 1.0
         lambda_depth_tv_loss: 1.0
       prompt_cfg:
-        prompt: "a red motorcycle, blender, 8k, HDR."
-
-        # manually assigned view-dependent prompts
-        prompt_front: null
-        prompt_side: null
-        prompt_back: null
-        prompt_overhead: null
-
-        negative_prompt: ""
         pretrained_model_name_or_path: "runwayml/stable-diffusion-v1-5"
-        overhead_threshold: 60.0
-        front_threshold: 45.0
-        back_threshold: 45.0
+        prompt: "a red motorcycle, blender, 8k, HDR."
+        negative_prompt: "ugly, bad anatomy, blurry, pixelated obscure, unnatural colors, poor lighting, dull, and unclear, cropped, lowres, low quality, artifacts, duplicate, morbid, mutilated, poorly drawn face, deformed, dehydrated, bad proportions"
+        front_threshold: 30.0
+        back_threshold: 30.0
         view_dependent_prompt_front: False
         use_cache: True
-        spawn: False
-
-        use_perp_neg: False
-        # a*e(-b*r) + c
-        # a * e(-b) + c = 0
-        perp_neg_f_sb: [1,0.5,-0.606]
-        perp_neg_f_fsb: [1 ,0.5,0.967]
-        perp_neg_f_fs: [4, 0.5,-2.426] 
-        perp_neg_f_sf: [4, 0.5, -2.426]
-
-        # prompt debiasing
+        spawn: True
         use_prompt_debiasing: False
         pretrained_model_name_or_path_prompt_debiasing: "bert-base-uncased"
         # index of words that can potentially be removed
@@ -134,41 +101,25 @@ trainer:
     generate_cfg:
       base_name: "base40M-textvec"
       prompt: "a red motorcycle"
+      
       radius_range: [5.2,5.5]
-      max_radius_range: [3.5, 5.0]
-      default_radius: 3.5
       theta_range: [45, 105]
-      max_theta_range: [45, 105]
       phi_range: [-180, 180]
-      max_phi_range: [-180, 180]
-      fovy_range: [0.32, 0.60] #[0
-      max_fovy_range: [0.16, 0.60]
-      rand_cam_gamma: 1.0
-      angle_overhead: 30
-      angle_front: 60
-      render_45: False
-      uniform_sphere_rate: 0
+      fovy_range: [0.32, 0.60] 
+      
+      default_radius: 3.5
+
+
+
       image_w: 512
       image_h: 512 
-      SSAA: 1
-      init_num_pts: 100_000
       default_polar: 90
       default_azimuth: 0
       default_fovy: 0.7
-      device: "cuda"
-      jitter_pose: True
-      jitter_center: 0.05
-      jitter_target: 0.05
-      jitter_up: 0.01
-      use_pointe_rgb: False
-      image_count: 200
       path: "store_point_cloud"
       init_shape: "pointe"
-      batch_size: 4
       fov: 0.5
       validation_size : 120 
-
-
 
   renderer:
     name: "DPTRRender"

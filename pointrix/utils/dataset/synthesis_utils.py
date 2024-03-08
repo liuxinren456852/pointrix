@@ -25,7 +25,7 @@ def safe_normalize(x, eps=1e-20):
 
 
 # TODO base_name ,device，prompt都可以放到cfg
-def init_by_point_e(base_name, prompt):
+def init_by_point_e(base_name, prompt,num_pts):
     print('creating base model...')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     base_model = model_from_config(MODEL_CONFIGS[base_name], device)
@@ -47,7 +47,7 @@ def init_by_point_e(base_name, prompt):
         device=device,
         models=[base_model, upsampler_model],
         diffusions=[base_diffusion, upsampler_diffusion],
-        num_points=[1024, 4096 - 1024],
+        num_points=[1024, num_pts - 1024],
         guidance_scale=[3.0, 0.0],
         aux_channels=['R', 'G', 'B'],
         # Do not condition the upsampler at all

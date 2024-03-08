@@ -30,6 +30,6 @@ if __name__ == "__main__":
     parser.add_argument("--config", required=True, help="path to config file")
     parser.add_argument("--smc_file", type=str, default = None)
     args, extras = parser.parse_known_args()
-    
+
     main(args, extras)
     

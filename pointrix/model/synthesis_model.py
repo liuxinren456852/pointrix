@@ -91,10 +91,14 @@ class SynthesisModel(BaseModel):
             loss_tv_rgb = self.C(self.loss_cfg["lambda_tv_loss"]) * tv_loss(
                 rgb.permute(0, 3, 1, 2)
             )
-            loss_tv_depth= self.C(self.loss_cfg["lambda_tv_loss"]) * tv_loss(
+            loss += loss_tv_rgb
+            
+        if self.loss_cfg["lambda_depth_tv_loss"] > 0.0:
+            loss_tv_depth= self.C(self.loss_cfg["lambda_depth_tv_loss"]) * tv_loss(
                 depth.permute(0, 3, 1, 2)
             )
-            loss += (loss_tv_rgb+loss_tv_depth)
+            loss += loss_tv_depth
+    
         loss_dict = {"loss": loss}
         if "loss_sds_img" in guidance_out.keys():
             loss_dict.update({"loss_sds_img": guidance_out["loss_sds_img"]})

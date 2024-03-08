@@ -108,7 +108,7 @@ class DefaultTrainer:
         """
         render_dict = self.model(batch)
         render_results = self.renderer.render_batch(render_dict, batch)
-        self.loss_dict = self.model.get_loss_dict(render_results, batch,render_dict=render_dict,global_step=self.global_step)
+        self.loss_dict = self.model.get_loss_dict(render_results, batch)
         self.optimizer_dict = self.model.get_optimizer_dict(self.loss_dict,
                                                             render_results,
                                                             self.white_bg)
@@ -145,7 +145,7 @@ class DefaultTrainer:
         novel_view_render(self.model, self.renderer,
                           self.datapipline, output_path=self.cfg.output_path)
 
-    def train_loop(self) -> None:
+    def  train_loop(self) -> None:
         """
         The training loop for the model.
         """
