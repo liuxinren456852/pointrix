@@ -68,7 +68,7 @@ class SynthesisModel(BaseModel):
         
         loss=guidance_out['loss_sds']*self.loss_cfg['lambda_sds']
         if self.loss_cfg["lambda_position"] > 0.0:
-            xyz_mean =render_dict['position'](dim=-1)
+            xyz_mean =render_dict['position'].norm(dim=-1)
             loss_position = xyz_mean.mean()
             loss += self.C(self.loss_cfg["lambda_position"]) * loss_position
 
