@@ -45,7 +45,7 @@ class SynthesisReFormat(BaseReFormatData):
         image_w: int = 512
         image_h: int = 512
         SSAA: float = 1.0
-        init_num_pts: int = 4096
+        init_num_pts: int = 10_0000
         default_polar: int = 90
         default_azimuth: int = 0
         default_fovy: float = 0.55  # 20
@@ -80,8 +80,11 @@ class SynthesisReFormat(BaseReFormatData):
 
 
     def load_pointcloud(self) -> SimplePointCloud:
-        ply_path = os.path.join(self.data_root, "sparse/0/points3D.ply")
-        ply_path=os.path.join("store_point_cloud", "pointe.ply")
+        # ply_path = os.path.join(self.data_root, "sparse/0/points3D.ply")
+        directory_to_save_point_path="store_point_cloud"
+        ply_path=os.path.join(directory_to_save_point_path, "pointe.ply")
+        if not os.path.exists(directory_to_save_point_path):
+            os.mkdir(directory_to_save_point_path)
         if not os.path.exists(ply_path):
 
             num_pts = self.cfg.init_num_pts
@@ -110,7 +113,7 @@ class SynthesisReFormat(BaseReFormatData):
             elif self.cfg.init_shape == 'pointe':
                 num_pts = int(num_pts/5000)
 
-                xyz, rgb = init_by_point_e(self.cfg.base_name, self.cfg.prompt,num_pts)
+                xyz, rgb = init_by_point_e(self.cfg.base_name, self.cfg.prompt)
                 xyz[:, 1] = - xyz[:, 1]
                 xyz[:, 2] = xyz[:, 2] + 0.15
                 thetas = np.random.rand(num_pts)*np.pi
