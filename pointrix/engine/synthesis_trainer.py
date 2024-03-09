@@ -46,6 +46,8 @@ class Synthesis_Trainer(DefaultTrainer):
         self.call_hook("before_train")
         for iteration in loop_range:
             self.call_hook("before_train_iter")
+            radius_now_scale=1+self.cfg['dataset']['generate_cfg']['radius_increase_scale'] *self.global_step
+            self.datapipeline.set_all_scale(radius_now_scale)
             batch = self.datapipeline.next_train(self.global_step)
             self.renderer.update_sh_degree(iteration)
             self.schedulers.step(self.global_step, self.optimizer)
@@ -54,7 +56,7 @@ class Synthesis_Trainer(DefaultTrainer):
             self.call_hook("after_train_iter")
             self.global_step += 1
             if (iteration+1)%self.cfg.video_interval==0:
-                self.video_inference(iteration)
+                self.video_inference(iteration+1)
             if (iteration+1) % self.cfg.val_interval == 0 or iteration == self.cfg.max_steps:
                 self.call_hook("before_val")
                 self.validation()
@@ -80,6 +82,7 @@ class Synthesis_Trainer(DefaultTrainer):
 
     
     def video_inference(self, iteration):
+        self.datapipeline.validation_dataset.resample()
         self.val_dataset_size = len(self.datapipeline.validation_dataset)
         save_folder = os.path.join(
             self.exp_dir, "videos/{}_iteration".format(iteration))

@@ -47,7 +47,6 @@ trainer:
         spawn: True
         use_prompt_debiasing: False
         pretrained_model_name_or_path_prompt_debiasing: "bert-base-uncased"
-        # index of words that can potentially be removed
         prompt_debiasing_mask_ids: null
 
 
@@ -95,24 +94,24 @@ trainer:
     cached_image: False
     shuffle: True
     batch_size: 4
+    
     num_workers: 0
     scale: 0.25
     white_bg: True
     generate_cfg:
       base_name: "base40M-textvec"
       prompt: "a red motorcycle"
-      
-      radius_range: [5.2,5.5]
+      image_w: 512
+      image_h: 512 
+
+      radius_increase_scale: 0.00025
+      radius_now_scale : 1.0
+      radius_range: [2.2,2.5]
       theta_range: [45, 105]
       phi_range: [-180, 180]
       fovy_range: [0.32, 0.60] 
-      
-      default_radius: 3.5
 
-
-
-      image_w: 512
-      image_h: 512 
+      default_radius: 0.5
       default_polar: 90
       default_azimuth: 0
       default_fovy: 0.7

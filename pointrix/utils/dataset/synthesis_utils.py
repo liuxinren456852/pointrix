@@ -208,10 +208,12 @@ def generate_circle_cameras(cfg, size=8, render45=False):
     radius_list=[]
     # generate specific data structure
     focal=fov2focal(fov, cfg.image_h)
+    
+    look_pos=2.7*cfg.radius_now_scale
     for idx in range(size):
         thetas = torch.FloatTensor([cfg.default_polar])
         phis = torch.FloatTensor([(idx / size) * 360])
-        radius = torch.FloatTensor([cfg.default_radius+1.7])
+        radius = torch.FloatTensor([look_pos])
         # random pose on the fly
         poses = circle_poses(radius=radius, theta=thetas, phi=phis,
                              angle_overhead=cfg.angle_overhead, angle_front=cfg.angle_front)
@@ -268,8 +270,13 @@ def generate_circle_cameras(cfg, size=8, render45=False):
 
 def generate_random_cameras(size,cfg, SSAA=True):
 
+    radius_range=[]
+    radius_range.append(cfg.radius_range[0])
+    radius_range.append(cfg.radius_range[1])
+    radius_range[0]*=cfg.radius_now_scale
+    radius_range[1]*=cfg.radius_now_scale
     # random pose on the fly
-    poses, thetas, phis, radius = rand_poses(size, cfg, radius_range=cfg.radius_range, theta_range=cfg.theta_range, phi_range=cfg.phi_range,
+    poses, thetas, phis, radius = rand_poses(size, cfg, radius_range=radius_range, theta_range=cfg.theta_range, phi_range=cfg.phi_range,
                                              angle_overhead=cfg.angle_overhead, angle_front=cfg.angle_front, uniform_sphere_rate=cfg.uniform_sphere_rate,
                                              rand_cam_gamma=cfg.rand_cam_gamma)
     # delta polar/azimuth/radius to default view
@@ -279,8 +286,8 @@ def generate_random_cameras(size,cfg, SSAA=True):
     delta_azimuth[delta_azimuth > 180] -= 360  # range in [-180, 180]
     delta_radius = radius - cfg.default_radius
     # random focal
-    # fov = random.random() * \
-    #     (cfg.fovy_range[1] - cfg.fovy_range[0]) + cfg.fovy_range[0]
+    fov = random.random() * \
+        (cfg.fovy_range[1] - cfg.fovy_range[0]) + cfg.fovy_range[0]
 
     cam_infos = []
 
@@ -291,7 +298,7 @@ def generate_random_cameras(size,cfg, SSAA=True):
 
     image_h = cfg.image_h * ssaa
     image_w = cfg.image_w * ssaa
-    focal=fov2focal(cfg.fov, image_h)
+    focal=fov2focal(fov, image_h)
 
     # generate specific data structure
     for idx in range(size):

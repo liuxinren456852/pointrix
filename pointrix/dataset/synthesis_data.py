@@ -24,6 +24,8 @@ class SynthesisReFormat(BaseReFormatData):
     class Config:
         base_name: str = "base40M-textvec"
         prompt: str = "a red motorcycle"
+        radius_increase_scale: float = 0.0005
+        radius_now_scale:float = 1.0
         radius_range: List[float] = field(default_factory=lambda: [0.16, 0.60])
         max_radius_range: List[float] = field(
             default_factory=lambda: [3.5, 5.0])
@@ -38,7 +40,7 @@ class SynthesisReFormat(BaseReFormatData):
         rand_cam_gamma: float = 1.0
         angle_overhead: int = 30
         angle_front: int = 60
-        render_45: bool = True
+        render_45: bool = False
         uniform_sphere_rate: float = 0
         image_w: int = 512
         image_h: int = 512
@@ -59,16 +61,23 @@ class SynthesisReFormat(BaseReFormatData):
         generate_size: int = 4
         fov: float = 0.48
         validation_size: int = 120
+        batch_size: int = 4
         loss:dict =field(default_factory=dict)
     def __init__(self,
                  data_root: Path,
                  split: str = "train",
                  scale: float = 1.0,
                  cached_image: bool = True,
-                 gencfg: dict = {}
+                 gencfg: dict = {},
+                 batch_size:int =4,
+                 train:bool = False
                  ):
+        self.radius_scale=1.0
+        self.is_training=train
         self.cfg = parse_structured(self.Config, gencfg)
+        self.batch_size = batch_size
         super().__init__(data_root, split, cached_image, scale, gencfg)
+
 
     def load_pointcloud(self) -> SimplePointCloud:
         ply_path = os.path.join(self.data_root, "sparse/0/points3D.ply")
@@ -162,6 +171,9 @@ class SynthesisReFormat(BaseReFormatData):
 
         return data
 
+    def set_radius_scale(self, scale: float) -> None:
+        self.cfg['radius_now_scale'] = scale
+    
     def load_camera(self, split) -> List[Camera]:
         if split == 'train':
             cameras, spherical_coordinate = generate_random_cameras(
@@ -200,11 +212,15 @@ class SynthesisImageDataset(BaseImageDataset):
     def __init__(self, format_data: SynthesisReFormat) -> None:
         super().__init__(format_data)
         self.format_data = format_data
-        self.len = len(self.camera_list)
-
-    def __len__(self):
+        self.len = format_data.batch_size
+        self.is_training = format_data.is_training
         self.resample()
-        return self.len
+        
+    def __len__(self):
+        if self.is_training:
+            self.resample()
+            return self.len
+        return len(self.camera_list)
 
     def resample(self):
         format_data, spherical_coordinate = self.format_data.load_data_list_include_camera()
@@ -218,6 +234,8 @@ class SynthesisImageDataset(BaseImageDataset):
 
     def __getitem__(self, idx):
         # self.resample()
+        if  self.is_training:
+            idx=0
         camera = self.camera_list[idx]
         image = None
         camera.height = camera.height
@@ -247,12 +265,15 @@ class SynthesisImageDataPipeline(BaseDataPipeline):
             data_root=self.cfg.data_path, split="train",
             cached_image=self.cfg.cached_image,
             scale=self.cfg.scale,
-            gencfg=self.cfg.generate_cfg)
+            gencfg=self.cfg.generate_cfg,
+            batch_size=self.cfg.batch_size,
+            train=True)
         self.validation_format_data = dataformat(
             data_root=self.cfg.data_path, split="val",
             cached_image=self.cfg.cached_image,
             scale=self.cfg.scale,
-            gencfg=self.cfg.generate_cfg)
+            gencfg=self.cfg.generate_cfg,
+            batch_size=self.cfg.batch_size)
 
         self.point_cloud = self.train_format_data.data_list.PointCloud
         self.white_bg = self.cfg.white_bg
@@ -263,6 +284,10 @@ class SynthesisImageDataPipeline(BaseDataPipeline):
         self.loaddata()
 
         self.training_cameras = self.training_dataset.cameras
+    def set_all_scale(self,scale:float=1.0):
+        self.train_format_data.set_radius_scale(scale)
+        self.validation_format_data.set_radius_scale(scale)
+
 
     def get_training_dataset(self) -> BaseImageDataset:
         self.training_dataset = SynthesisImageDataset(
