@@ -23,7 +23,7 @@ def get_parameters(model, name):
         return module
     return []
 
-def parse_optimizer(configs, model, **kwargs):
+def parse_optimizer(configs, model, datapipeline, **kwargs):
     """
     Parse the optimizer.
 
@@ -44,7 +44,13 @@ def parse_optimizer(configs, model, **kwargs):
             ]
         else:
             params = model.parameters()
-            
+        
+        if hasattr(config, "camera_params"):
+            camera_params = [
+                {"params": params, "name": name, "lr": config.camera_params.lr}
+                for name, params in datapipeline.get_param_groups().items()
+            ]
+            params = list(params) + camera_params
         if config.name in ["FusedAdam"]:
             import apex
 

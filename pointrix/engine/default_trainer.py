@@ -89,7 +89,7 @@ class DefaultTrainer:
                                           cameras_extent if self.cfg.spatial_lr_scale else 1.
                                           )
         self.optimizer = parse_optimizer(self.cfg.optimizer,
-                                         self.model,
+                                         self.model, self.datapipeline,
                                          cameras_extent=cameras_extent)
 
         # build logger and hooks

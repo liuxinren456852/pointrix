@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from pointrix.utils.registry import Registry
 from .optimizer import OptimizerList
@@ -81,6 +82,7 @@ class ExponLRScheduler:
 
         return helper
     
+    @torch.no_grad()
     def step(self, global_step: int, optimizer_list: OptimizerList) -> None:
         """
         Update the learning rate for the optimizer.

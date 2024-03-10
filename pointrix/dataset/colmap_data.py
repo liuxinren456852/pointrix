@@ -3,7 +3,7 @@ import numpy as np
 from typing import Any, Dict, List
 from pathlib import Path
 
-from pointrix.camera.camera import Camera
+from pointrix.camera.camera import Camera, TrainableCamera
 from pointrix.dataset.base_data import BaseReFormatData, SimplePointCloud, DATA_FORMAT_REGISTRY
 from pointrix.utils.dataset.colmap_utils import (read_colmap_extrinsics,
                                                  read_colmap_intrinsics,
@@ -84,7 +84,7 @@ class ColmapReFormat(BaseReFormatData):
             else:
                 assert False, "Colmap camera model not handled: only undistorted datasets (PINHOLE or SIMPLE_PINHOLE cameras) supported!"
 
-            camera = Camera(idx=idx, R=R, T=T, width=width, height=height, rgb_file_name=os.path.basename(extr.name),
+            camera = TrainableCamera(idx=idx, R=R, T=T, width=width, height=height, rgb_file_name=os.path.basename(extr.name),
                             fx=focal_length_x, fy=focal_length_y, cx=width/2, cy=height/2, bg=0.0)
             cameras.append(camera)
         

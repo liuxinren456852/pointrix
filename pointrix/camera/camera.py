@@ -390,6 +390,7 @@ class Camera:
 class TrainableCamera(Camera):
     """
     Trainable Camera class used in Pointrix
+    Only support opencv camera yet
 
     Parameters
     ----------
@@ -444,8 +445,9 @@ class TrainableCamera(Camera):
     """
 
     def __post_init__(self):
+        omega = torch.zeros(6)
+        self._omega = nn.Parameter(omega.contiguous().requires_grad_(True))
         super().__post_init__()
-        self._omega = nn.Parameter(torch.zeros(6).requires_grad_(True))
 
     @property
     def param_groups(self) -> List:
@@ -461,9 +463,8 @@ class TrainableCamera(Camera):
         property of the camera class
 
         """
-        return [self._omega]
+        return self._omega
 
-    @property
     def _exp_factor(self) -> Float[Tensor, "4 4"]:
         """
         Get the exponential fix factor of the camera.
@@ -494,7 +495,23 @@ class TrainableCamera(Camera):
         property of the camera class
 
         """
-        return self._world_view_transform @ self._exp_factor
+        return self._world_view_transform
+    
+    def extrinsic_matrix(self) -> Float[Tensor, "4 4"]:
+        """
+        Get the fixed extrinsic matrix from the camera.
+
+        Returns
+        -------
+        _extrinsic_matrix: Float[Tensor, "4 4"]
+
+        Notes
+        -----
+        property of the camera class
+
+        """
+        extrinsic_matrix = self._exp_factor() @ self._extrinsic_matrix
+        return extrinsic_matrix[:3, :]
 
     @property
     def full_proj_transform(self) -> Float[Tensor, "4 4"]:

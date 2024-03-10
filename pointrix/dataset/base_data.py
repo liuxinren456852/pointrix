@@ -263,6 +263,8 @@ class BaseImageDataset(Dataset):
             image_file_name) if self.images is None else self.images[idx]
         camera.height = image.shape[1]
         camera.width = image.shape[2]
+
+        extrinsic_matrix = camera.extrinsic_matrix()
         return {
             "image": image,
             "camera": camera,
@@ -270,11 +272,14 @@ class BaseImageDataset(Dataset):
             "FovY": camera.fovY,
             "height": camera.image_height,
             "width": camera.image_width,
+            "camera_center": camera.camera_center,
+            # For opengl camera
             "world_view_transform": camera.world_view_transform,
             "full_proj_transform": camera.full_proj_transform,
-            "extrinsic_matrix": camera.extrinsic_matrix,
+            # For opencv camera
+            "extrinsic_matrix": extrinsic_matrix,
             "intrinsic_matrix": camera.intrinsic_matrix,
-            "camera_center": camera.camera_center,
+
         }
 
     def _load_transform_image(self, image_filename, bg=[1., 1., 1.]) -> Float[Tensor, "3 h w"]:
@@ -478,4 +483,9 @@ class BaseDataPipeline:
         """
         Return trainable parameters.
         """
-        raise NotImplementedError
+        camera_params = {}
+
+        for i, camera in enumerate(self.train_format_data.Camera_list):
+            camera_params['camera_{}'.format(camera.idx)] = camera.param_groups
+        
+        return camera_params
