@@ -36,3 +36,18 @@ cd simple-knn
 python setup.py install
 pip install .
 ```
+```bash
+# Install threestudio
+git clone https://github.com/threestudio-project/threestudio.git
+cd threestudio
+python setup.py install
+pip install .
+```
+```bash
+# Install point-e
+git clone https://github.com/openai/point-e.git
+cd point-e
+python setup.py install
+pip install .
+```
+

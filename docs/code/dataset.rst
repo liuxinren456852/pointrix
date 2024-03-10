@@ -21,3 +21,12 @@ Colmap dataset
 .. automodule:: pointrix.dataset.colmap_data
    :members:
    :show-inheritance:
+
+Synthesis dataset
+----------------
+
+.. automodule:: pointrix.dataset.synthesis_data
+   :members:
+   :show-inheritance:
+
+"""

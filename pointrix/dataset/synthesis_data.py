@@ -24,8 +24,11 @@ class SynthesisReFormat(BaseReFormatData):
     class Config:
         base_name: str = "base40M-textvec"
         prompt: str = "a red motorcycle"
+
         radius_increase_scale: float = 0.0005
-        radius_now_scale:float = 1.0
+
+        radius_now_scale: float = 1.0
+
         radius_range: List[float] = field(default_factory=lambda: [0.16, 0.60])
         max_radius_range: List[float] = field(
             default_factory=lambda: [3.5, 5.0])
@@ -48,44 +51,124 @@ class SynthesisReFormat(BaseReFormatData):
         init_num_pts: int = 10_0000
         default_polar: int = 90
         default_azimuth: int = 0
-        default_fovy: float = 0.55  # 20
+        default_fovy: float = 0.55
         device: str = "cuda"
         jitter_pose: bool = True
         jitter_center: float = 0.05
         jitter_target: float = 0.05
         jitter_up: float = 0.01
         use_pointe_rgb: bool = False
-        image_count: int = 200
-        path: str = "./point_cloud/"
         init_shape: str = "pointe"
         generate_size: int = 4
         fov: float = 0.48
         validation_size: int = 120
         batch_size: int = 4
-        loss:dict =field(default_factory=dict)
+        loss: dict = field(default_factory=dict)
+
+        """
+        Format of SynthesisReFormat
+        
+        Parameters
+        ----------
+        base_name: str  
+            The name of the  point-e model
+        prompt: str  
+            The prompt for the point-e model
+        radius_increase_scale: float  
+            The increasing scale of the radius of camera position
+        radius_now_scale: float 
+            The current scale of the radius of camera position
+        radius_range: List[float]
+            The range of the radius of camera position
+        max_radius_range: List[float]
+            The max range of the radius of camera position
+        default_radius: float
+            The default radius of camera position
+        theta_range: List[float]
+            The range of the theta of camera position
+        max_theta_range: List[float] 
+            The max range of the theta of camera position
+        phi_range: List[float]
+            The range of the phi of camera position
+        max_phi_range: List[float]
+            The max range of the phi of camera position
+        fovy_range: List[float]
+            The range of the fovy of camera position
+        max_fovy_range: List[float]
+            The max range of the fovy of camera position
+        rand_cam_gamma: float
+            The gamma of the random camera
+        angle_overhead: int
+            The angle overhead of the camera
+        angle_front: int
+            The angle front of the camera
+        render_45: bool
+            whether use render_45 to get camera position
+        uniform_sphere_rate: float
+            The rate of the uniform sphere
+        image_w: int
+            The width of the image
+        image_h: int
+            The height of the image
+        SSAA: float
+            whether use SSAA to scale image
+        init_num_pts: int
+            The number of points for initialization
+        default_polar: int
+            The default polar of camera position
+        default_azimuth: int
+            The default azimuth of camera position
+        default_fovy: float
+            The default fovy of camera position
+        device: str
+            The device of training
+        jitter_pose: bool
+            whether use jitter pose
+        jitter_center: float
+            The jitter center of camera position
+        jitter_target: float
+            The jitter target of camera position
+        jitter_up: float
+            The jitter up of camera position
+        use_pointe_rgb: bool
+            whether use point-e rgb to init
+        init_shape: str
+            The way to init point cloud
+        generate_size: int
+            The size of the generated camera in each sample
+        fov: float
+            The fov of the camera
+        validation_size: int
+            The size of the validation camera
+        batch_size: int
+            The batch size of the training
+        loss: dict
+            loss config of training
+
+        """
+
     def __init__(self,
                  data_root: Path,
                  split: str = "train",
                  scale: float = 1.0,
                  cached_image: bool = True,
                  gencfg: dict = {},
-                 batch_size:int =4,
-                 train:bool = False
+                 batch_size: int = 4,
+                 train: bool = False
                  ):
-        self.radius_scale=1.0
-        self.is_training=train
+        self.radius_scale = 1.0
+        self.is_training = train
         self.cfg = parse_structured(self.Config, gencfg)
         self.batch_size = batch_size
         super().__init__(data_root, split, cached_image, scale, gencfg)
-
 
     def load_pointcloud(self) -> SimplePointCloud:
         """
         The function for loading the Pointcloud for initialization of gaussian model.
         """
-        directory_to_save_point_path="store_point_cloud"
-        file_name=self.cfg.prompt+".ply"
-        ply_path=os.path.join(directory_to_save_point_path, file_name)
+        directory_to_save_point_path = "store_point_cloud"
+        file_name = self.cfg.prompt+".ply"
+        ply_path = os.path.join(directory_to_save_point_path, file_name)
         if not os.path.exists(directory_to_save_point_path):
             os.mkdir(directory_to_save_point_path)
         if not os.path.exists(ply_path):
@@ -187,13 +270,13 @@ class SynthesisReFormat(BaseReFormatData):
     def set_radius_scale(self, scale: float) -> None:
         """
         Set the radius scale for the point cloud.
-        
+
         Parameters
         ----------
         scale: The scale of the radius.
         """
         self.cfg['radius_now_scale'] = scale
-    
+
     def load_camera(self, split) -> List[Camera]:
         """
         The function for loading the camera typically requires user customization.
@@ -202,7 +285,7 @@ class SynthesisReFormat(BaseReFormatData):
         ----------
         split: The split of the data.
         """
-        
+
         if split == 'train':
             cameras, spherical_coordinate = generate_random_cameras(
                 self.cfg['generate_size'], self.cfg, SSAA=self.cfg.SSAA)
@@ -231,7 +314,7 @@ class SynthesisReFormat(BaseReFormatData):
         """
         The function for loading the camera
         """
-        
+
         split = self.split
         camera, spherical_coordinate = self.load_camera(split)
         image_filenames = self.load_image_filenames(camera, split=split)
@@ -247,7 +330,7 @@ class SynthesisImageDataset(BaseImageDataset):
         self.len = format_data.batch_size
         self.is_training = format_data.is_training
         self.resample()
-        
+
     def __len__(self):
         if self.is_training:
             self.resample()
@@ -269,8 +352,8 @@ class SynthesisImageDataset(BaseImageDataset):
 
     def __getitem__(self, idx):
         # self.resample()
-        if  self.is_training:
-            idx=0
+        if self.is_training:
+            idx = 0
         camera = self.camera_list[idx]
         image = None
         camera.height = camera.height
@@ -319,10 +402,11 @@ class SynthesisImageDataPipeline(BaseDataPipeline):
         self.loaddata()
 
         self.training_cameras = self.training_dataset.cameras
-    def set_all_scale(self,scale:float=1.0):
+
+    def set_all_scale(self, scale: float = 1.0):
         """
         Set the radius scale for all datasets
-        
+
         Parameters
         ----------
         scale: The scale of the radius.
@@ -330,12 +414,17 @@ class SynthesisImageDataPipeline(BaseDataPipeline):
         self.train_format_data.set_radius_scale(scale)
         self.validation_format_data.set_radius_scale(scale)
 
-
     def get_training_dataset(self) -> BaseImageDataset:
+        """
+        Return training dataset
+        """
         self.training_dataset = SynthesisImageDataset(
             format_data=self.train_format_data)
 
     def get_validation_dataset(self) -> BaseImageDataset:
+        """
+        Return validation dataset
+        """
         self.validation_dataset = SynthesisImageDataset(
             format_data=self.validation_format_data
         )
