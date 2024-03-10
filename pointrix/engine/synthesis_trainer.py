@@ -82,6 +82,15 @@ class Synthesis_Trainer(DefaultTrainer):
 
     
     def video_inference(self, iteration):
+        """
+        Synthesize the video for the model.
+        
+        Parameters
+        ----------
+        iteration : int
+            The iteration number.
+        
+        """
         self.datapipeline.validation_dataset.resample()
         self.val_dataset_size = len(self.datapipeline.validation_dataset)
         save_folder = os.path.join(

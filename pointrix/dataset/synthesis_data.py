@@ -80,9 +80,12 @@ class SynthesisReFormat(BaseReFormatData):
 
 
     def load_pointcloud(self) -> SimplePointCloud:
-        # ply_path = os.path.join(self.data_root, "sparse/0/points3D.ply")
+        """
+        The function for loading the Pointcloud for initialization of gaussian model.
+        """
         directory_to_save_point_path="store_point_cloud"
-        ply_path=os.path.join(directory_to_save_point_path, "pointe.ply")
+        file_name=self.cfg.prompt+".ply"
+        ply_path=os.path.join(directory_to_save_point_path, file_name)
         if not os.path.exists(directory_to_save_point_path):
             os.mkdir(directory_to_save_point_path)
         if not os.path.exists(ply_path):
@@ -161,6 +164,13 @@ class SynthesisReFormat(BaseReFormatData):
         return SimplePointCloud(positions=positions, colors=colors, normals=normals)
 
     def load_data_list(self, split) -> BaseDataFormat:
+        """
+        The foundational function for formating the data
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
         camera, _ = self.load_camera(split=split)
         image_filenames = self.load_image_filenames(camera, split=split)
         metadata = self.load_metadata(split=split)
@@ -175,9 +185,24 @@ class SynthesisReFormat(BaseReFormatData):
         return data
 
     def set_radius_scale(self, scale: float) -> None:
+        """
+        Set the radius scale for the point cloud.
+        
+        Parameters
+        ----------
+        scale: The scale of the radius.
+        """
         self.cfg['radius_now_scale'] = scale
     
     def load_camera(self, split) -> List[Camera]:
+        """
+        The function for loading the camera typically requires user customization.
+
+        Parameters
+        ----------
+        split: The split of the data.
+        """
+        
         if split == 'train':
             cameras, spherical_coordinate = generate_random_cameras(
                 self.cfg['generate_size'], self.cfg, SSAA=self.cfg.SSAA)
@@ -203,6 +228,10 @@ class SynthesisReFormat(BaseReFormatData):
         return image_filenames
 
     def load_data_list_include_camera(self):
+        """
+        The function for loading the camera
+        """
+        
         split = self.split
         camera, spherical_coordinate = self.load_camera(split)
         image_filenames = self.load_image_filenames(camera, split=split)
@@ -226,6 +255,9 @@ class SynthesisImageDataset(BaseImageDataset):
         return len(self.camera_list)
 
     def resample(self):
+        """
+        Regenerate the dataset
+        """
         format_data, spherical_coordinate = self.format_data.load_data_list_include_camera()
         self.spherical_coordinate = spherical_coordinate
         self.camera_list = format_data.Camera_list
@@ -288,6 +320,13 @@ class SynthesisImageDataPipeline(BaseDataPipeline):
 
         self.training_cameras = self.training_dataset.cameras
     def set_all_scale(self,scale:float=1.0):
+        """
+        Set the radius scale for all datasets
+        
+        Parameters
+        ----------
+        scale: The scale of the radius.
+        """
         self.train_format_data.set_radius_scale(scale)
         self.validation_format_data.set_radius_scale(scale)
 

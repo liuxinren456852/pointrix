@@ -115,6 +115,7 @@ def _tensor_size(t):
     
     
 def tv_loss(x):
+    
     batch_size = x.size()[0]
     h_x = x.size()[2]
     w_x = x.size()[3]

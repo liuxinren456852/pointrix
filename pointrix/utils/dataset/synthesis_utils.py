@@ -26,6 +26,16 @@ def safe_normalize(x, eps=1e-20):
 
 # TODO base_name ,device，prompt都可以放到cfg
 def init_by_point_e(base_name, prompt):
+    '''
+    Init the point cloud by point_e
+    
+    Parameters:
+    ----------
+        base name: str, the name of the base model
+        prompt: str, the prompt to condition the model on
+    Return:
+        xyz, rgb: np.array, the point cloud and its color
+    '''
     print('creating base model...')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     base_model = model_from_config(MODEL_CONFIGS[base_name], device)
@@ -69,6 +79,18 @@ def init_by_point_e(base_name, prompt):
 
 
 def random_pos(size, param_range, gamma=1):
+    '''
+    generate random values in a range
+    
+    Parameters:
+    ----------
+        size: int, the number of random values
+        param_range: list, the range of the random values
+        gamma: float, the gamma of the random values
+    Return: 
+        torch.tensor, the random values
+    
+    '''
     lower, higher = param_range[0], param_range[1]
 
     mid = lower + (higher - lower) * 0.5
@@ -92,7 +114,9 @@ def rand_poses(size,
                uniform_sphere_rate: float = 0.5,
                rand_cam_gamma: float = 1):
     ''' generate random poses from an orbit camera
-    Args:
+    
+    Parameters:
+    ----------
         size: batch size of generated poses.
         device: where to allocate the output.
         radius: camera radius
@@ -169,7 +193,19 @@ def rand_poses(size,
 
 
 def circle_poses(radius=torch.tensor([3.2]), theta=torch.tensor([60]), phi=torch.tensor([0]), angle_overhead=30, angle_front=60):
-
+    '''
+    generate poses from an orbit camera
+    
+    Parameters:
+    ----------
+        radius: camera radius
+        theta: Spherical coordinate
+        phi:Spherical coordinate
+        angle_overhead: torch.tensor, the angle of overhead
+        angle_front: torch.tensor, the angle of front
+    Return:
+        poses: [size, 4, 4] camrea poses
+    '''
     theta = theta / 180 * np.pi
     phi = phi / 180 * np.pi
     angle_overhead = angle_overhead / 180 * np.pi
@@ -200,6 +236,17 @@ def circle_poses(radius=torch.tensor([3.2]), theta=torch.tensor([60]), phi=torch
 
 
 def generate_circle_cameras(cfg, size=8, render45=False):
+    '''
+    generate cameras on a circle
+    
+    Parameters:
+    ----------
+        cfg: the config of the camera
+        size: the number of cameras
+    Return:
+        cam_infos: the camera information
+    '''
+    
     # random focal
     fov = cfg.default_fovy
     cam_infos = []
@@ -269,7 +316,17 @@ def generate_circle_cameras(cfg, size=8, render45=False):
 
 
 def generate_random_cameras(size,cfg, SSAA=True):
-
+    '''
+    generate random cameras 
+    
+    Parameters:
+    ----------
+        size: the number of cameras
+        cfg: the config of the camera
+        SSAA: whether to use SSAA
+    Return:
+        cam_infos: the camera information
+    '''
     radius_range=[]
     radius_range.append(cfg.radius_range[0])
     radius_range.append(cfg.radius_range[1])

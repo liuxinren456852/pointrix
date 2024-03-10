@@ -29,6 +29,19 @@ sys.path.insert(0, "/home/linxi/Pointrix/threestudio")
 
 @MODEL_REGISTRY.register()
 class SynthesisModel(BaseModel):
+    """
+    class for Synthesis models.
+
+    Parameters
+    ----------
+    cfg : Optional[Union[dict, DictConfig]]
+        The configuration dictionary.
+    datapipeline : BaseDataPipeline
+        The data pipeline which is used to initialize the point cloud.
+    device : str, optional
+        The device to use, by default "cuda".
+    """
+    
     @dataclass
     class Syn_Config:
 
@@ -53,6 +66,22 @@ class SynthesisModel(BaseModel):
         return C(value,epoch,self.global_step)
 
     def get_loss_dict(self, render_results, batch, **kwargs) -> dict:
+        """
+        Get the loss dictionary.
+
+        Parameters
+        ----------
+        render_results : dict
+            The render results which is the output of the renderer.
+        batch : dict
+            The batch of data which contains the ground truth images.
+        
+        Returns
+        -------
+        dict
+            The loss dictionary which contain loss for backpropagation.
+        """
+        
         self.global_step=kwargs['global_step']
         render_dict=kwargs['render_dict']
         rgb = render_results["rgb"].permute(0, 2, 3, 1)
@@ -106,6 +135,20 @@ class SynthesisModel(BaseModel):
         return loss_dict
 
     def get_optimizer_dict(self, loss_dict, render_results, white_bg) -> dict:
+        """
+        Get the optimizer dictionary which will be 
+        the input of the optimizer update model
+
+        Parameters
+        ----------
+        loss_dict : dict
+            The loss dictionary.
+        render_results : dict
+            The render results which is the output of the renderer.
+        white_bg : bool
+            The white background flag.
+        """
+        
         optimizer_dict = {"loss": loss_dict["loss"],
                           "viewspace_points": render_results['viewspace_points'],
                           "visibility": render_results['visibility'],
@@ -114,6 +157,22 @@ class SynthesisModel(BaseModel):
         return optimizer_dict
 
     def get_metric_dict(self, render_results, batch) -> dict:
+        """
+        Get the metric dictionary.
+
+        Parameters
+        ----------
+        render_results : dict
+            The render results which is the output of the renderer.
+        batch : dict
+            The batch of data which contains the ground truth images.
+        
+        Returns
+        -------
+        dict
+            The metric dictionary which contains the metrics for evaluation.
+        """
+        
         metric_dict = {"loss": self.loss_dict['loss'],
                        "images": render_results['images']}
         if "loss_sds_img" in self.loss_dict.keys():
