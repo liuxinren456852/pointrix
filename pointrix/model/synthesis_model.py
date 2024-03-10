@@ -23,7 +23,7 @@ from PIL import Image
 from .base_model import BaseModel
 import sys
 # sys.path.insert(0,'../')
-sys.path.insert(0, "/home/linxi/Pointrix/threestudio")
+# sys.path.insert(0, "/home/linxi/Pointrix/threestudio")
 # from threestudio.threestudio.models.guidance.stable_diffusion_guidance
 
 
