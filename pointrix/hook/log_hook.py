@@ -116,19 +116,23 @@ class LogHook(Hook):
 
         image_name = os.path.basename(trainner.metric_dict['rgb_file_name'])
         iteration = trainner.global_step
-        visual_depth, _ = visualize_depth(trainner.metric_dict['depth'].squeeze())
         trainner.logger.write_image(
             "test" + f"_view_{image_name}/render",
             trainner.metric_dict['images'].squeeze(),
             step=iteration)
         trainner.logger.write_image(
-            "test" + f"_view_{image_name}/depth",
-            visual_depth,
-            step=iteration)
-        trainner.logger.write_image(
             "test" + f"_view_{image_name}/ground_truth",
             trainner.metric_dict['gt_images'].squeeze(),
             step=iteration)
+        
+        if 'depth' in trainner.metric_dict:
+            visual_depth, _ = visualize_depth(
+                trainner.metric_dict['depth'].squeeze()
+            )
+            trainner.logger.write_image(
+                "test" + f"_view_{image_name}/depth",
+                visual_depth,
+                step=iteration)
 
     def after_val(self, trainner) -> None:
         log_info = f"[ITER {trainner.global_step}] Evaluating test:"

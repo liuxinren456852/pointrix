@@ -18,8 +18,8 @@ trainer:
       pos_traj_dim: 8
       rot_traj_dim: 8
       feat_traj_dim: 4
-      rescale_value: 0.9
-      offset_value: 0.
+      rescale_value: 0.8
+      offset_value: 0.1
       trainable: true
       random_noise: true
       max_steps: ${trainer.max_steps}
@@ -43,14 +43,14 @@ trainer:
         densify_stop_iter: 5_000
         prune_interval: 100
         duplicate_interval: 100
-        opacity_reset_interval: 3000
-        densify_grad_threshold: 0.0002
+        opacity_reset_interval: 5000
+        densify_grad_threshold: 0.00001
         min_opacity: 0.001
       params:
         point_cloud.position:
-          lr: 0.00016
+          lr: 0.000016
         point_cloud.pos_params:
-          lr: 0.002
+          lr: 0.00005
         point_cloud.rotation:
           lr: 0.001
         point_cloud.rot_params:
@@ -73,11 +73,11 @@ trainer:
     max_steps: ${trainer.max_steps}
     params:
       point_cloud.position:
-        init:  0.00016
-        final: 0.0000016
+        init:  0.000016
+        final: 0.00000016
       point_cloud.pos_params:
-        init:  0.002
-        final: 0.0002
+        init:  0.00005
+        final: 0.0000005
       # point_cloud.rotation:
       #   init:  0.001
       #   final: 0.0001

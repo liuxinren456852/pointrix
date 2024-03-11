@@ -145,7 +145,7 @@ class BaseModel(BaseModule):
             render_results['rgb'], gt_images, data_range=1, size_average=True
         ).mean().item()
 
-        depth = render_results['depth']
+        # depth = render_results['depth']
         # lpips_test = lpips(
         #     render_results['images'], 
         #     gt_images,
@@ -154,11 +154,14 @@ class BaseModel(BaseModule):
         metric_dict = {"L1_loss": L1_loss,
                        "psnr": psnr_test,
                        "ssims": ssims_test,
-                       "depth": depth,
+                    #    "depth": depth,
                     #    "lpips": lpips_test,
                        "gt_images": gt_images,
                        "images": render_results['rgb'],
                        "rgb_file_name": batch[0]["camera"].rgb_file_name}
+        
+        if "depth" in render_results:
+            metric_dict["depth"] = render_results['depth']
         return metric_dict
     
     def load_ply(self, path):

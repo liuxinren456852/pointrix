@@ -45,7 +45,7 @@ def test_view_render(render_func, datapipeline, output_path, device='cuda'):
         b_i = val_dataset[i]
         image_name = os.path.basename(b_i['camera'].rgb_file_name)
         render_results = render_func(b_i)
-        image = torch.clamp(render_results["render"], 0.0, 1.0)
+        image = torch.clamp(render_results["rgb"], 0.0, 1.0)
         gt_image = torch.clamp(b_i['image'].to("cuda").float(), 0.0, 1.0)
         
         mkdir_p(os.path.join(output_path, 'test_view'))
@@ -95,7 +95,7 @@ def novel_view_render(render_func, datapipeline, output_path, novel_view_list=["
                 "camera_center": camera.camera_center,
             }
             render_results = render_func(data)
-            image = torch.clamp(render_results["render"], 0.0, 1.0)
+            image = torch.clamp(render_results["rgb"], 0.0, 1.0)
             mkdir_p(os.path.join(output_path, 'novel_view_' + novel_view))
             imageio.imwrite(os.path.join(output_path, 'novel_view_' + novel_view, "{}.png".format(i)),
                             to8b(image.detach().cpu().numpy()).transpose(1, 2, 0))

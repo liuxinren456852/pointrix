@@ -24,8 +24,9 @@ def main(args, extras) -> None:
     gaussian_trainer.train_loop()    
     model_path = os.path.join(
         gaussian_trainer.cfg.output_path, 
-        "{}.ply".format(gaussian_trainer.global_step-1)
+        "{}.pth".format(gaussian_trainer.global_step-1)
     )
+    gaussian_trainer.save_model(path=model_path)
     
     gaussian_trainer.test(model_path)
     print("\nTraining complete.")

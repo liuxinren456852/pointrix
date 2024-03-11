@@ -32,7 +32,7 @@ class GaussianFlowRenderer(GaussianSplattingRender):
         
         for b_i in batch:
             render_results = render_func(b_i)
-            renders.append(render_results["render"])
+            renders.append(render_results["rgb"])
             viewspace_points.append(render_results["viewspace_points"])
             visibilitys.append(
                 render_results["visibility_filter"].unsqueeze(0)
@@ -44,7 +44,7 @@ class GaussianFlowRenderer(GaussianSplattingRender):
         images = torch.stack(renders)
 
         render_results = {
-            "images": images,
+            "rgb": images,
             "radii": radii,
             "visibility": visibility,
             "viewspace_points": viewspace_points,

@@ -77,7 +77,7 @@ class GaussianFlow(BaseModel):
             [batch[i]["image"].to(self.device) for i in range(len(batch))],
             dim=0
         )
-        L1_loss = l1_loss(render_results['images'], gt_images)
+        L1_loss = l1_loss(render_results['rgb'], gt_images)
         loss = L1_loss
         loss_dict = {
             "loss": loss,
