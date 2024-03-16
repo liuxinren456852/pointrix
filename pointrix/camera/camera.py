@@ -635,6 +635,8 @@ class Cameras:
             return self.zoom(c2w, [focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
         elif mode == "Spiral":
             return self.spiral(c2w, [focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
+        elif mode == "Circle":
+            return self.circle([focalx, focaly], width, height, sc=sc, length=SE3_poses.shape[0], num_frames=num_frames)
 
     def pose_to_cam(self, poses, focals, width, height):
         """
@@ -663,7 +665,7 @@ class Cameras:
             fovY = 2 * math.atan(height / (2 * focal))
 
             cam = self.camera_type(idx=idx, R=R, T=T, width=width, height=height, rgb_file_name='',
-                         fovX=fovX, fovY=fovY, bg=0.0, scene_scale=1.0)
+                                   fovX=fovX, fovY=fovY, bg=0.0, scene_scale=1.0)
             camera_list.append(cam)
         return camera_list
 
@@ -814,19 +816,20 @@ class Cameras:
             The number of frames of the camera path.
         """
         # TODO: how to define the max_disp
-        max_disp = 20.0
+        max_disp = 120.0
 
         max_trans = max_disp / focal[0] * sc
-        
+
         spiral_poses = []
         spiral_focals = []
         # Rendering teaser. Add translation.
         for i in range(num_frames):
-            x_trans = max_trans * 1.5 * np.sin(2.0 * np.pi * float(i) / float(30)) * 2.0
+            x_trans = max_trans * 1.5 * \
+                np.sin(2.0 * np.pi * float(i) / float(60)) * 2.0
             y_trans = (
                 max_trans
                 * 1.5
-                * (np.cos(2.0 * np.pi * float(i) / float(30)) - 1.0)
+                * (np.cos(2.0 * np.pi * float(i) / float(60)) - 1.0)
                 * 2.0
                 / 3.0
             )
@@ -835,7 +838,8 @@ class Cameras:
             i_pose = np.concatenate(
                 [
                     np.concatenate(
-                        [np.eye(3), np.array([x_trans, y_trans, z_trans])[:, np.newaxis]],
+                        [np.eye(3), np.array([x_trans, y_trans, z_trans])[
+                            :, np.newaxis]],
                         axis=1,
                     ),
                     np.array([0.0, 0.0, 0.0, 1.0])[np.newaxis, :],
@@ -846,7 +850,8 @@ class Cameras:
             i_pose = np.linalg.inv(i_pose)
 
             ref_pose = np.concatenate(
-                [c2w[:3, :4], np.array([0.0, 0.0, 0.0, 1.0])[np.newaxis, :]], axis=0
+                [c2w[:3, :4], np.array([0.0, 0.0, 0.0, 1.0])[
+                    np.newaxis, :]], axis=0
             )
 
             render_pose = np.dot(ref_pose, i_pose)
@@ -856,3 +861,76 @@ class Cameras:
         spiral_poses = np.stack(spiral_poses, 0)[:, :3]
         spiral_focals = np.stack(spiral_focals, 0)
         return self.pose_to_cam(spiral_poses, spiral_focals, width, height)
+
+    def circle(self, focal, width, height, sc, length, num_frames):
+        """
+        Generate the camera path with circle.
+
+        Parameters
+        ----------
+        c2w: Float[Tensor, "3 4"]
+            The camera to world transform.
+        focal: list[float]
+            The focal length of the camera.
+        width: int
+            The width of the image.
+        height: int
+            The height of the image.
+        sc: float
+            The scale of the scene.
+        length: int
+            The length of the camera path.
+        num_frames: int
+            The number of frames of the camera path.
+        """
+        camera_list = []
+
+        def trans_t(t): return torch.Tensor([
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, t],
+            [0, 0, 0, 1]]).float()
+
+        def rot_phi(phi): return torch.Tensor([
+            [1, 0, 0, 0],
+            [0, np.cos(phi), -np.sin(phi), 0],
+            [0, np.sin(phi), np.cos(phi), 0],
+            [0, 0, 0, 1]]).float()
+
+        def rot_theta(th): return torch.Tensor([
+            [np.cos(th), 0, -np.sin(th), 0],
+            [0, 1, 0, 0],
+            [np.sin(th), 0, np.cos(th), 0],
+            [0, 0, 0, 1]]).float()
+
+        def rot_yaw(yaw): return torch.Tensor([
+            [np.cos(yaw), -np.sin(yaw), 0, 0],
+            [np.sin(yaw), np.cos(yaw), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]]).float()
+
+        def pose_spherical(theta, phi, yaw, radius):
+            c2w = trans_t(radius)
+            c2w = rot_phi(phi/180.*np.pi) @ c2w
+            c2w = rot_theta(theta/180.*np.pi) @ c2w
+            c2w = rot_yaw(yaw/180.*np.pi) @ c2w
+            c2w = torch.Tensor(
+                np.array([[-1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])) @ c2w
+            return c2w
+
+        render_poses = torch.stack([pose_spherical(-4, -90., angle, 4.0)
+                                   for angle in np.linspace(-180, 180, 100+1)[:-1]], 0)
+
+        for idx, poses in enumerate(render_poses):
+            matrix = np.linalg.inv(np.array(poses))
+            R = -np.transpose(matrix[:3, :3])
+            R[:, 0] = -R[:, 0]
+            T = -matrix[:3, 3]
+
+            fovX = 2 * math.atan(width / (2 * focal[0]))
+            fovY = 2 * math.atan(height / (2 * focal[0]))
+
+            cam = self.camera_type(idx=idx, R=R, T=T, width=width, height=height, rgb_file_name='',
+                                   fovX=fovX, fovY=fovY, bg=0.0, scene_scale=1.0)
+            camera_list.append(cam)
+        return camera_list

@@ -154,6 +154,9 @@ class GaussianSplattingRender(BaseObject):
 
         colors_precomp = None
 
+        # keep up with dptr
+        rendered_features_split = {}
+
         # Rasterize visible Gaussians to image, obtain their radii (on screen).
         (
             # num_rendered,
@@ -172,11 +175,12 @@ class GaussianSplattingRender(BaseObject):
             rotations=rotation.contiguous(),
             cov3D_precomp=cov3D_precomp
         )
+        rendered_features_split['rgb'] = rendered_image
 
         # import pdb; pdb.set_trace()
         # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
         # They will be excluded from value updates used in the splitting criteria.
-        return {"rgb": rendered_image,
+        return {"rendered_features_split": rendered_features_split,
                 # "opacity": opacity,
                 # "render_xyz": render_xyz,
                 "viewspace_points": screenspace_points,
@@ -206,7 +210,7 @@ class GaussianSplattingRender(BaseObject):
         for b_i in batch:
             b_i.update(render_dict)
             render_results = self.render_iter(**b_i)
-            renders.append(render_results["rgb"])
+            renders.append(render_results["rendered_features_split"]['rgb'])
             viewspace_points.append(render_results["viewspace_points"])
             visibilitys.append(
                 render_results["visibility_filter"].unsqueeze(0))

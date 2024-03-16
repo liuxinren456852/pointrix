@@ -1,13 +1,43 @@
 import os
 import argparse
 
-import sys
-sys.path.append("../../")
+import torch
+from typing import List
 from pointrix.utils.config import load_config
 from pointrix.engine.default_trainer import DefaultTrainer
 
 from model import DeformGaussian
 from dataformat import NerfiesReFormat
+
+class Trainer(DefaultTrainer):
+
+    def train_step(self, batch: List[dict]) -> None:
+        """
+        The training step for the model.
+
+        Parameters
+        ----------
+        batch : dict
+            The batch data.
+        """
+        render_dict = self.model(batch, step=self.global_step, training=True)
+        render_results = self.renderer.render_batch(render_dict, batch)
+        self.loss_dict = self.model.get_loss_dict(render_results, batch)
+        self.loss_dict['loss'].backward()
+        self.optimizer_dict = self.model.get_optimizer_dict(self.loss_dict,
+                                                            render_results,
+                                                            self.white_bg)
+    
+    @torch.no_grad()
+    def validation(self):
+        self.val_dataset_size = len(self.datapipeline.validation_dataset)
+        for i in range(0, self.val_dataset_size):
+            self.call_hook("before_val_iter")
+            batch = self.datapipeline.next_val(i)
+            render_dict = self.model(batch)
+            render_results = self.renderer.render_batch(render_dict, batch)
+            self.metric_dict = self.model.get_metric_dict(render_results, batch)
+            self.call_hook("after_val_iter")
 
 def main(args, extras) -> None:
     
@@ -15,12 +45,12 @@ def main(args, extras) -> None:
 
     cfg.trainer.model.name = "DeformGaussian"
     cfg.trainer.dataset.data_type = "NerfiesReFormat"
-    cfg.trainer.dataset.data_path = "/home/clz/data/dnerf/cat"
+    cfg.trainer.dataset.data_path = "/NASdata/clz/data/mochi-high-five"
     cfg['trainer']['optimizer']['optimizer_1']['params']['deform'] = {}
     cfg['trainer']['optimizer']['optimizer_1']['params']['deform']['lr'] = 0.00016 * 5.0
     cfg.trainer.val_interval = 5000
 
-    gaussian_trainer = DefaultTrainer(
+    gaussian_trainer = Trainer(
         cfg.trainer,
         cfg.exp_dir,
     )
