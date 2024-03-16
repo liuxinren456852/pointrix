@@ -37,7 +37,7 @@ trainer:
         min_opacity: 0.005
       params:
         point_cloud.position:
-          lr: 0.00016
+          lr: 0.0008
         point_cloud.features:
           lr: 0.0025
         point_cloud.features_rest:
@@ -54,8 +54,8 @@ trainer:
     max_steps: 40000
     params:
       point_cloud.position:
-        init:  0.00016
-        final: 0.0000016
+        init:  0.0008
+        final: 0.000008
       deform:
         init:  0.00016
         final: 0.0000016

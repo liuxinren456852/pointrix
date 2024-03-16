@@ -86,7 +86,7 @@ class DefaultTrainer:
         # build optimizer and scheduler
         cameras_extent = self.datapipeline.training_dataset.radius
         self.schedulers = parse_scheduler(self.cfg.scheduler,
-                                          cameras_extent if self.cfg.spatial_lr_scale else 5.
+                                          cameras_extent if self.cfg.spatial_lr_scale else 1.
                                           )
         self.optimizer = parse_optimizer(self.cfg.optimizer,
                                          self.model,
