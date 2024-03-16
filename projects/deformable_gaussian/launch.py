@@ -20,7 +20,7 @@ class Trainer(DefaultTrainer):
         batch : dict
             The batch data.
         """
-        render_dict = self.model(batch, step=self.global_step)
+        render_dict = self.model(batch, step=self.global_step, training=True)
         render_results = self.renderer.render_batch(render_dict, batch)
         self.loss_dict = self.model.get_loss_dict(render_results, batch)
         self.loss_dict['loss'].backward()
@@ -34,7 +34,7 @@ class Trainer(DefaultTrainer):
         for i in range(0, self.val_dataset_size):
             self.call_hook("before_val_iter")
             batch = self.datapipeline.next_val(i)
-            render_dict = self.model(batch, step=6000)
+            render_dict = self.model(batch)
             render_results = self.renderer.render_batch(render_dict, batch)
             self.metric_dict = self.model.get_metric_dict(render_results, batch)
             self.call_hook("after_val_iter")

@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -114,23 +115,49 @@ class DeformNetwork(nn.Module):
 
         return d_xyz, rotation, scaling
 
+def get_linear_noise_func(
+        lr_init, lr_final, lr_delay_steps=0, lr_delay_mult=1.0, max_steps=1000000
+):
+    def helper(step):
+        if step < 0 or (lr_init == 0.0 and lr_final == 0.0):
+            # Disable this parameter
+            return 0.0
+        if lr_delay_steps > 0:
+            # A kind of reverse cosine decay.
+            delay_rate = lr_delay_mult + (1 - lr_delay_mult) * np.sin(
+                0.5 * np.pi * np.clip(step / lr_delay_steps, 0, 1)
+            )
+        else:
+            delay_rate = 1.0
+        t = np.clip(step / max_steps, 0, 1)
+        log_lerp = lr_init * (1 - t) + lr_final * t
+        return delay_rate * log_lerp
+
+    return helper
+
 @MODEL_REGISTRY.register()
 class DeformGaussian(BaseModel):
     def __init__(self, cfg, datapipeline, device="cuda"):
         super().__init__(cfg, datapipeline, device)
         self.deform = DeformNetwork(is_blender=False).to(self.device)
-        self.N = len(self.point_cloud.position)
         self.time_interval = 1. / datapipeline.training_dataset_size
+        self.smooth_term = get_linear_noise_func(
+            lr_init=0.1, lr_final=1e-15, lr_delay_mult=0.01, max_steps=20000)
 
-    def forward(self, batch, step):
+    def forward(self, batch, step=-1, training=False):
+        N = len(self.point_cloud.position)
         camera_fid = torch.Tensor([batch[0]['camera'].fid]).float().to(self.device)
         position = self.point_cloud.get_position
         time_input = camera_fid.unsqueeze(0).expand(position.shape[0], -1)
-        # ast_noise = torch.randn(1, 1, device='cuda').expand(self.N, -1) * self.time_interval * self.smooth_term(step)
-        if step < 3000:
+        ast_noise = torch.randn(1, 1, device='cuda').expand(N, -1) * self.time_interval * self.smooth_term(step)
+        if step < 3000 and training:
             d_xyz, d_rotation, d_scaling = 0.0, 0.0, 0.0
         else:
-            d_xyz, d_rotation, d_scaling = self.deform(position.detach(), time_input)
+            if training:
+                d_xyz, d_rotation, d_scaling = self.deform(position.detach(), time_input+ast_noise)
+            else:
+                d_xyz, d_rotation, d_scaling = self.deform(position.detach(), time_input)
+
         render_dict = {
             "position": self.point_cloud.get_position + d_xyz,
             "opacity": self.point_cloud.get_opacity,
