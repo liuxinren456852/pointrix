@@ -17,7 +17,9 @@ The DefaultTrainer is a class for training and testing models, and its framework
 - Load and Save: The `save_model` and `load_model` methods are used to save and load the model. The state of the model is saved in a dictionary, which includes the global steps, the state of the optimizer, the state of the model, and the state of the renderer.
 - Hook Fuction: The `call_hook` method is used to call hook functions. Hook functions are functions that are executed at specific stages (such as the start of training, the end of training, before and after each training step, etc.) and can be used to implement some custom functions.
 
+```{note}
 You can also define your own training process by define hook function or inherit the DefaultTrainer class and add your modification.
+```
 
 ## Data Flow
 
@@ -31,4 +33,6 @@ In this framework, the flow of data mainly goes through the following steps:
    - Validation: In the validation stages (called at regular intervals), the steps of data loading, forward propagation, and calculation of evaluation metrics are also performed, but backward propagation and **parameter updates are not performed**.
 3. Save Model: At specific steps in the training process, or at the end of training, the state of the model is saved.
 
+```{note}
 If you want to test the effect of the model, just call the `test()` method and it will load the model and render image to evaluate the model.
+```

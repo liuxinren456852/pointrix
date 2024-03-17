@@ -2,8 +2,6 @@
 
 As shown in the following diagram, the model can be generally divided into **BaseModel**, **PointCloud** and **Optimizer**.
 
-![../_images/gs_optimizer.svg](../images/gs_optimizer.svg)
-
 - **BaseModel**: Provides a convenient and flexible way to organize the training process, manage parameters, define computation, and take advantage of PyTorch's automatic differentiation capabilities. It always associates with a PointCloud object, which is the main goal of optimizing. It can also produce the data dictionary used by other modules in this system such as Render and Optimizer.
 - **PointCloud**: Provides the function to initialize the point clouds supports flexible definition and rendering of various attributes. Some customized operations on Gaussian Points such as clone, split, remove and reset are supported too, which should be combined with Gaussian Optimizers. You can easily inherit this class to add your own attributes of points as shown in example `GaussianPointCloud`.
 - **Optimizer**: Responsible for updating not only the parameters, but also the structures of the model automatically. For instance, it can adjust the number, position, and size of point clouds. 
@@ -20,6 +18,8 @@ BaseModel class composites with a PointCloud object. It can also produce the dat
 You can refer to the API part for more details of BaseModel.
 Only little part need to be modified if you want add your model in Pointrix.
 Tutorial illustrates how to add your own model in Pointrix.
+```
+```python
 @MODEL_REGISTRY.register()
 class BaseModel(BaseModule):
     """
@@ -123,8 +123,9 @@ class BaseModel(BaseModule):
         """
 
 ```
-
-**It you want to create your personal way to calculate loss or the input of render and so on, you can just inherit this class.**
+```{note}
+If you want to create your personal way to calculate loss or the input of render and so on, you can just inherit this class.
+```
 
 Because it is derived from Torch.nn.Module, the system can easily get model's parameters including all trainable attributes of PointCloud, by using `model.parameters()`. These parameters will be offered to construct Optimizer.
 
@@ -143,19 +144,19 @@ It is accomplished by maintain a variable named `attributes` which is a list of 
 
 ```python
 def register_atribute(self, name:str, value:Float[Tensor, "3 1"], trainable=True) -> None:
-        self.register_buffer(name, value)
-        if self.cfg.trainable and trainable:
-            setattr(
-                self, 
-                name, 
-                nn.Parameter(
-                    value.contiguous().requires_grad_(True)
-                )
+    self.register_buffer(name, value)
+    if self.cfg.trainable and trainable:
+        setattr(
+            self, 
+            name, 
+            nn.Parameter(
+                value.contiguous().requires_grad_(True)
             )
-        self.atributes.append({
-            'name': name,
-            'trainable': trainable,
-        })
+        )
+    self.atributes.append({
+        'name': name,
+        'trainable': trainable,
+    })
 ```
 
 PointCloud also provides API`save_ply(path:Path)`and `load_ply(path:Path)` to help to save/load the customized point cloud to `.ply` file.
@@ -196,6 +197,13 @@ And we also define some customized operations on Gaussian Points such as clone, 
 
 ## Optimizer
 
+```{image} ../images/gs_optimizer.svg
+:alt: fishy
+:class: bg-primary
+:width: 400px
+:align: center
+```
+
 ### BaseOptimizer
 
 An optimizer is a component responsible for executing parameter updates through gradient descent in a model. Pointrix further encapsulates optimizers at the level of PyTorch optimizers. Specifically, Pointrix's optimizer composites a PyTorch Optimizer to help for updating parameters.
@@ -203,6 +211,7 @@ An optimizer is a component responsible for executing parameter updates through 
 ### GaussianSplattingOptimizer 
 
 Compared to optimizers that only update model parameters, we propose **Gaussian Optimizers**. As depicted in the diagram above, these optimizers not only update model parameters but also adjust the number, position, and size of point clouds. 
+
 
 For instance, GaussianSplattingOptimizer has a function to execute updates:
 
@@ -226,7 +235,9 @@ In this piece of code you can see the update process can be divided into 4 steps
 
 If the structure of parameters need to be modified by the customized Optimizer. The PyTorch optimizer associated it should also be updates such as modifying the length of the parameters Tensor.
 
-Pointrix's point have supported structure modification already. Specifically, the PointCloud interfaces related to structure updates such as `replace(self, new_atributes:dict, optimizer:Union[Optimizer, None]=None)`, `extend_points(...)` and `remove_points(...)`have a PyTorch optimizer as a formal parameter. Not only the PointCloud itself should be updated, but the PyTorch optimizer's shape of parameters should also be updated when the structure is modified. Here is the detail of how to remove some points from model, other types of operations are similar:
+Pointrix's point have supported structure modification already. Specifically, the PointCloud interfaces related to structure updates such as `replace(self, new_atributes:dict, optimizer:Union[Optimizer, None]=None)`, `extend_points(...)` and `remove_points(...)`have a PyTorch optimizer as a formal parameter. Not only the PointCloud itself should be updated, but the PyTorch optimizer's shape of parameters should also be updated when the structure is modified. 
+
+Here is the detail of how to remove some points from model, other types of operations are similar:
 
 ```
 def remove_points(self, mask:Tensor, optimizer:Union[Optimizer, None]=None) -> None:
@@ -289,9 +300,9 @@ def remove_points(self, mask:Tensor, optimizer:Union[Optimizer, None]=None) -> N
                     optimizable_tensors[unwarp_ground] = group["params"][0]
         return optimizable_tensors
 ```
-
+```{note}
 If you have your own way to take charge of structure updates, **you can just inherit GaussianSplattingOptimizer, or define your own optimizer inherited from BaseOptimizer.**
-
+```
 ### Scheduler
 
 - Scheduler can help you update the hyper-parameters such as learning rate as training goes on.

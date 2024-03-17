@@ -108,7 +108,8 @@ You can **modify trainer progress by define hook function**, for example, if you
 ```{note}
 The trainer can be fully accessed in the hook function.
 We provide log hook and checkpoint hook by default.
-
+```
+```
 @HOOK_REGISTRY.register()
 class LogHook(Hook):
     """

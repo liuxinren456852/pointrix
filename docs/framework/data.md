@@ -23,7 +23,9 @@ As shown in the diagram below, the data pipeline consists of three parts: **Refo
 
 ### ReformatData
 
-- You have to implement `load_camera()` and `load_image_filenames()` if you want to create a support to a new kind of dataset format. Whenever the BaseReFormatData was created, the "load_data_list" will be called, and the overrode function of detail loading will be called. After the instance is created, you can get BaseFormat object by call its variable `data_list`.
+You have to implement `load_camera()` and `load_image_filenames()` if you want to create a support to a new kind of dataset format. 
+
+Whenever the BaseReFormatData was created, the "load_data_list" will be called, and the overrode function of detail loading will be called. After the instance is created, you can get BaseFormat object by call its variable `data_list`.
 
 ```python
 class BaseReFormatData:
@@ -80,8 +82,9 @@ class BaseReFormatData:
 
 ### DataFormat
 
-- The code below shows a typical DataFormat class. You don't need to write a new one usually.
-- As the example shows, you need to give it a image filename list, a camera list and an optional metadata information to generate a BaseDataFormat object.
+The code below shows a typical DataFormat class. You don't need to write a new one usually.
+
+As the example shows, you need to give it a image filename list, a camera list and an optional metadata information to generate a BaseDataFormat object.
 
 ```python
 @dataclass
@@ -129,7 +132,8 @@ class BaseDataFormat:
 
 ### Dataset
 
-- You can override the Python's Dataset class to create your own Dataset. But typically you have to support using BaseDataFormat to create Dataset, and also support to use `[]` to get the image-related information, which will be used in rendering and loss computation. The example BaseImageDataset is shown below.
+You can override the Python's Dataset class to create your own Dataset. But typically you have to support using BaseDataFormat to create Dataset, 
+and also support to use `[]` to get the image-related information, which will be used in rendering and loss computation. The example BaseImageDataset is shown below.
 
 ```python
     def __init__(self, format_data: BaseDataFormat) -> None:
@@ -169,8 +173,11 @@ class BaseDataFormat:
 
 ### DataPipeline
 
-- The DataPipeline is the interface that can be used for trainer and other part of the framework. The creation of a Datapipeline means that the dataset is loaded. And trainer can use `next_train()` and `next_val()` to get a new batch of data. Whether using Python's DataLoader can be chosen by yourself.
-- The SimplePointCloud can be found if you have a datapipeline. It can be used to initialize the Gaussian model's point cloud. At the same time, the cameras' parameters are associated to DataPipeline too.
+The DataPipeline is the interface that can be used for trainer and other part of the framework. 
+
+The creation of a Datapipeline means that the dataset is loaded. And trainer can use `next_train()` and `next_val()` to get a new batch of data. Whether using Python's DataLoader can be chosen by yourself.
+
+The SimplePointCloud can be found if you have a datapipeline. It can be used to initialize the Gaussian model's point cloud. At the same time, the cameras' parameters are associated to DataPipeline too.
 
 ### Camera
 
