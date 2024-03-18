@@ -56,7 +56,7 @@ def test_view_render(model, renderer, datapipeline, output_path, device='cuda'):
             render_results['rendered_features_split']['rgb'], 0.0, 1.0)
 
         for feat_name, feat in render_results['rendered_features_split'].items():
-            visual_feat = eval(f"visualize_{feat_name}")(feat)
+            visual_feat = eval(f"visualize_{feat_name}")(feat.squeeze())
             if not os.path.exists(os.path.join(output_path, f'test_view_{feat_name}')):
                 os.makedirs(os.path.join(
                     output_path, f'test_view_{feat_name}'))
@@ -72,7 +72,7 @@ def test_view_render(model, renderer, datapipeline, output_path, device='cuda'):
     print(f"Test results: L1 {l1_test:.5f} PSNR {psnr_test:.5f}")
 
 
-def novel_view_render(model, renderer, datapipeline, output_path, novel_view_list=["Dolly", "Zoom", "Spiral", "Circle"], device='cuda'):
+def novel_view_render(model, renderer, datapipeline, output_path, novel_view_list=["Dolly", "Zoom", "Spiral"], device='cuda'):
     """
     Render the novel view and save the images to the output path.
 
@@ -90,7 +90,7 @@ def novel_view_render(model, renderer, datapipeline, output_path, novel_view_lis
         The list of novel views to render, by default ["Dolly", "Zoom", "Spiral"]
     """
     cameras = datapipeline.training_cameras
-
+    print("Rendering Novel view ...............")
     for novel_view in novel_view_list:
         novel_view_camera_list = cameras.generate_camera_path(50, novel_view)
 
@@ -111,7 +111,7 @@ def novel_view_render(model, renderer, datapipeline, output_path, novel_view_lis
             render_results = renderer.render_iter(**render_dict)
 
             for feat_name, feat in render_results['rendered_features_split'].items():
-                visual_feat = eval(f"visualize_{feat_name}")(feat)
+                visual_feat = eval(f"visualize_{feat_name}")(feat.squeeze())
                 if not os.path.exists(os.path.join(output_path, f'{novel_view}_{feat_name}')):
                     os.makedirs(os.path.join(
                         output_path, f'{novel_view}_{feat_name}'))

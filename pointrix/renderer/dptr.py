@@ -3,6 +3,7 @@ import numpy as np
 import dptr.gs as gs
 
 from typing import List
+from dataclasses import dataclass
 from pointrix.utils.base import BaseObject
 from pointrix.utils.renderer.renderer_utils import RenderFeatures
 from pointrix.utils.registry import Registry
@@ -25,7 +26,16 @@ class DPTRRender(BaseObject):
         The iteration to update the spherical harmonics degree, by default 1000.
     """
 
+    @dataclass
+    class Config:
+        update_sh_iter: int = 1000
+        max_sh_degree: int = 3
+    
+    cfg: Config
+
     def setup(self, white_bg, device, **kwargs):
+        self.active_sh_degree = 0
+        self.device = device
         super().setup(white_bg, device, **kwargs)
         self.bg_color = 1. if white_bg else 0.
 
@@ -198,3 +208,14 @@ class DPTRRender(BaseObject):
                 "visibility": torch.cat(visibilitys).any(dim=0),
                 "radii": torch.cat(radii, 0).max(dim=0).values
                 }
+    
+    def update_sh_degree(self, step):
+        if step % self.cfg.update_sh_iter == 0:
+            if self.active_sh_degree < self.cfg.max_sh_degree:
+                self.active_sh_degree += 1
+
+    def load_state_dict(self, state_dict):
+        self.active_sh_degree = state_dict["active_sh_degree"]
+
+    def state_dict(self):
+        return {"active_sh_degree": self.active_sh_degree}

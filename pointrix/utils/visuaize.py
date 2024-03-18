@@ -11,7 +11,7 @@ def visualize_depth(depth, minmax=None, cmap=cv2.COLORMAP_JET, tensorboard=False
     depth: (H, W)
     """
     if type(depth) is not np.ndarray:
-        depth = depth.cpu().numpy()
+        depth = depth.detach().cpu().numpy()
 
     x = np.nan_to_num(depth)  # change nan to 0
     if minmax is None:

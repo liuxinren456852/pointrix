@@ -12,8 +12,8 @@
     <strong>Document | </strong></a>
     <a href="https://countermaker.github.io/pointrix.io/">
     <strong>Paper (Comming soon)| </strong></a>
-    <a href="https://countermaker.github.io/pointrix.io/">
-    <strong>Wechat group (Comming soon)</strong></a>
+    <a href="https://github.com/pointrix-project/dptr">
+    <strong>DPRT Render Kernel</strong></a>
     <br />
     <br />
     <!-- <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
@@ -26,13 +26,13 @@
 
 Pointrix is a differentiable point-based rendering library which has following properties:
 - **Rich Feature**:
-  - Pointrix supports the implementation of various types of tasks such as:
-    - Static Scene Reconstruction: 
-      - **3D Gaussian Splatting for Real-Time Radiance Field Rendering (2023 Siggraph Best Paper)**
-    - Dynamic Scene Reconstruction: 
-      - **Deformable 3D Gaussians for High-Fidelity Monocular Dynamic Scene Reconstruction (2024 CVPR)**
-    - Text to 3D generation: 
-      - MVDream: Multi-view Diffusion for 3D Generation (2023 Arxiv)
+  - Static Scene Reconstruction: 
+    - **3D Gaussian Splatting for Real-Time Radiance Field Rendering (2023 Siggraph Best Paper)**
+  - Dynamic Scene Reconstruction: 
+    - **Deformable 3D Gaussians for High-Fidelity Monocular Dynamic Scene Reconstruction (2024 CVPR)**
+    - **Gaussian-Flow: 4D Reconstruction with Dynamic 3D Gaussian Particle (2024 CVPR)**
+  - Text to 3D generation: 
+    - MVDream: Multi-view Diffusion for 3D Generation (2023 Arxiv)
       
 - **Highly Extensible**:
   - Pointrix adopts a modular design, with clear structure and easy extensibility. 
@@ -73,7 +73,7 @@ Finally, install our DPTR rendering kernel:
 # Install official diff-gaussian-rasterization
 # clone the code from github
 git clone https://github.com/NJU-3DV/DPTR.git --recursive
-cd DPTR
+cd dptr
 # install dptr
 pip install .
 ```
@@ -102,6 +102,9 @@ cd Pointrix
 pip install -e .
 cd projects/gaussian_splatting
 python launch.py --config ./configs/colmap_dptr.yaml
+
+# you can also run this if you have install gaussian original kernel
+python launch.py --config ./configs/colmap.yaml
 ```
 
 ## Try other methods
@@ -130,6 +133,7 @@ python launch.py --config deform.yaml
 Welcome to submit PR if you have any idea or methods:
 
 - [ ] Support opencv camera
+- [ ] Introduction of Pointrix by video
 - [ ] Add gaussian flow (CVPR2024) methods (in one week)
 - [ ] Add GUI for visualization (in one week)
 - [ ] support camera optimization.
