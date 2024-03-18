@@ -15,7 +15,7 @@ sd_hide_title: true
 :::{grid-item}
 :columns: 12 5 5 4
 
-```{image} images/logo_transparent.png
+```{image} images/pointrix_portrait_all_white.png
 :class: sd-m-auto sd-animate-grow50-rot20
 ```
 :::
@@ -51,13 +51,13 @@ Pointrix is a **differentiable point-based rendering library** which has followi
 :gutter: 1 1 1 2
 
 :::{grid-item-card} {octicon}`plug;1.5em;sd-mr-1` Highly Extensible
-:link: framework/overall
+:link: tutorial/tutorial
 :link-type: doc
 
 Pointrix adopts a modular design, with clear structure and easy extensibility. 
 
 +++
-[Learn more »](framework/overall)
+[Learn more »](tutorial/tutorial)
 :::
 
 :::{grid-item-card} {octicon}`device-camera` Rich Feature
@@ -71,13 +71,13 @@ Pointrix supports the implementation of various types of tasks.
 :::
 
 :::{grid-item-card} {octicon}`rocket` Powerful backend
-:link: framework/overall
-:link-type: doc
+:link: https://github.com/pointrix-project/dptr
+:link-type: url
 
 DPTR which offer foundational functionalities for point rendering serves as the backend of Pointrix.
 
 +++
-[Learn more »](framework/overall)
+[Learn more »](https://github.com/pointrix-project/dptr)
 :::
 
 ::::
@@ -114,11 +114,11 @@ get_started/render_novel_view_gui
 ```{toctree}
 :maxdepth: 1
 :caption: tutorial
+tutorial/tutorial
 tutorial/define_your_model
 tutorial/define_your_own_dataset
 tutorial/define_your_trainer
 tutorial/learning_configuration
-tutorial/tutorial
 ```
 :::
 

@@ -1,4 +1,4 @@
-# Example
+# Tutorial
 
 There is a simple example that how to extend our pointrix 
 framework to dynamic gaussaian, which the deformation is generated
@@ -23,29 +23,34 @@ contains full gaussian point implemetation.
 
 ```{code-block} python
 :lineno-start: 1 
-:emphasize-lines: "8, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 45"
+:emphasize-lines: "5,6,7,8,11,12,13,14,15,16,17,18,19,20,21,22,25,27,28"
 :caption: |
 :    We *highlight* the modified part.
 @MODEL_REGISTRY.register()
 class DeformGaussian(BaseModel):
     def __init__(self, cfg, datapipeline, device="cuda"):
         super().__init__(cfg, datapipeline, device)
-
-        # you can refer to projects/deformable_gaussian/model.py
-        # if you want to know the detail of DeformNetwork.
         self.deform = DeformNetwork(is_blender=False).to(self.device)
+        self.time_interval = 1. / datapipeline.training_dataset_size
+        self.smooth_term = get_linear_noise_func(
+            lr_init=0.1, lr_final=1e-15, lr_delay_mult=0.01, max_steps=20000)
 
-        # The gaussian point cloud is implemeted in BaseModel, we
-        # do not need to care about the detail here.
-    
-    def forward(self, batch):
+    def forward(self, batch, step=-1, training=False):
+        N = len(self.point_cloud.position)
         camera_fid = torch.Tensor([batch[0]['camera'].fid]).float().to(self.device)
         position = self.point_cloud.get_position
         time_input = camera_fid.unsqueeze(0).expand(position.shape[0], -1)
-        d_xyz, d_rotation, d_scaling = self.deform(position, time_input)
+        ast_noise = torch.randn(1, 1, device='cuda').expand(N, -1) * self.time_interval * self.smooth_term(step)
+        if step < 3000 and training:
+            d_xyz, d_rotation, d_scaling = 0.0, 0.0, 0.0
+        else:
+            if training:
+                d_xyz, d_rotation, d_scaling = self.deform(position.detach(), time_input+ast_noise)
+            else:
+                d_xyz, d_rotation, d_scaling = self.deform(position.detach(), time_input)
 
         render_dict = {
-            "position": self.point_cloud.position + d_xyz,
+            "position": self.point_cloud.get_position + d_xyz,
             "opacity": self.point_cloud.get_opacity,
             "scaling": self.point_cloud.get_scaling + d_scaling,
             "rotation": self.point_cloud.get_rotation + d_rotation,
@@ -53,25 +58,6 @@ class DeformGaussian(BaseModel):
         }
         
         return render_dict
-    
-    def get_param_groups(self):
-        param_group = {}
-        param_group[self.point_cloud.prefix_name +
-                    'position'] = self.point_cloud.position
-        param_group[self.point_cloud.prefix_name +
-                    'opacity'] = self.point_cloud.opacity
-        param_group[self.point_cloud.prefix_name +
-                    'features'] = self.point_cloud.features
-        param_group[self.point_cloud.prefix_name +
-                    'features_rest'] = self.point_cloud.features_rest
-        param_group[self.point_cloud.prefix_name +
-                    'scaling'] = self.point_cloud.scaling
-        param_group[self.point_cloud.prefix_name +
-                    'rotation'] = self.point_cloud.rotation
-
-
-        param_group['deform'] = self.deform.parameters()
-        return param_group
 ```
 
 ## Add your dataset
@@ -124,6 +110,49 @@ class NerfiesReFormat(BaseReFormatData):
         return pcd
 ```
 
+## Modify Trainer
+In deformable gaussian, we need to pass the value of global step to model,
+so we can inherit it and add our own operation:
+
+```{code-block} python
+:lineno-start: 1 
+:emphasize-lines: " 13"
+:caption: |
+:    We *highlight* the modified part.
+
+from pointrix.engine.default_trainer import DefaultTrainer
+class Trainer(DefaultTrainer):
+
+    def train_step(self, batch: List[dict]) -> None:
+        """
+        The training step for the model.
+
+        Parameters
+        ----------
+        batch : dict
+            The batch data.
+        """
+        render_dict = self.model(batch, step=self.global_step, training=True)
+        render_results = self.renderer.render_batch(render_dict, batch)
+        self.loss_dict = self.model.get_loss_dict(render_results, batch)
+        self.loss_dict['loss'].backward()
+        self.optimizer_dict = self.model.get_optimizer_dict(self.loss_dict,
+                                                            render_results,
+                                                            self.white_bg)
+    
+    @torch.no_grad()
+    def validation(self):
+        self.val_dataset_size = len(self.datapipeline.validation_dataset)
+        for i in range(0, self.val_dataset_size):
+            self.call_hook("before_val_iter")
+            batch = self.datapipeline.next_val(i)
+            render_dict = self.model(batch)
+            render_results = self.renderer.render_batch(render_dict, batch)
+            self.metric_dict = self.model.get_metric_dict(render_results, batch)
+            self.call_hook("after_val_iter")
+```
+
+
 ## Run pointrix
 We can add our model and dataset implemented above in 
 pointrix framework.
@@ -155,7 +184,7 @@ def main(args, extras) -> None:
     cfg['trainer']['optimizer']['optimizer_1']['params']['deform']['lr'] = 0.00016 * 5.0
     cfg.trainer.val_interval = 5000
 
-    gaussian_trainer = DefaultTrainer(
+    gaussian_trainer = Trainer(
         cfg.trainer,
         cfg.exp_dir,
     )

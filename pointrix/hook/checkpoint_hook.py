@@ -19,7 +19,7 @@ class CheckPointHook(Hook):
         """
         if trainner.global_step % 5000 == 0:
             trainner.model.point_cloud.save_ply(os.path.join(
-                trainner.exp_dir, "{}.ply".format(trainner.global_step)))
+                trainner.exp_dir, "{:0>5}.ply".format(trainner.global_step)))
             trainner.save_model()
 
     def after_train(self, trainner) -> None:
@@ -40,6 +40,5 @@ class CheckPointHook(Hook):
 
         path = os.path.join(
             trainner.exp_dir, 
-            "chkpnt" + str(trainner.global_step) + ".pth"
-        )
+            "chkpnt" + "{:0>5}.pth".format(trainner.global_step))
         torch.save(data_list, path)

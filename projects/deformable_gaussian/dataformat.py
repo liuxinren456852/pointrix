@@ -134,6 +134,6 @@ class NerfiesReFormat(BaseReFormatData):
         xyz = (xyz - self.scene_center) * self.coord_scale
         num_pts = xyz.shape[0]
         shs = np.random.random((num_pts, 3)) / 255.0
-        pcd = SimplePointCloud(points=xyz, colors=SH2RGB(
+        pcd = SimplePointCloud(positions=xyz, colors=SH2RGB(
             shs), normals=np.zeros((num_pts, 3)))
         return pcd

@@ -1,5 +1,15 @@
 # Hook
 
+Hook module can be used as a tool class to take some actions to Trainer in some fixed time point. the CheckPointHook and LogHook are two example Hook derived from base class, which are used to save the checkpoint during the training loop and to log the training and validation losses, respectively.
+
+![](../images/framework-hook.png)
+
+LogHook relies on a Console object named Logger to print some log information in the terminal, a ProgressLogger object to visualize the training progress. And it will call the trainer's writer to record log information during in indicated timepoint.
+
+For a writer binded with trainer, it should be inherited from base class `Writer`, and `write_scalar()`, `write_image()` and `write_config()`,  these three abstract functions have to be accomplished. You can create more types of Writer. For instance, TensorboardWriter encapsulates `torch.utils.tensorboard.SummaryWrite` by overriding those three interface functions. You can also indicate the type of writer you want to use in `.yaml`configuration file, conveniently. 
+
+## Where to use
+
 In trainer, the hook function will be called at the specific position:
 
 ```{code-block} python
@@ -91,16 +101,15 @@ class DefaultTrainer:
                     raise TypeError(f'{e} in {hook}') from None
 ```
 
-so that you can **modify trainer progress by define hook function**, for example, if you want log something after train iter:
+## More Types of Hook
+
+You can **modify trainer progress by define hook function**, for example, if you want log something after train iteration:
 
 ```{note}
-
 The trainer can be fully accessed in the hook function.
 We provide log hook and checkpoint hook by default.
-
 ```
-
-```python
+```
 @HOOK_REGISTRY.register()
 class LogHook(Hook):
     """

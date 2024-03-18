@@ -25,7 +25,7 @@ author = 'Pointrix-Group'
 # The full version, including alpha/beta/rc tags
 # release = '0.0.1'
 
-html_logo = "images/twitter_header_photo_1.png"
+html_logo = "images/pointrix_landscape_b.png"
 html_favicon = "images/pointrix.ico"
 html_title = "Pointrix"
 

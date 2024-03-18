@@ -1,5 +1,4 @@
-from .base_splatting import GaussianSplattingRender, RENDERER_REGISTRY
-from .dptr import DPTRRender
+from .dptr import RENDERER_REGISTRY, DPTRRender
 
 def parse_renderer(cfg, **kwargs):
     """
@@ -11,4 +10,6 @@ def parse_renderer(cfg, **kwargs):
         The configuration dictionary.
     """
     name = cfg.pop("name")
+    if name == 'GaussianSplattingRender':
+        from .base_splatting import GaussianSplattingRender
     return RENDERER_REGISTRY.get(name)(cfg, **kwargs)
