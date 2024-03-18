@@ -22,11 +22,13 @@ pip install -r requirements.txt
 ```
 
 Finally, install the following packages:
+
 ```bash
 # Install official diff-gaussian-rasterization
-git clone https://github.com/graphdeco-inria/diff-gaussian-rasterization.git
-cd diff-gaussian-rasterization
-python setup.py install
+# clone the code from github
+git clone https://github.com/pointrix-project/dptr.git --recursive
+cd dptr
+# install dptr
 pip install .
 ```
 ```bash
@@ -34,5 +36,5 @@ pip install .
 git clone https://gitlab.inria.fr/bkerbl/simple-knn.git
 cd simple-knn
 python setup.py install
-pip install .
+pip install . 
 ```

@@ -135,13 +135,13 @@ class BaseModel(BaseModule):
         dict
             The metric dictionary which contains the metrics for evaluation.
         """
-        gt_images = torch.stack(
+        gt_images = torch.clamp(torch.stack(
             [batch[i]["image"].to(self.device) for i in range(len(batch))],
             dim=0
-        )
+        ), 0.0, 1.0)
         rgb = torch.clamp(render_results['rgb'], 0.0, 1.0)
-        L1_loss = l1_loss(rgb, gt_images).mean().item()
-        psnr_test = psnr(rgb, gt_images).mean().item()
+        L1_loss = l1_loss(rgb, gt_images).mean().double()
+        psnr_test = psnr(rgb, gt_images).mean().double()
         ssims_test = ms_ssim(
             rgb, gt_images, data_range=1, size_average=True
         ).mean().item()

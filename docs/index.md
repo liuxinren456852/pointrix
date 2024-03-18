@@ -164,3 +164,14 @@ API
 :::
 
 ::::
+
+## Contributors:
+### Pointrix:
+<a href="https://github.com/pointrix-project/pointrix/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=pointrix-project/pointrix" />
+</a>
+
+### DPTR:
+<a href="https://github.com/pointrix-project/dptr/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=pointrix-project/dptr" />
+</a>
