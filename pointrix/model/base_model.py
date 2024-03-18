@@ -139,10 +139,11 @@ class BaseModel(BaseModule):
             [batch[i]["image"].to(self.device) for i in range(len(batch))],
             dim=0
         )
-        L1_loss = l1_loss(render_results['rgb'], gt_images).mean().item()
-        psnr_test = psnr(render_results['rgb'], gt_images).mean().item()
+        rgb = torch.clamp(render_results['rgb'], 0.0, 1.0)
+        L1_loss = l1_loss(rgb, gt_images).mean().item()
+        psnr_test = psnr(rgb, gt_images).mean().item()
         ssims_test = ms_ssim(
-            render_results['rgb'], gt_images, data_range=1, size_average=True
+            rgb, gt_images, data_range=1, size_average=True
         ).mean().item()
         # lpips_test = lpips(
         #     render_results['images'], 
@@ -154,7 +155,7 @@ class BaseModel(BaseModule):
                        "ssims": ssims_test,
                     #    "lpips": lpips_test,
                        "gt_images": gt_images,
-                       "images": render_results['rgb'],
+                       "images": rgb,
                        "rgb_file_name": batch[0]["camera"].rgb_file_name}
         
         if 'depth' in render_results:

@@ -98,7 +98,28 @@ pip install .
 Note: we support both gaussian original kernel and DPTR kernel.
 
 ## Running our example
+### Lego
+1. Download the lego data and put it in your folder:
 
+```bash
+wget http://cseweb.ucsd.edu/\~viscomp/projects/LF/papers/ECCV20/nerf/nerf_example_data.zip
+```
+
+2. Run the following command to train the model:
+
+**you need to modify the data path in the config file to the path of the data you downloaded.**
+
+```bash
+cd Pointrix
+pip install -e .
+cd projects/gaussian_splatting
+python launch.py --config ./configs/nerf_dptr.yaml
+
+# you can also run this if you have installed gaussian original kernel
+python launch.py --config ./configs/nerf.yaml
+```
+
+### Mip-nerf 360 or other colmap dataset
 1. Download the data and put it in your folder:
 
 http://storage.googleapis.com/gresearch/refraw360/360_v2.zip

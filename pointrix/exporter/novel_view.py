@@ -104,6 +104,8 @@ def novel_view_render(model, renderer, datapipeline, output_path, novel_view_lis
                 "width": int(camera.image_width),
                 "world_view_transform": camera.world_view_transform,
                 "full_proj_transform": camera.full_proj_transform,
+                "extrinsic_matrix": camera.extrinsic_matrix,
+                "intrinsic_matrix": camera.intrinsic_matrix,
                 "camera_center": camera.camera_center,
             }
             render_dict.update(atributes_dict)
@@ -116,10 +118,6 @@ def novel_view_render(model, renderer, datapipeline, output_path, novel_view_lis
                         output_path, f'{novel_view}_{feat_name}'))
                 imageio.imwrite(os.path.join(
                     output_path, f'{novel_view}_{feat_name}', "{:0>3}.png".format(i)), visual_feat)
-            image = torch.clamp(render_results["rgb"], 0.0, 1.0)
-            mkdir_p(os.path.join(output_path, 'novel_view_' + novel_view))
-            imageio.imwrite(os.path.join(output_path, 'novel_view_' + novel_view, "{}.png".format(i)),
-                            to8b(image.detach().cpu().numpy()).transpose(1, 2, 0))
         
     
 
