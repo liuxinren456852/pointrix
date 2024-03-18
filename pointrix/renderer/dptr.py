@@ -3,12 +3,13 @@ import numpy as np
 import dptr.gs as gs
 
 from typing import List
+from pointrix.utils.base import BaseObject
 from pointrix.utils.renderer.renderer_utils import RenderFeatures
-from .base_splatting import RENDERER_REGISTRY, GaussianSplattingRender
-
+from pointrix.utils.registry import Registry
+RENDERER_REGISTRY = Registry("RENDERER", modules=["pointrix.renderer"])
 
 @RENDERER_REGISTRY.register()
-class DPTRRender(GaussianSplattingRender):
+class DPTRRender(BaseObject):
     """
     A class for rendering point clouds using DPTR.
 
