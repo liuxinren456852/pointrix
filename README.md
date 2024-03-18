@@ -2,7 +2,7 @@
   <h3 align="center">Pointrix</h3>
   <p align="center">
       <picture>
-      <img alt="Pointrix" src="docs/images/logo_2.png" width="80%">
+      <img alt="Pointrix" src="https://github.com/pointrix-project/pointrix/assets/32637882/81019881-5ecf-4fc8-9c64-76fb292b5a0d" width="50%">
       </picture>
   </p>
   <p align="center">
@@ -39,21 +39,11 @@ Pointrix is a differentiable point-based rendering library which has following p
 - **Powerful Backend**:
   - DPTR which offer foundational functionalities for point rendering serves as the backend of Pointrix.
 
-<div style="display:flex; justify-content:center;">
-  <video width="320" height="240" controls>
-    <source src="docs/images/result1.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-  <video width="320" height="240" controls>
-    <source src="docs/images/result2.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-  <video width="320" height="240" controls>
-    <source src="docs/images/result3.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
+<div style="display:flex;">
+  <img src="https://github.com/pointrix-project/pointrix/assets/32637882/61795e5a-f91a-4a2a-b6ce-9a341a16145e" width="30%" />
+  <img src="https://github.com/pointrix-project/pointrix/assets/32637882/616b7af8-3a8a-455a-ac1e-a62e9dc146d2" width="30%" />
+  <img src="https://github.com/pointrix-project/pointrix/assets/32637882/41920617-86aa-4500-982f-5145b90e3336" width="30%" />
 </div>
-
 
 ## Prerequisites
 
