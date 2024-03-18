@@ -26,8 +26,8 @@
 
 Pointrix is a differentiable point-based rendering library which has following properties:
 - **Powerful Backend**:
-  - Modular design and easy to modify.
   - Support **"Render Anything"**(depth, normal, optical flow, anything you want)  and **"Backward Anything"** (Intrinsics & Extrinsics).
+  - Modular design and easy to modify, support open-gl and opencv camera.
 - **Rich Feature**:
   - Static Scene Reconstruction: 
     - **3D Gaussian Splatting for Real-Time Radiance Field Rendering (2023 Siggraph Best Paper)**
@@ -49,14 +49,11 @@ Pointrix is a differentiable point-based rendering library which has following p
 </div>
 
 # WIP
-Welcome to submit PR if you have any idea or methods:
-
-- [ ] Support opencv camera
 - [ ] Introduction of Pointrix by video
-- [ ] Add GUI for visualization (in one week)
+- [ ] **Add GUI for visualization (in one week)**
 - [ ] Add gaussian flow (CVPR2024) methods (in one week)
 - [ ] Add Relightable Gaussian (CVPR2024) methods
-- [ ] support camera optimization  (in one week).
+- [ ] **support camera optimization  (in one week).**
 
 ## Prerequisites
 
@@ -85,7 +82,7 @@ Finally, install our DPTR rendering kernel:
 ```bash
 # Install official diff-gaussian-rasterization
 # clone the code from github
-git clone https://github.com/NJU-3DV/DPTR.git --recursive
+git clone https://github.com/pointrix-project/dptr.git --recursive
 cd dptr
 # install dptr
 pip install .
@@ -140,13 +137,4 @@ python launch.py --config deform.yaml
 ### 2. Generation (under construction, please refer to generate branch)
 
 
-
-
-# TODO
-Welcome to submit PR if you have any idea or methods:
-
-- [ ] Support opencv camera
-- [ ] Introduction of Pointrix by video
-- [ ] Add gaussian flow (CVPR2024) methods (in one week)
-- [ ] Add GUI for visualization (in one week)
-- [ ] support camera optimization.
+Welcome to submit PR if you have any idea or methods.

@@ -44,8 +44,8 @@ class DPTRRender(BaseObject):
                     FovY,
                     height,
                     width,
-                    world_view_transform,
-                    full_proj_transform,
+                    extrinsic_matrix,
+                    intrinsic_matrix,
                     camera_center,
                     position,
                     opacity,
@@ -106,17 +106,11 @@ class DPTRRender(BaseObject):
         direction = direction / direction.norm(dim=1, keepdim=True)
         rgb = gs.compute_sh(shs, 3, direction)
 
-        camparams = torch.Tensor([
-            width / (2 * np.tan(FovX * 0.5)),
-            height / (2 * np.tan(FovY * 0.5)),
-            float(width) / 2,
-            float(height) / 2]).cuda().float()
-
         (uv, depth) = gs.project_point(
             position,
-            world_view_transform.cuda(),
-            full_proj_transform.cuda(),
-            camparams, width, height)
+            intrinsic_matrix.cuda(),
+            extrinsic_matrix.cuda(),
+            width, height)
 
         visible = depth != 0
 
@@ -127,8 +121,8 @@ class DPTRRender(BaseObject):
         (conic, radius, tiles_touched) = gs.ewa_project(
             position,
             cov3d,
-            world_view_transform.cuda(),
-            camparams,
+            intrinsic_matrix.cuda(),
+            extrinsic_matrix.cuda(),
             uv,
             width,
             height,
@@ -143,8 +137,8 @@ class DPTRRender(BaseObject):
         Render_Features = RenderFeatures(rgb=rgb, depth=depth)
         render_features = Render_Features.combine()
 
-        # alpha blending
         ndc = torch.zeros_like(uv, requires_grad=True)
+        # alpha blending
         try:
             ndc.retain_grad()
         except:
