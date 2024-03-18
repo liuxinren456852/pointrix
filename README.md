@@ -11,7 +11,7 @@
     <a href="https://countermaker.github.io/pointrix.io/">
     <strong>Document | </strong></a>
     <a href="https://countermaker.github.io/pointrix.io/">
-    <strong>Paper (Comming soon)| </strong></a>
+    <strong>Paper (Comming soon) | </strong></a>
     <a href="https://github.com/pointrix-project/dptr">
     <strong>DPRT Render Kernel</strong></a>
     <br />
@@ -25,6 +25,9 @@
 </div>
 
 Pointrix is a differentiable point-based rendering library which has following properties:
+- **Powerful Backend**:
+  - DPTR which offer foundational functionalities for point rendering serves as the backend of Pointrix.
+  - Support **"Render Anything"**(depth, normal, optical flow, anything you want)  and **"Backward Anything"** (Intrinsics & Extrinsics)
 - **Rich Feature**:
   - Static Scene Reconstruction: 
     - **3D Gaussian Splatting for Real-Time Radiance Field Rendering (2023 Siggraph Best Paper)**
@@ -34,16 +37,26 @@ Pointrix is a differentiable point-based rendering library which has following p
   - Text to 3D generation: 
     - MVDream: Multi-view Diffusion for 3D Generation (2023 Arxiv)
       
-- **Highly Extensible**:
+- **Highly Extensible and Designed for Research**:
   - Pointrix adopts a modular design, with clear structure and easy extensibility. 
-- **Powerful Backend**:
-  - DPTR which offer foundational functionalities for point rendering serves as the backend of Pointrix.
+  - Only few codes need to be modified if you want to add a new method. 
+
 
 <div style="display:flex;">
   <img src="https://github.com/pointrix-project/pointrix/assets/32637882/61795e5a-f91a-4a2a-b6ce-9a341a16145e" width="30%" />
   <img src="https://github.com/pointrix-project/pointrix/assets/32637882/616b7af8-3a8a-455a-ac1e-a62e9dc146d2" width="30%" />
   <img src="https://github.com/pointrix-project/pointrix/assets/32637882/41920617-86aa-4500-982f-5145b90e3336" width="30%" />
 </div>
+
+# WIP
+Welcome to submit PR if you have any idea or methods:
+
+- [ ] Support opencv camera
+- [ ] Introduction of Pointrix by video
+- [ ] Add GUI for visualization (in one week)
+- [ ] Add gaussian flow (CVPR2024) methods (in one week)
+- [ ] Add Relightable Gaussian (CVPR2024) methods
+- [ ] support camera optimization  (in one week).
 
 ## Prerequisites
 
