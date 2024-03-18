@@ -1,0 +1,508 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Define your own model" href="define_your_model.html" /><link rel="prev" title="Using GUI and render novel view" href="../get_started/render_novel_view_gui.html" />
+
+    <link rel="shortcut icon" href="../_static/pointrix.ico"/><!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+        <title>Tutorial - Pointrix</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Pointrix</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/pointrix_landscape_b.png" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">Pointrix</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Get started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../get_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../get_started/run_first_model.html">Run your first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../get_started/render_novel_view_gui.html">Using GUI and render novel view</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">tutorial</span></p>
+<ul class="current">
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="define_your_model.html">Define your own model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="define_your_own_dataset.html">Define your own dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="define_your_trainer.html">Define your own trainer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="learning_configuration.html">Learning the configuration in Pointrix</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Framework</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../framework/overall.html">Overall</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../framework/data.html">Datapipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../framework/model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../framework/trainer.html">Trainer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../framework/hook.html">Hook</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../API.html">API</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../code/cameras.html">camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../code/dataset.html">dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../code/point_cloud.html">point_cloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../code/exporter.html">exporter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../code/hook.html">hook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../code/logger.html">logger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../code/model.html">model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../code/optimizer.html">optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../code/render.html">renderer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../code/trainer.html">trainer</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Link to this heading">#</a></h1>
+<p>There is a simple example that how to extend our pointrix
+framework to dynamic gaussaian, which the deformation is generated
+by MLP which take time step as input.</p>
+<section id="add-your-model">
+<h2>Add your model<a class="headerlink" href="#add-your-model" title="Link to this heading">#</a></h2>
+<p>First, we need to import base model from pointrix so that
+we can inherit, registry and modify them.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pointrix.model.base_model</span> <span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">MODEL_REGISTRY</span>
+</pre></div>
+</div>
+<p>Then, we need to implemet our model based BaseModel which
+contains full gaussian point implemetation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Your can refer to pointrix/model/base_model.py for more detail if
+you care about the full gaussian point implemetation.</p>
+</div>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">We <em>highlight</em> the modified part.</span><a class="headerlink" href="#id1" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="nd">@MODEL_REGISTRY</span><span class="o">.</span><span class="n">register</span><span class="p">()</span>
+<span class="linenos"> 2</span><span class="k">class</span> <span class="nc">DeformGaussian</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="linenos"> 3</span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">datapipeline</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">):</span>
+<span class="linenos"> 4</span>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">datapipeline</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+<span class="hll"><span class="linenos"> 5</span>        <span class="bp">self</span><span class="o">.</span><span class="n">deform</span> <span class="o">=</span> <span class="n">DeformNetwork</span><span class="p">(</span><span class="n">is_blender</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+</span><span class="hll"><span class="linenos"> 6</span>        <span class="bp">self</span><span class="o">.</span><span class="n">time_interval</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">datapipeline</span><span class="o">.</span><span class="n">training_dataset_size</span>
+</span><span class="hll"><span class="linenos"> 7</span>        <span class="bp">self</span><span class="o">.</span><span class="n">smooth_term</span> <span class="o">=</span> <span class="n">get_linear_noise_func</span><span class="p">(</span>
+</span><span class="hll"><span class="linenos"> 8</span>            <span class="n">lr_init</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">lr_final</span><span class="o">=</span><span class="mf">1e-15</span><span class="p">,</span> <span class="n">lr_delay_mult</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">20000</span><span class="p">)</span>
+</span><span class="linenos"> 9</span>
+<span class="linenos">10</span>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">step</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="hll"><span class="linenos">11</span>        <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">point_cloud</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
+</span><span class="hll"><span class="linenos">12</span>        <span class="n">camera_fid</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">([</span><span class="n">batch</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;camera&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fid</span><span class="p">])</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+</span><span class="hll"><span class="linenos">13</span>        <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">point_cloud</span><span class="o">.</span><span class="n">get_position</span>
+</span><span class="hll"><span class="linenos">14</span>        <span class="n">time_input</span> <span class="o">=</span> <span class="n">camera_fid</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</span><span class="hll"><span class="linenos">15</span>        <span class="n">ast_noise</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_interval</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">smooth_term</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+</span><span class="hll"><span class="linenos">16</span>        <span class="k">if</span> <span class="n">step</span> <span class="o">&lt;</span> <span class="mi">3000</span> <span class="ow">and</span> <span class="n">training</span><span class="p">:</span>
+</span><span class="hll"><span class="linenos">17</span>            <span class="n">d_xyz</span><span class="p">,</span> <span class="n">d_rotation</span><span class="p">,</span> <span class="n">d_scaling</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span>
+</span><span class="hll"><span class="linenos">18</span>        <span class="k">else</span><span class="p">:</span>
+</span><span class="hll"><span class="linenos">19</span>            <span class="k">if</span> <span class="n">training</span><span class="p">:</span>
+</span><span class="hll"><span class="linenos">20</span>                <span class="n">d_xyz</span><span class="p">,</span> <span class="n">d_rotation</span><span class="p">,</span> <span class="n">d_scaling</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deform</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span> <span class="n">time_input</span><span class="o">+</span><span class="n">ast_noise</span><span class="p">)</span>
+</span><span class="hll"><span class="linenos">21</span>            <span class="k">else</span><span class="p">:</span>
+</span><span class="hll"><span class="linenos">22</span>                <span class="n">d_xyz</span><span class="p">,</span> <span class="n">d_rotation</span><span class="p">,</span> <span class="n">d_scaling</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deform</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span> <span class="n">time_input</span><span class="p">)</span>
+</span><span class="linenos">23</span>
+<span class="linenos">24</span>        <span class="n">render_dict</span> <span class="o">=</span> <span class="p">{</span>
+<span class="hll"><span class="linenos">25</span>            <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">point_cloud</span><span class="o">.</span><span class="n">get_position</span> <span class="o">+</span> <span class="n">d_xyz</span><span class="p">,</span>
+</span><span class="linenos">26</span>            <span class="s2">&quot;opacity&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">point_cloud</span><span class="o">.</span><span class="n">get_opacity</span><span class="p">,</span>
+<span class="hll"><span class="linenos">27</span>            <span class="s2">&quot;scaling&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">point_cloud</span><span class="o">.</span><span class="n">get_scaling</span> <span class="o">+</span> <span class="n">d_scaling</span><span class="p">,</span>
+</span><span class="hll"><span class="linenos">28</span>            <span class="s2">&quot;rotation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">point_cloud</span><span class="o">.</span><span class="n">get_rotation</span> <span class="o">+</span> <span class="n">d_rotation</span><span class="p">,</span>
+</span><span class="linenos">29</span>            <span class="s2">&quot;shs&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">point_cloud</span><span class="o">.</span><span class="n">get_shs</span><span class="p">,</span>
+<span class="linenos">30</span>        <span class="p">}</span>
+<span class="linenos">31</span>        
+<span class="linenos">32</span>        <span class="k">return</span> <span class="n">render_dict</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="add-your-dataset">
+<h2>Add your dataset<a class="headerlink" href="#add-your-dataset" title="Link to this heading">#</a></h2>
+<p>To add our dataset, we need to inhert BaseReFormatData class and
+rewrite <code class="docutils literal notranslate"><span class="pre">load_camera</span></code> and <code class="docutils literal notranslate"><span class="pre">load_pointcloud</span></code>.</p>
+<p>First, we need to import base data format from pointrix so that
+we can inherit, registry and modify them.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pointrix.dataset.base_data</span> <span class="kn">import</span> <span class="n">DATA_FORMAT_REGISTRY</span><span class="p">,</span> <span class="n">BaseReFormatData</span><span class="p">,</span> <span class="n">SimplePointCloud</span>
+<span class="kn">from</span> <span class="nn">pointrix.camera.camera</span> <span class="kn">import</span> <span class="n">Camera</span>
+</pre></div>
+</div>
+<p>Then, we need to implement the function to load the camera in
+dataset.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Pointrix support common dataset reading so you do not
+need to implement by yourself in the most cases. There is just an
+example to illustrate how to add your own dataset.</p>
+</div>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">We <em>highlight</em> the modified part.</span><a class="headerlink" href="#id2" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="nd">@DATA_FORMAT_REGISTRY</span><span class="o">.</span><span class="n">register</span><span class="p">()</span>
+<span class="linenos"> 2</span><span class="k">class</span> <span class="nc">NerfiesReFormat</span><span class="p">(</span><span class="n">BaseReFormatData</span><span class="p">):</span>
+<span class="linenos"> 3</span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<span class="linenos"> 4</span>                 <span class="n">data_root</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+<span class="linenos"> 5</span>                 <span class="n">split</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;train&#39;</span><span class="p">,</span>
+<span class="linenos"> 6</span>                 <span class="n">cached_image</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="linenos"> 7</span>                 <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">):</span>
+<span class="linenos"> 8</span>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data_root</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">cached_image</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
+<span class="linenos"> 9</span>    
+<span class="hll"><span class="linenos">10</span>    <span class="k">def</span> <span class="nf">load_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">split</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span class="hll"><span class="linenos">11</span>        <span class="c1">## load your camera here</span>
+</span><span class="hll"><span class="linenos">12</span>        <span class="c1">## for full implemetation, please refer to projects/deformable_gaussian/dataformat.py</span>
+</span><span class="hll"><span class="linenos">13</span>        <span class="k">return</span> <span class="n">cameras_results</span>
+</span><span class="hll"><span class="linenos">14</span>    
+</span><span class="hll"><span class="linenos">15</span>    <span class="k">def</span> <span class="nf">load_pointcloud</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span class="hll"><span class="linenos">16</span>        <span class="n">xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_root</span><span class="p">,</span> <span class="s2">&quot;points.npy&quot;</span><span class="p">))</span>
+</span><span class="hll"><span class="linenos">17</span>        <span class="n">xyz</span> <span class="o">=</span> <span class="p">(</span><span class="n">xyz</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene_center</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord_scale</span>
+</span><span class="hll"><span class="linenos">18</span>        <span class="n">num_pts</span> <span class="o">=</span> <span class="n">xyz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span class="hll"><span class="linenos">19</span>        <span class="n">shs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="n">num_pts</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span> <span class="o">/</span> <span class="mf">255.0</span>
+</span><span class="hll"><span class="linenos">20</span>        <span class="n">pcd</span> <span class="o">=</span> <span class="n">SimplePointCloud</span><span class="p">(</span><span class="n">positions</span><span class="o">=</span><span class="n">xyz</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">SH2RGB</span><span class="p">(</span>
+</span><span class="hll"><span class="linenos">21</span>            <span class="n">shs</span><span class="p">),</span> <span class="n">normals</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_pts</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+</span><span class="hll"><span class="linenos">22</span>        <span class="k">return</span> <span class="n">pcd</span>
+</span></pre></div>
+</div>
+</div>
+</section>
+<section id="modify-trainer">
+<h2>Modify Trainer<a class="headerlink" href="#modify-trainer" title="Link to this heading">#</a></h2>
+<p>In deformable gaussian, we need to pass the value of global step to model,
+so we can inherit it and add our own operation:</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">We <em>highlight</em> the modified part.</span><a class="headerlink" href="#id3" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">from</span> <span class="nn">pointrix.engine.default_trainer</span> <span class="kn">import</span> <span class="n">DefaultTrainer</span>
+<span class="linenos"> 2</span><span class="k">class</span> <span class="nc">Trainer</span><span class="p">(</span><span class="n">DefaultTrainer</span><span class="p">):</span>
+<span class="linenos"> 3</span>
+<span class="linenos"> 4</span>    <span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="linenos"> 5</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="linenos"> 6</span><span class="sd">        The training step for the model.</span>
+<span class="linenos"> 7</span>
+<span class="linenos"> 8</span><span class="sd">        Parameters</span>
+<span class="linenos"> 9</span><span class="sd">        ----------</span>
+<span class="linenos">10</span><span class="sd">        batch : dict</span>
+<span class="linenos">11</span><span class="sd">            The batch data.</span>
+<span class="linenos">12</span><span class="sd">        &quot;&quot;&quot;</span>
+<span class="hll"><span class="linenos">13</span>        <span class="n">render_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">global_step</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span class="linenos">14</span>        <span class="n">render_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">renderer</span><span class="o">.</span><span class="n">render_batch</span><span class="p">(</span><span class="n">render_dict</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+<span class="linenos">15</span>        <span class="bp">self</span><span class="o">.</span><span class="n">loss_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_loss_dict</span><span class="p">(</span><span class="n">render_results</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+<span class="linenos">16</span>        <span class="bp">self</span><span class="o">.</span><span class="n">loss_dict</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="linenos">17</span>        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_optimizer_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loss_dict</span><span class="p">,</span>
+<span class="linenos">18</span>                                                            <span class="n">render_results</span><span class="p">,</span>
+<span class="linenos">19</span>                                                            <span class="bp">self</span><span class="o">.</span><span class="n">white_bg</span><span class="p">)</span>
+<span class="linenos">20</span>    
+<span class="linenos">21</span>    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<span class="linenos">22</span>    <span class="k">def</span> <span class="nf">validation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="linenos">23</span>        <span class="bp">self</span><span class="o">.</span><span class="n">val_dataset_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">datapipeline</span><span class="o">.</span><span class="n">validation_dataset</span><span class="p">)</span>
+<span class="linenos">24</span>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_dataset_size</span><span class="p">):</span>
+<span class="linenos">25</span>            <span class="bp">self</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="s2">&quot;before_val_iter&quot;</span><span class="p">)</span>
+<span class="linenos">26</span>            <span class="n">batch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datapipeline</span><span class="o">.</span><span class="n">next_val</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="linenos">27</span>            <span class="n">render_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+<span class="linenos">28</span>            <span class="n">render_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">renderer</span><span class="o">.</span><span class="n">render_batch</span><span class="p">(</span><span class="n">render_dict</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+<span class="linenos">29</span>            <span class="bp">self</span><span class="o">.</span><span class="n">metric_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_metric_dict</span><span class="p">(</span><span class="n">render_results</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+<span class="linenos">30</span>            <span class="bp">self</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="s2">&quot;after_val_iter&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="run-pointrix">
+<h2>Run pointrix<a class="headerlink" href="#run-pointrix" title="Link to this heading">#</a></h2>
+<p>We can add our model and dataset implemented above in
+pointrix framework.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>we need to modify the model and dataset name
+to our names of new model and datasets implemented above.
+Pointrix framework can find your model and datasets by registry.</p>
+</div>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">We <em>highlight</em> the modified part.</span><a class="headerlink" href="#id4" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="hll"><span class="linenos"> 1</span><span class="kn">from</span> <span class="nn">model</span> <span class="kn">import</span> <span class="n">DeformGaussian</span>
+</span><span class="hll"><span class="linenos"> 2</span><span class="kn">from</span> <span class="nn">dataformat</span> <span class="kn">import</span> <span class="n">NerfiesReFormat</span>
+</span><span class="linenos"> 3</span>
+<span class="linenos"> 4</span><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">extras</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="linenos"> 5</span>    
+<span class="linenos"> 6</span>    <span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">cli_args</span><span class="o">=</span><span class="n">extras</span><span class="p">)</span>
+<span class="linenos"> 7</span>
+<span class="hll"><span class="linenos"> 8</span>    <span class="n">cfg</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;DeformGaussian&quot;</span>
+</span><span class="hll"><span class="linenos"> 9</span>    <span class="n">cfg</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="s2">&quot;NerfiesReFormat&quot;</span>
+</span><span class="hll"><span class="linenos">10</span>    <span class="c1"># you need to modify this path to your dataset.</span>
+</span><span class="hll"><span class="linenos">11</span>    <span class="n">cfg</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="s2">&quot;/home/clz/data/dnerf/cat&quot;</span>
+</span><span class="hll"><span class="linenos">12</span>    <span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;trainer&#39;</span><span class="p">][</span><span class="s1">&#39;optimizer&#39;</span><span class="p">][</span><span class="s1">&#39;optimizer_1&#39;</span><span class="p">][</span><span class="s1">&#39;params&#39;</span><span class="p">][</span><span class="s1">&#39;deform&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span class="hll"><span class="linenos">13</span>    <span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;trainer&#39;</span><span class="p">][</span><span class="s1">&#39;optimizer&#39;</span><span class="p">][</span><span class="s1">&#39;optimizer_1&#39;</span><span class="p">][</span><span class="s1">&#39;params&#39;</span><span class="p">][</span><span class="s1">&#39;deform&#39;</span><span class="p">][</span><span class="s1">&#39;lr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.00016</span> <span class="o">*</span> <span class="mf">5.0</span>
+</span><span class="hll"><span class="linenos">14</span>    <span class="n">cfg</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">val_interval</span> <span class="o">=</span> <span class="mi">5000</span>
+</span><span class="linenos">15</span>
+<span class="linenos">16</span>    <span class="n">gaussian_trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+<span class="linenos">17</span>        <span class="n">cfg</span><span class="o">.</span><span class="n">trainer</span><span class="p">,</span>
+<span class="linenos">18</span>        <span class="n">cfg</span><span class="o">.</span><span class="n">exp_dir</span><span class="p">,</span>
+<span class="linenos">19</span>    <span class="p">)</span>
+<span class="linenos">20</span>    <span class="n">gaussian_trainer</span><span class="o">.</span><span class="n">train_loop</span><span class="p">()</span>    
+<span class="linenos">21</span>    <span class="n">model_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+<span class="linenos">22</span>        <span class="n">cfg</span><span class="o">.</span><span class="n">exp_dir</span><span class="p">,</span> 
+<span class="linenos">23</span>        <span class="s2">&quot;chkpnt&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">gaussian_trainer</span><span class="o">.</span><span class="n">global_step</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.pth&quot;</span>
+<span class="linenos">24</span>    <span class="p">)</span>
+<span class="linenos">25</span>    <span class="n">gaussian_trainer</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
+<span class="linenos">26</span>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Training complete.&quot;</span><span class="p">)</span>
+<span class="linenos">27</span>
+<span class="linenos">28</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="linenos">29</span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+<span class="linenos">30</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--config&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;path to config file&quot;</span><span class="p">)</span>
+<span class="linenos">31</span>    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--smc_file&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<span class="linenos">32</span>    <span class="n">args</span><span class="p">,</span> <span class="n">extras</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">()</span>
+<span class="linenos">33</span>    
+<span class="linenos">34</span>    <span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">extras</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Finally, you can run the command to run your code.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>launch.py<span class="w"> </span>--config<span class="w"> </span>default.yaml
+</pre></div>
+</div>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="define_your_model.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Define your own model</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../get_started/render_novel_view_gui.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Using GUI and render novel view</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Pointrix-Group
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Tutorial</a><ul>
+<li><a class="reference internal" href="#add-your-model">Add your model</a></li>
+<li><a class="reference internal" href="#add-your-dataset">Add your dataset</a></li>
+<li><a class="reference internal" href="#modify-trainer">Modify Trainer</a></li>
+<li><a class="reference internal" href="#run-pointrix">Run pointrix</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=32e29ea5"></script>
+    <script src="../_static/design-tabs.js?v=36754332"></script>
+    </body>
+</html>

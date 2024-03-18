@@ -1,0 +1,1 @@
+# Learning the configuration in Pointrix
