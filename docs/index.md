@@ -17,6 +17,7 @@ sd_hide_title: true
 
 ```{image} images/pointrix_portrait_all_white.png
 :class: sd-m-auto sd-animate-grow50-rot20
+:width: 150px
 ```
 :::
 

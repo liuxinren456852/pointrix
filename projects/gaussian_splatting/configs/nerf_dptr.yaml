@@ -58,7 +58,7 @@ trainer:
         init:  0.00016
         final: 0.0000016
   dataset:
-    data_path: ""
+    data_path: "/home/clz/data/nerf_synthetic/lego"
     data_type: "NerfReFormat"
     cached_image: True
     shuffle: True
@@ -68,7 +68,7 @@ trainer:
     white_bg: True
 
   renderer:
-    name: "GaussianSplattingRender"
+    name: "DPTRRender"
     max_sh_degree: ${trainer.model.point_cloud.max_sh_degree}
   writer:
     writer_type: "TensorboardWriter"
