@@ -8,11 +8,11 @@
     A differentiable point-based rendering library.
     <br />
     <a href="https://pointrix-project.github.io/pointrix/">
-    <strong>Document | </strong></a>
+    <strong>Document🏠 | </strong></a>
     <a href="https://countermaker.github.io/pointrix.io/">
-    <strong>Paper (Comming soon) | </strong></a>
+    <strong>Paper📄 (Comming soon) | </strong></a>
     <a href="https://github.com/pointrix-project/dptr">
-    <strong>DPRT Render Kernel</strong></a>
+    <strong>DPRT Backend🌐 </strong></a>
     <br />
     <br />
     <!-- <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
@@ -23,6 +23,13 @@
   </p>
 </div>
 
+[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fpointrix-project%2Fpointrix&count_bg=%2396114C&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=visitors&edge_flat=false)](https://hits.seeyoufarm.com)
+![Hits](https://img.shields.io/github/stars/pointrix-project/pointrix)
+![Static Badge](https://img.shields.io/badge/Pointrix_document-Pointrix_document?color=hsl&link=https%3A%2F%2Fpointrix-project.github.io%2Fpointrix)
+![GitHub Pipenv locked dependency version](https://img.shields.io/github/pipenv/locked/dependency-version/pointrix-project/dptr/dptr)
+
+
+
 
 Pointrix is a differentiable point-based rendering library which has following properties:
 - **Powerful Backend**:
@@ -30,12 +37,12 @@ Pointrix is a differentiable point-based rendering library which has following p
   - Modular design and easy to modify, support open-gl and opencv camera.
 - **Rich Feature**:
   - Static Scene Reconstruction: 
-    - **3D Gaussian Splatting for Real-Time Radiance Field Rendering (2023 Siggraph Best Paper)**
+    - **[Vanilla 3DGS](https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/3d_gaussian_splatting_high.pdf) (2023 Siggraph Best Paper)**
   - Dynamic Scene Reconstruction: 
-    - **Deformable 3D Gaussians for High-Fidelity Monocular Dynamic Scene Reconstruction (2024 CVPR)**
-    - **Gaussian-Flow: 4D Reconstruction with Dynamic 3D Gaussian Particle (2024 CVPR)**
+    - **[Deformable 3DGS](https://arxiv.org/abs/2309.13101) (2024 CVPR)**
+    - **[Gaussian-Flow](https://arxiv.org/abs/2312.03431) (2024 CVPR)**
   - Text to 3D generation: 
-    - MVDream: Multi-view Diffusion for 3D Generation (2023 Arxiv)
+    - [MVDream](https://arxiv.org/abs/2308.16512) (2023 Arxiv)
       
 - **Highly Extensible and Designed for Research**:
   - Pointrix adopts a modular design, with clear structure and easy extensibility. 
@@ -48,12 +55,12 @@ Pointrix is a differentiable point-based rendering library which has following p
   <img src="https://github.com/pointrix-project/pointrix/assets/32637882/928a142e-38cb-48e6-847b-1c6d4b95f7a3" width="30%" />
 </div>
 
-# WIP
-- [ ] Introduction of Pointrix by video
-- [ ] **Add GUI for visualization (in one week)**
-- [ ] Add gaussian flow (CVPR2024) methods (in one week)
-- [ ] Add Relightable Gaussian (CVPR2024) methods
-- [ ] **support camera optimization  (in one week).**
+## contributors
+<a href="https://github.com/pointrix-project/pointrix/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=pointrix-project/pointrix" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
 
 ## Prerequisites
 
@@ -98,16 +105,14 @@ pip install .
 Note: we support both gaussian original kernel and DPTR kernel.
 
 ## Running our example
-### Lego
+### 1. Lego
 1. Download the lego data and put it in your folder:
 
 ```bash
 wget http://cseweb.ucsd.edu/\~viscomp/projects/LF/papers/ECCV20/nerf/nerf_example_data.zip
 ```
 
-2. Run the following command to train the model:
-
-**you need to modify the data path in the config file to the path of the data you downloaded.**
+2. Run the following command to train the model (...data path in the config file...):
 
 ```bash
 cd Pointrix
@@ -119,14 +124,12 @@ python launch.py --config ./configs/nerf_dptr.yaml
 python launch.py --config ./configs/nerf.yaml
 ```
 
-### Mip-nerf 360 or other colmap dataset
+### 2. Mip-nerf 360 or other colmap dataset
 1. Download the data and put it in your folder:
 
 http://storage.googleapis.com/gresearch/refraw360/360_v2.zip
 
-2. Run the following command to train the model:
-
-**you need to modify the data path in the config file to the path of the data you downloaded.**
+2. Run the following command to train the model (...data path in the config file...):
 
 ```bash
 cd Pointrix
@@ -155,14 +158,19 @@ cd projects/deformable_gaussian
 python launch.py --config deform.yaml
 ```
 
-### 2. Generation (under construction, please refer to generate branch)
+### 2. Generation (WIP)
 
 
-Welcome to submit PR if you have any idea or methods.
+# WIP
+- [ ] Introduction video
+- [ ] **Add GUI for visualization (this week).**
+- [ ] **Implementataion of Gaussian-Flow (CVPR 2024) (this week).**
+- [ ] Implementataion of MVDream (this week).
+- [ ] Implementataion of Relightable Gaussian (arXiv 2023).
+- [ ] **Support camera optimization  (this week).**
 
-## contributors
-<a href="https://github.com/pointrix-project/pointrix/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=pointrix-project/pointrix" />
-</a>
+Welcome to join us or submit PR if you have any idea or methods.
 
-Made with [contrib.rocks](https://contrib.rocks).
+
+
+
