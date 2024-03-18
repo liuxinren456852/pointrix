@@ -1,5 +1,4 @@
 <div align="center">
-  <h3 align="center">Pointrix</h3>
   <p align="center">
       <picture>
       <img alt="Pointrix" src="https://github.com/pointrix-project/pointrix/assets/32637882/e0bd7ce3-fbf3-40f3-889c-7c882f3eed20" width="80%">
