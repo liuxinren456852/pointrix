@@ -7,7 +7,7 @@
   <p align="center">
     A differentiable point-based rendering library.
     <br />
-    <a href="https://countermaker.github.io/pointrix.io/">
+    <a href="https://pointrix-project.github.io/pointrix/">
     <strong>Document | </strong></a>
     <a href="https://countermaker.github.io/pointrix.io/">
     <strong>Paper (Comming soon) | </strong></a>
@@ -159,3 +159,10 @@ python launch.py --config deform.yaml
 
 
 Welcome to submit PR if you have any idea or methods.
+
+## contributors
+<a href="https://github.com/pointrix-project/pointrix/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=pointrix-project/pointrix" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
