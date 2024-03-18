@@ -45,7 +45,7 @@ Pointrix is a differentiable point-based rendering library which has following p
 <div style="display:flex;">
   <img src="https://github.com/pointrix-project/pointrix/assets/32637882/61795e5a-f91a-4a2a-b6ce-9a341a16145e" width="30%" />
   <img src="https://github.com/pointrix-project/pointrix/assets/32637882/616b7af8-3a8a-455a-ac1e-a62e9dc146d2" width="30%" />
-  <img src="https://github.com/pointrix-project/pointrix/assets/32637882/41920617-86aa-4500-982f-5145b90e3336" width="30%" />
+  <img src="https://github.com/pointrix-project/pointrix/assets/32637882/928a142e-38cb-48e6-847b-1c6d4b95f7a3" width="30%" />
 </div>
 
 # WIP
