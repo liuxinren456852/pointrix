@@ -137,20 +137,21 @@ class DPTRRender(BaseObject):
         Render_Features = RenderFeatures(rgb=rgb, depth=depth)
         render_features = Render_Features.combine()
 
+        ndc = torch.zeros_like(uv, requires_grad=True)
         # alpha blending
         try:
-            uv.retain_grad()
+            ndc.retain_grad()
         except:
-            raise ValueError("uv does not have grad")
+            raise ValueError("ndc does not have grad")
 
         rendered_features = gs.alpha_blending(
             uv, conic, opacity, render_features,
-            gaussian_ids_sorted, tile_range, self.bg_color, width, height
+            gaussian_ids_sorted, tile_range, self.bg_color, width, height, ndc
         )
         rendered_features_split = Render_Features.split(rendered_features)
 
         return {"rendered_features_split": rendered_features_split,
-                "viewspace_points": uv,
+                "viewspace_points": ndc,
                 "visibility_filter": radius > 0,
                 "radii": radius
                 }
