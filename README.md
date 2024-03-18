@@ -26,8 +26,8 @@
 
 Pointrix is a differentiable point-based rendering library which has following properties:
 - **Powerful Backend**:
-  - DPTR which offer foundational functionalities for point rendering serves as the backend of Pointrix.
-  - Support **"Render Anything"**(depth, normal, optical flow, anything you want)  and **"Backward Anything"** (Intrinsics & Extrinsics)
+  - Modular design and easy to modify.
+  - Support **"Render Anything"**(depth, normal, optical flow, anything you want)  and **"Backward Anything"** (Intrinsics & Extrinsics).
 - **Rich Feature**:
   - Static Scene Reconstruction: 
     - **3D Gaussian Splatting for Real-Time Radiance Field Rendering (2023 Siggraph Best Paper)**
