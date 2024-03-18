@@ -2,140 +2,37 @@
 
 The Trainer provides a complete default training pipeline, including **initialization** of hooks, data pipelines, renderers, models, optimizers, and loggers, as well as the **train_step**, **train_loop**, and **validation** processes.
 
-```python
-class DefaultTrainer:
-    """
-    The default trainer class for training and testing the model.
+The Relationship between Trainer to other modules is shown below:
 
-    Parameters
-    ----------
-    cfg : dict
-        The configuration dictionary.
-    exp_dir : str
-        The experiment directory.
-    device : str, optional
-        The device to use, by default "cuda".
-    """
-    @dataclass
-    class Config:
-        # Modules
-        model: dict = field(default_factory=dict)
-        optimizer: dict = field(default_factory=dict)
-        renderer: dict = field(default_factory=dict)
-        scheduler: Optional[dict] = field(default_factory=dict)
-        writer: dict = field(default_factory=dict)
-        hooks: dict = field(default_factory=dict)
-        # Dataset
-        dataset_name: str = "NeRFDataset"
-        dataset: dict = field(default_factory=dict)
+![](../images/framework-trainer.png)
 
-        # Training config
-        batch_size: int = 1
-        num_workers: int = 0
-        max_steps: int = 30000
-        val_interval: int = 2000
-        spatial_lr_scale: bool = True
+## DefaultTrainer 
 
-        # Progress bar
-        bar_upd_interval: int = 10
-        # Output path
-        output_path: str = "output"
+The DefaultTrainer is a class for training and testing models, and its framework mainly includes the following parts:
 
-    cfg: Config
+- Initialization: In the initialization phase, DefaultTrainer builds the training environment according to the configuration file and the experiment directory. This includes parsing the configuration file, constructing the data pipeline, renderer, model, optimizer, scheduler, and hook.
 
-    def __init__(self, cfg: Config, exp_dir: Path, device: str = "cuda") -> None:
-        super().__init__()
-        self.exp_dir = exp_dir
-        self.device = device
+- Training Loop: The `train_loop` method defines the entire training process. It updates the model parameters in each training step and validates the model at each validation interval. The `train_step` method defines the process of each training step. It first obtains the rendering results through the model, then calculates the loss, and finally updates the model parameters through the optimizer. The `validation` method is called at regular intervals and used to evaluate the performance of the model on the validation set. It traverses all the data in the validation set, renders each data, and then calculates the evaluation metrics. 
+- Test: The `test` method is used to evaluate the performance of the model on the test set. It first loads the model, then renders the data of the test set, and saves the rendering results such as some novel view images. 
+- Load and Save: The `save_model` and `load_model` methods are used to save and load the model. The state of the model is saved in a dictionary, which includes the global steps, the state of the optimizer, the state of the model, and the state of the renderer.
+- Hook Fuction: The `call_hook` method is used to call hook functions. Hook functions are functions that are executed at specific stages (such as the start of training, the end of training, before and after each training step, etc.) and can be used to implement some custom functions.
 
-        self.start_steps = 1
-        self.global_step = 0
-
-        # build config
-        self.cfg = parse_structured(self.Config, cfg)
-        # build hooks
-        self.hooks = parse_hooks(self.cfg.hooks)
-        self.call_hook("before_run")
-        # build datapipeline
-        self.datapipeline = parse_data_pipeline(self.cfg.dataset)
-
-        # build render and point cloud model
-        self.white_bg = self.datapipeline.white_bg
-        self.renderer = parse_renderer(
-            self.cfg.renderer, white_bg=self.white_bg, device=device)
-
-        self.model = parse_model(
-            self.cfg.model, self.datapipeline, device=device)
-
-        # build optimizer and scheduler
-        cameras_extent = self.datapipeline.training_dataset.radius
-        self.schedulers = parse_scheduler(self.cfg.scheduler,
-                                          cameras_extent if self.cfg.spatial_lr_scale else 1.
-                                          )
-        self.optimizer = parse_optimizer(self.cfg.optimizer,
-                                         self.model,
-                                         cameras_extent=cameras_extent)
-
-        # build logger and hooks
-        self.logger = parse_writer(self.cfg.writer, exp_dir)
-
-    def train_step(self, batch: List[dict]) -> None:
-        """
-        The training step for the model.
-
-        Parameters
-        ----------
-        batch : dict
-            The batch data.
-        """
-
-
-    @torch.no_grad()
-    def validation(self):
-        """
-        The validation progress.
-        """
-        self.val_dataset_size = len(self.datapipeline.validation_dataset)
-        for i in range(0, self.val_dataset_size):
-            self.call_hook("before_val_iter")
-            batch = self.datapipeline.next_val(i)
-            render_dict = self.model(batch)
-            render_results = self.renderer.render_batch(render_dict, batch)
-            self.metric_dict = self.model.get_metric_dict(render_results, batch)
-            self.call_hook("after_val_iter")
-
-    def test(self, model_path=None) -> None:
-        """
-        The testing method for the model.
-        """
-
-    def train_loop(self) -> None:
-        """
-        The training loop for the model.
-        """
-        
-
-    def call_hook(self, fn_name: str, **kwargs) -> None:
-        """
-        Call the hook method.
-
-        Parameters
-        ----------
-        fn_name : str
-            The hook method name.
-        kwargs : dict
-            The keyword arguments.
-        """
-        for hook in self.hooks:
-            # support adding additional custom hook methods
-            if hasattr(hook, fn_name):
-                try:
-                    getattr(hook, fn_name)(self, **kwargs)
-                except TypeError as e:
-                    raise TypeError(f'{e} in {hook}') from None
-        
+```{note}
+You can also define your own training process by define hook function or inherit the DefaultTrainer class and add your modification.
 ```
 
-You can also define your own training process by define hook function or inherit the DefaultTrainer class and add your modifcation.
+## Data Flow
 
-More details can be found in API and hook part.
+In this framework, the flow of data mainly goes through the following steps:
+
+1. Data Loading: Load training data and validation data through the data pipeline.
+2. Training:
+   - Forward Propagation: Input the **training dataset** into the model, perform forward propagation, and get the **rendering results**.
+   - Loss Calculation: Calculate the **loss dictionary** based on the rendering results and the real data.
+   - Backward Propagation and Parameter Update: Perform backward propagation based on the loss, and then generate **optimizer dictionary** to update the **model parameters** and **structures** through the optimizer.
+   - Validation: In the validation stages (called at regular intervals), the steps of data loading, forward propagation, and calculation of evaluation metrics are also performed, but backward propagation and **parameter updates are not performed**.
+3. Save Model: At specific steps in the training process, or at the end of training, the state of the model is saved.
+
+```{note}
+If you want to test the effect of the model, just call the `test()` method and it will load the model and render image to evaluate the model.
+```
