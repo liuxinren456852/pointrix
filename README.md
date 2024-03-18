@@ -2,7 +2,7 @@
   <h3 align="center">Pointrix</h3>
   <p align="center">
       <picture>
-      <img alt="Pointrix" src="https://github.com/pointrix-project/pointrix/assets/32637882/81019881-5ecf-4fc8-9c64-76fb292b5a0d" width="50%">
+      <img alt="Pointrix" src="https://github.com/pointrix-project/pointrix/assets/32637882/e0bd7ce3-fbf3-40f3-889c-7c882f3eed20" width="80%">
       </picture>
   </p>
   <p align="center">
@@ -23,6 +23,7 @@
     <a href="https://github.com/othneildrew/Best-README-Template/issues">Request Feature</a> -->
   </p>
 </div>
+
 
 Pointrix is a differentiable point-based rendering library which has following properties:
 - **Powerful Backend**:
